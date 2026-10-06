@@ -1,0 +1,45 @@
+{
+  "name": "mxd-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Catalogo tecnico interactivo de piezas de drones MXD (MX30 / MX50 / MX80)",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build --webpack",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "glb:optimizar": "node scripts/optimizar_glb.mjs",
+    "verificar": "npm run specs:importar && npm run typecheck && npm run lint && npm run build",
+    "specs:importar": "node scripts/importar_specs.mjs",
+    "logo:png": "node scripts/logo_a_png.mjs",
+    "glb:piezas": "node scripts/extraer_piezas_glb.mjs"
+  },
+  "dependencies": {
+    "@react-pdf/renderer": "^4.9.0",
+    "@react-three/drei": "^10.0.6",
+    "@react-three/fiber": "^9.1.0",
+    "next": "^16.3.5",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "three": "^0.186.0",
+    "zod": "^3.24.3",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@gltf-transform/core": "^4.5.0",
+    "@gltf-transform/extensions": "^4.5.0",
+    "@gltf-transform/functions": "^4.5.0",
+    "@tailwindcss/postcss": "^4.1.4",
+    "@types/node": "^22.14.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/three": "^0.186.0",
+    "eslint": "^9.25.0",
+    "eslint-config-next": "^16.3.5",
+    "meshoptimizer": "^1.2.0",
+    "tailwindcss": "^4.1.4",
+    "typescript": "^5.8.3"
+  }
+}

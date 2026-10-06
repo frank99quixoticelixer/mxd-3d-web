@@ -1,0 +1,50 @@
+# dependencias
+/node_modules
+/.pnp
+.pnp.*
+
+# build de Next.js
+/.next/
+/out/
+/build
+next-env.d.ts
+tsconfig.tsbuildinfo
+
+# entorno
+.env
+.env.local
+.env*.local
+
+# depuracion
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# sistema operativo
+.DS_Store
+Thumbs.db
+
+# editores
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+
+# ---------------------------------------------------------------
+# Archivos 3D
+# ---------------------------------------------------------------
+# Los .blend y los escaneos crudos NO van en este repositorio:
+# viven en el repositorio de assets (mxd-assets) con Git LFS.
+*.blend
+*.blend1
+*.stl
+*.ply
+*.obj
+
+# Los .glb SI se versionan aqui mientras el proyecto es pequenio,
+# pero con Git LFS (ver .gitattributes). Cuando migres a Cloudflare R2,
+# descomenta la linea siguiente y quita los GLB del historial.
+# /public/models/**/*.glb
+
+# salidas temporales de los scripts
+/scripts/salida/

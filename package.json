@@ -1,0 +1,13 @@
+{
+  "name": "mxd-3d-web",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "vitrina": "npm run dev --workspace=apps/vitrina",
+    "pedidos": "npm run dev --workspace=apps/pedidos",
+    "interna": "npm run dev --workspace=apps/interna"
+  }
+}

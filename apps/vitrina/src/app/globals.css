@@ -1,0 +1,169 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------
+   Sistema de diseno MXD: blanco y verde.
+   Los mismos valores estan en src/config/marca.ts (los usa el visor 3D).
+   Si cambias un color aqui, cambialo tambien alla.
+   --------------------------------------------------------------- */
+@theme {
+  --color-mxd-verde: #0f8a4c;
+  --color-mxd-verde-oscuro: #0a5f36;
+  --color-mxd-verde-claro: #e9f5ee;
+  --color-mxd-verde-acento: #22c55e;
+
+  --color-mxd-hueso: #f6f8f7;
+  --color-mxd-borde: #e2e8e5;
+  --color-mxd-gris: #5c6b66;
+  --color-mxd-tinta: #0d1512;
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+
+  --radius-xl2: 1.25rem;
+}
+
+/* ---------------------------------------------------------------
+   Base
+   --------------------------------------------------------------- */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #ffffff;
+  color: var(--color-mxd-tinta);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Estado de foco visible y consistente (accesibilidad por teclado). */
+:where(a, button, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid var(--color-mxd-verde);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* El canvas 3D no debe secuestrar el scroll vertical de la pagina en movil. */
+canvas {
+  touch-action: none;
+  display: block;
+}
+
+/* ---------------------------------------------------------------
+   Utilidades propias
+   --------------------------------------------------------------- */
+
+/* Linea divisoria con degradado, se usa entre secciones. */
+.mxd-divisor {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-mxd-borde) 20%,
+    var(--color-mxd-borde) 80%,
+    transparent
+  );
+}
+
+/* Fondo del visor: degradado radial muy suave, blanco al centro. */
+.mxd-fondo-visor {
+  background:
+    radial-gradient(
+      ellipse 120% 80% at 50% 25%,
+      #ffffff 0%,
+      var(--color-mxd-hueso) 55%,
+      #eef2f0 100%
+    );
+}
+
+/* Retícula técnica tenue, da sensación de plano de ingeniería. */
+.mxd-reticula {
+  background-image:
+    linear-gradient(to right, rgba(15, 138, 76, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 138, 76, 0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* Barra del despiece (0 a 200%): pista verde brillante y perilla con halo. */
+.mxd-deslizador {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 9999px;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.45);
+}
+
+.mxd-deslizador::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--color-mxd-verde-acento);
+  border: 3px solid #ffffff;
+  box-shadow: 0 0 0 2px var(--color-mxd-verde-acento),
+    0 0 12px rgba(34, 197, 94, 0.8);
+}
+
+.mxd-deslizador::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: var(--color-mxd-verde-acento);
+  border: 3px solid #ffffff;
+  box-shadow: 0 0 0 2px var(--color-mxd-verde-acento),
+    0 0 12px rgba(34, 197, 94, 0.8);
+}
+
+/* Animacion de entrada discreta. */
+@keyframes mxd-aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mxd-aparecer {
+  animation: mxd-aparecer 0.5s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mxd-aparecer {
+    animation: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* ---------------------------------------------------------------
+   Pantallas tactiles
+   --------------------------------------------------------------- */
+
+/* Un pulgar de 18 px se falla con el dedo. En punteros gruesos (dedo, lapiz)
+   se agranda el tirador y la pista, sin tocar el raton. */
+@media (pointer: coarse) {
+  .mxd-deslizador {
+    height: 28px;
+  }
+  .mxd-deslizador::-webkit-slider-thumb {
+    width: 26px;
+    height: 26px;
+  }
+  .mxd-deslizador::-moz-range-thumb {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+/* El lienzo 3D se queda con los gestos: sin esto el navegador interpreta el
+   arrastre como desplazamiento de la pagina y el modelo no gira. */
+.mxd-lienzo-3d {
+  touch-action: none;
+}

@@ -1,0 +1,3 @@
+# Los GLB de esta carpeta se sirven como estaticos en produccion.
+# Hostinger no tiene Git LFS, asi que van como binarios normales.
+*.glb !filter !diff !merge -text

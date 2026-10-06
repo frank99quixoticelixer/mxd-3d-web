@@ -1,0 +1,157 @@
+// ---------------------------------------------------------------
+// ESQUEMA PREVISTO PARA LA FASE CON BASE DE DATOS
+//
+// Este archivo NO esta activo. Es la referencia del modelo de datos
+// al que migrara src/data/mx80.ts cuando se conecte PostgreSQL.
+//
+// Para activarlo:
+//   1. npm install prisma @prisma/client
+//   2. npx prisma init
+//   3. Copiar este contenido a prisma/schema.prisma
+//   4. Definir DATABASE_URL en .env.local
+//   5. npx prisma migrate dev --name inicial
+//   6. Reescribir el cuerpo de src/lib/catalogo.ts con consultas de Prisma
+//      (las paginas y componentes no cambian: dependen de esa interfaz).
+//
+// El esquema contempla desde ahora precio, existencias y cotizaciones,
+// aunque el sitio todavia no los muestre, para no tener que migrar
+// destructivamente mas adelante.
+// ---------------------------------------------------------------
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ModeloDron {
+  MX30
+  MX50
+  MX80
+}
+
+enum Subsistema {
+  PROPULSION
+  ESTRUCTURA
+  LIQUIDOS
+  ELECTRONICA
+  TREN_ATERRIZAJE
+  OTROS
+}
+
+enum EstadoPieza {
+  PENDIENTE
+  ESCANEADA
+  MODELADA
+  PUBLICADA
+}
+
+enum TipoAsset {
+  GLB_ENSAMBLE
+  GLB_PIEZA
+  MINIATURA
+  RENDER
+  STL_PROVEEDOR // acceso restringido: archivo de fabricacion
+}
+
+model Pieza {
+  id          String      @id @default(cuid())
+  sku         String      @unique // MX80-001
+  slug        String      @unique
+  modelo      ModeloDron
+  nombre      String
+  descripcion String      @default("")
+  subsistema  Subsistema  @default(OTROS)
+  estado      EstadoPieza @default(PENDIENTE)
+
+  // Nombres del objeto en Blender, para el emparejamiento de respaldo.
+  nombresBlender String[] @default([])
+
+  // Vista explosionada
+  direccionExplosion Float[] @default([]) // [x, y, z] o vacio = automatico
+  factorExplosion    Float   @default(1)
+
+  // Comercial (no expuesto todavia en el sitio publico)
+  precioMxn Decimal? @db.Decimal(10, 2)
+  stock     Int      @default(0)
+
+  // Especificaciones: null = pendiente de medir. Nunca se estiman.
+  masaG     Float?
+  largoMm   Float?
+  anchoMm   Float?
+  altoMm    Float?
+  material  String?
+  acabado   String?
+  notas     String?
+
+  orden Int @default(999)
+
+  assets     Asset[]
+  proveedor  Proveedor?  @relation(fields: [proveedorId], references: [id])
+  proveedorId String?
+  items      ItemCotizacion[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@index([modelo, subsistema])
+}
+
+model Asset {
+  id      String    @id @default(cuid())
+  tipo    TipoAsset
+  // Ruta dentro del almacenamiento de objetos (R2 / S3), no una URL firmada.
+  ruta    String
+  bytes   Int
+  sha256  String
+  version Int       @default(1)
+  // Solo para GLB: permite vigilar el presupuesto de rendimiento.
+  triangulos Int?
+  publico    Boolean @default(true)
+
+  pieza   Pieza  @relation(fields: [piezaId], references: [id], onDelete: Cascade)
+  piezaId String
+
+  creadoEn DateTime @default(now())
+
+  @@unique([piezaId, tipo, version])
+}
+
+model Proveedor {
+  id       String  @id @default(cuid())
+  nombre   String  @unique
+  contacto String?
+  notas    String?
+  piezas   Pieza[]
+}
+
+// ---------------------------------------------------------------
+// Fase 3: solicitud de cotizacion. Previsto, no implementado.
+// ---------------------------------------------------------------
+
+model Cotizacion {
+  id            String   @id @default(cuid())
+  folio         String   @unique
+  nombreCliente String
+  correo        String
+  telefono      String?
+  empresa       String?
+  mensaje       String?
+  atendida      Boolean  @default(false)
+  items         ItemCotizacion[]
+  creadaEn      DateTime @default(now())
+}
+
+model ItemCotizacion {
+  id           String     @id @default(cuid())
+  cantidad     Int        @default(1)
+  cotizacion   Cotizacion @relation(fields: [cotizacionId], references: [id], onDelete: Cascade)
+  cotizacionId String
+  pieza        Pieza      @relation(fields: [piezaId], references: [id])
+  piezaId      String
+
+  @@unique([cotizacionId, piezaId])
+}

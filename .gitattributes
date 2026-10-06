@@ -1,0 +1,9 @@
+# GLB/GLTF/BIN van por Git LFS por defecto.
+*.glb   filter=lfs diff=lfs merge=lfs -text
+*.gltf  filter=lfs diff=lfs merge=lfs -text
+*.bin   filter=lfs diff=lfs merge=lfs -text
+
+# Excepcion: los GLB estaticos de vitrina se sirven directamente y
+# Hostinger no soporta LFS, asi que van como binarios normales en git.
+# La regla especifica despues de la general gana en gitattributes.
+apps/vitrina/public/models/**/*.glb !filter !diff !merge text
