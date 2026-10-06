@@ -97,7 +97,7 @@ export function VisorMXD({
           <div className="absolute inset-0 z-20 bg-white">
             <VisorPieza
               key={piezaSola.sku}
-              url={`/api/descarga/${piezaSola.sku}/glb?ver=1`}
+              url={`/downloads/${piezaSola.sku}/${piezaSola.sku}.glb`}
               nombre={piezaSola.nombre}
               sinDespiece
               className="h-full w-full rounded-none border-0"

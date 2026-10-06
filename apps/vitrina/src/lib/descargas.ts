@@ -3,10 +3,10 @@ import INDICE from "@/data/descargas-mx80.json";
 /**
  * Descargas por pieza (GLB y STL).
  *
- * Los archivos viven en contenido/piezas_MX80/descargas/<SKU>/<SKU>.glb|.stl y
- * se sirven con /api/descarga/<SKU>/<formato>. El indice de este JSON lo genera
- * brazo_completo/exportar_descargas.py junto con los archivos; sirve para que
- * la interfaz solo ofrezca botones de lo que existe.
+ * Los archivos viven en public/downloads/<SKU>/<SKU>.glb|.stl y se sirven
+ * como estaticos directamente (sin API route). El indice JSON lo genera
+ * brazo_completo/exportar_descargas.py junto con los archivos; sirve para
+ * que la interfaz solo ofrezca botones de lo que existe.
  *
  * Este modulo no toca el disco, asi que es seguro importarlo desde componentes
  * de cliente.
@@ -23,7 +23,7 @@ export function descargasDe(sku: string): Partial<Record<FormatoDescarga, number
 }
 
 export function urlDescarga(sku: string, formato: FormatoDescarga): string {
-  return `/api/descarga/${sku}/${formato}`;
+  return `/downloads/${sku}/${sku}.${formato}`;
 }
 
 export function tamanoLegible(bytes: number): string {
