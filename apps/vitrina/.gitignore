@@ -40,6 +40,8 @@ Thumbs.db
 *.stl
 *.ply
 *.obj
+# Excepcion: STL de descarga van en public/downloads/ para servirse en Hostinger
+!public/downloads/**/*.stl
 
 # Los .glb SI se versionan aqui mientras el proyecto es pequenio,
 # pero con Git LFS (ver .gitattributes). Cuando migres a Cloudflare R2,
