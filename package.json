@@ -9,6 +9,8 @@
     "vitrina": "npm run dev --workspace=apps/vitrina",
     "pedidos": "npm run dev --workspace=apps/pedidos",
     "interna": "npm run dev --workspace=apps/interna",
+    "build": "npm run build --workspaces --if-present",
+    "start": "npm run start --workspaces --if-present",
     "build:vitrina": "npm run build --workspace=apps/vitrina",
     "start:vitrina": "npm run start --workspace=apps/vitrina",
     "build:pedidos": "npm run build --workspace=apps/pedidos",
