@@ -8,6 +8,12 @@
   "scripts": {
     "vitrina": "npm run dev --workspace=apps/vitrina",
     "pedidos": "npm run dev --workspace=apps/pedidos",
-    "interna": "npm run dev --workspace=apps/interna"
+    "interna": "npm run dev --workspace=apps/interna",
+    "build:vitrina": "npm run build --workspace=apps/vitrina",
+    "start:vitrina": "npm run start --workspace=apps/vitrina",
+    "build:pedidos": "npm run build --workspace=apps/pedidos",
+    "start:pedidos": "npm run start --workspace=apps/pedidos",
+    "build:interna": "npm run build --workspace=apps/interna",
+    "start:interna": "npm run start --workspace=apps/interna"
   }
 }
