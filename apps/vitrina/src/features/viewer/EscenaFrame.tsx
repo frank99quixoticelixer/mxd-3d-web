@@ -19,7 +19,7 @@ import {
   urlModelo,
 } from "@/config/modelos3d";
 import { prepararMateriales, type MaterialGuardado } from "./resolverPiezas";
-import { useVisor } from "./estado";
+import { DESPIECE_MAXIMO, useVisor } from "./estado";
 import { organizarEnCuadricula } from "./cuadricula";
 import { Escenario } from "./Escenario";
 import { LimiteError } from "./LimiteError";
@@ -36,6 +36,33 @@ import { LimiteError } from "./LimiteError";
  * "agarrador de brazo"/.001/.002/.003 y "retenedor_brazo"*: brackets fijos
  * al frame, no se animan con el plegado.
  */
+/**
+ * Que objetos del GLB forman cada zona de la capa 2.
+ *
+ * Los brazos se reparten por el sentido de su helice: brazo y brazo_4 montan
+ * Propela_CCW, brazo_2 y brazo_3 montan Propela_CW (ver SIGNO_GIRO).
+ * "frente" existe en la lista pero todavia no tiene geometria en el modelo.
+ */
+const OBJETOS_POR_ZONA: Record<string, readonly string[]> = {
+  // Un solo brazo por zona: los cuatro son el mismo numero de parte montado
+  // cuatro veces, asi que mostrar dos no aporta nada y estorba.
+  "brazo-cw": ["brazo_2"],
+  "brazo-ccw": ["brazo"],
+  frame: [
+    "agarrador_de_brazo", "agarrador_de_brazo001",
+    "agarrador_de_brazo002", "agarrador_de_brazo003",
+    "retenedor_brazo", "retenedor_brazo_2",
+    "retenedor_brazo_3", "retenedor_brazo_4",
+    "tubo_de_42_step", "tubo_de_42_step001",
+    "tubo_de_60_step", "tubo_de_60_step001",
+  ],
+  tanque: ["Tanque_spline_centrado_20"],
+  // El tren viene como un grupo con sus 8 piezas nombradas dentro, asi que
+  // basta nombrar el grupo: el despiece de la capa 2 baja solo a sus hojas.
+  "tren-aterrizaje": ["MXD_tren_aterrizaje"],
+  frente: ["modeloAvantiv1"],
+};
+
 const NOMBRES_BRAZO = ["brazo", "brazo_2", "brazo_3", "brazo_4"] as const;
 
 const COLOR_HOVER_BRAZO = new THREE.Color(COLORES.verdeAcento);
@@ -49,6 +76,12 @@ const MEZCLA_HOVER = 0.7;
  * Blender: "Tanque spline centrado 2.0" → THREE.js: quita puntos, espacios→_
  */
 const NOMBRE_TANQUE = "Tanque_spline_centrado_20";
+
+/** Grupo del tren de aterrizaje: patines, travesanios y los cuatro agarres. */
+const NOMBRE_TREN = "MXD_tren_aterrizaje";
+
+/** Pieza del frente del dron. */
+const NOMBRE_FRENTE = "modeloAvantiv1";
 
 /** Nodos fijos del marco (THREE.js sanitized): agarradores, retenedores y tubos. */
 const NOMBRES_MARCO = [
@@ -178,8 +211,27 @@ const NOMBRES_GIRATORIO: Record<(typeof NOMBRES_BRAZO)[number], string> = {
   brazo_4: "giratorio002",
 };
 
-/** Vueltas por segundo del rotor cuando el brazo esta desplegado del todo. */
-const VELOCIDAD_GIRO_MOTOR = 1.6;
+/**
+ * Vueltas por segundo del rotor con la barra de encendido al 100%.
+ * La barra escala este valor, asi que al 50% gira a la mitad.
+ *
+ * El techo util no es el motor real sino la camara: la helice tiene 2 palas y
+ * por tanto simetria de 180 grados, asi que a 60 cuadros por segundo el giro
+ * se vuelve ambiguo pasando de ~15 vueltas/s (90 grados por cuadro) y empieza
+ * a verse girando al reves o detenida. A 5 vueltas/s son 30 grados por cuadro:
+ * rapido y todavia legible.
+ *
+ * Para referencia, el motor real llega a 2371 RPM (~39.5 vueltas/s); a esa
+ * velocidad en pantalla no se veria girar, se veria vibrar.
+ */
+const VELOCIDAD_GIRO_MOTOR = 5.0;
+
+/**
+ * Despiece a partir del cual los rotores vuelven a su posicion de origen.
+ * Es una fraccion del recorrido del mando (0..1), igual que el umbral de los
+ * motores. Por debajo de esto las palas se quedan donde quedaron al frenar.
+ */
+const DESPIECE_REINICIA_ROTOR = 0.1;
 
 /**
  * Sentido de giro de cada rotor: +1 = CCW visto desde arriba, -1 = CW.
@@ -223,26 +275,41 @@ function ChasisPlegable({
   encendido,
   explosion,
   despieceAtomico,
+  capa,
+  zona,
+  piezaAislada,
   alMedir,
   alClicBrazo,
+  alClicPieza,
   alClicMarco,
   alClicTanque,
+  alClicTren,
+  alClicFrente,
 }: {
   despliegue: number;
   encendido: number;
   explosion: number;
   despieceAtomico: number;
+  capa: 1 | 2 | 3;
+  zona: string | null;
+  piezaAislada: string | null;
   /** Aceleracion de los rotores 0..1. Antes el giro dependia del despliegue;
    * ahora es un mando aparte, porque desplegar y acelerar son dos cosas. */
   alMedir: (medidas: { radio: number; semialto: number }) => void;
   /** Clic en un brazo: navega al explorador del brazo. La navegacion va
    * afuera del Canvas porque useRouter() no funciona dentro del reconciler
    * de R3F (ver VisorFrame.tsx). */
-  alClicBrazo: () => void;
+  alClicBrazo: (nombreBrazo: string) => void;
+  /** Clic sobre una malla dentro de una zona: aisla esa pieza. */
+  alClicPieza: (nombre: string) => void;
   /** Clic en un nodo fijo del marco: navega a /catalogo/marco. */
   alClicMarco: () => void;
   /** Clic en el tanque: navega a /catalogo/tanque. */
   alClicTanque: () => void;
+  /** Clic en el tren de aterrizaje. */
+  alClicTren: () => void;
+  /** Clic en la pieza del frente del dron. */
+  alClicFrente: () => void;
 }) {
   const gltf = useGLTF(urlModelo(GLB_FRAME));
   const camara = useThree((s) => s.camera);
@@ -255,11 +322,20 @@ function ChasisPlegable({
   const progreso = useRef(0);
   /** Progreso amortiguado del despiece atomico. */
   const atomico = useRef(0);
+  /**
+   * Donde empezo el ultimo pulsado, para distinguir un clic de un arrastre.
+   *
+   * three.js dispara onClick tambien al soltar despues de girar la camara, asi
+   * que sin esto cada giro entraba de capa sin querer: el despiece se reiniciaba
+   * y la vista saltaba a una pieza suelta.
+   */
+  const inicioPulsado = useRef<{ x: number; y: number } | null>(null);
   /** Angulo acumulado (radianes) del rotor de cada brazo: crece sin limite
    * mientras gira, no es un "hacia un objetivo" como progreso. */
   const anguloGiro = useRef<Record<string, number>>({});
 
-  const { raiz, brazos, marco, tanque, radio, semialto } = useMemo(() => {
+  const { raiz, brazos, marco, tanque, tren, frente, radio, semialto } =
+    useMemo(() => {
     const copia = gltf.scene.clone(true);
 
     const brazos: Brazo[] = NOMBRES_BRAZO.map((nombre) => {
@@ -298,6 +374,16 @@ function ChasisPlegable({
       ? { materiales: marcoObjs.flatMap((o) => prepararMateriales(o)), objetos: marcoObjs }
       : null;
 
+    const frenteObj = copia.getObjectByName(NOMBRE_FRENTE) ?? null;
+    const frente = frenteObj
+      ? { materiales: prepararMateriales(frenteObj), objetos: [frenteObj] }
+      : null;
+
+    const trenObj = copia.getObjectByName(NOMBRE_TREN) ?? null;
+    const tren = trenObj
+      ? { materiales: prepararMateriales(trenObj), objetos: [trenObj] }
+      : null;
+
     const tanqueObj = copia.getObjectByName(NOMBRE_TANQUE) ?? null;
     const tanque = tanqueObj
       ? { materiales: prepararMateriales(tanqueObj), objetos: [tanqueObj] }
@@ -313,6 +399,8 @@ function ChasisPlegable({
       brazos,
       marco,
       tanque,
+      tren,
+      frente,
       radio: tamano.length() / 2,
       semialto: tamano.y / 2,
     };
@@ -320,6 +408,8 @@ function ChasisPlegable({
 
   type Marco = NonNullable<typeof marco>;
   type TanqueGrupo = NonNullable<typeof tanque>;
+  type TrenGrupo = NonNullable<typeof tren>;
+  type FrenteGrupo = NonNullable<typeof frente>;
 
   const porObjetoBrazo = useMemo(() => {
     const mapa = new Map<THREE.Object3D, Brazo>();
@@ -336,6 +426,26 @@ function ChasisPlegable({
     }
     return mapa;
   }, [marco]);
+
+  const porObjetoFrente = useMemo(() => {
+    const mapa = new Map<THREE.Object3D, FrenteGrupo>();
+    if (frente) {
+      for (const obj of frente.objetos) {
+        obj.traverse((n: THREE.Object3D) => mapa.set(n, frente));
+      }
+    }
+    return mapa;
+  }, [frente]);
+
+  const porObjetoTren = useMemo(() => {
+    const mapa = new Map<THREE.Object3D, TrenGrupo>();
+    if (tren) {
+      for (const obj of tren.objetos) {
+        obj.traverse((n: THREE.Object3D) => mapa.set(n, tren));
+      }
+    }
+    return mapa;
+  }, [tren]);
 
   const porObjetoTanque = useMemo(() => {
     const mapa = new Map<THREE.Object3D, TanqueGrupo>();
@@ -369,6 +479,28 @@ function ChasisPlegable({
     return null;
   };
 
+  const frenteDesdeEvento = (evento: {
+    object: THREE.Object3D;
+  }): FrenteGrupo | null => {
+    let actual: THREE.Object3D | null = evento.object;
+    while (actual) {
+      const f = porObjetoFrente.get(actual);
+      if (f) return f;
+      actual = actual.parent;
+    }
+    return null;
+  };
+
+  const trenDesdeEvento = (evento: { object: THREE.Object3D }): TrenGrupo | null => {
+    let actual: THREE.Object3D | null = evento.object;
+    while (actual) {
+      const t = porObjetoTren.get(actual);
+      if (t) return t;
+      actual = actual.parent;
+    }
+    return null;
+  };
+
   const tanqueDesdeEvento = (evento: { object: THREE.Object3D }): TanqueGrupo | null => {
     let actual: THREE.Object3D | null = evento.object;
     while (actual) {
@@ -383,6 +515,8 @@ function ChasisPlegable({
     | { tipo: "brazo"; datos: Brazo }
     | { tipo: "marco"; datos: MarcoGrupo }
     | { tipo: "tanque"; datos: TanqueGrupo }
+    | { tipo: "tren"; datos: TrenGrupo }
+    | { tipo: "frente"; datos: FrenteGrupo }
     | null;
 
   const resaltado = useRef<HoverItem>(null);
@@ -413,10 +547,12 @@ function ChasisPlegable({
     if (siguiente?.tipo === "brazo") encender(siguiente, COLOR_HOVER_BRAZO);
     if (siguiente?.tipo === "marco") encender(siguiente, COLOR_HOVER_MARCO);
     if (siguiente?.tipo === "tanque") encender(siguiente, COLOR_HOVER_TANQUE, 1.8);
+    if (siguiente?.tipo === "tren") encender(siguiente, COLOR_HOVER_TANQUE, 1.8);
+    if (siguiente?.tipo === "frente") encender(siguiente, COLOR_HOVER_TANQUE, 1.8);
     resaltado.current = siguiente;
   };
 
-  useEffect(() => resaltar(null), [brazos, marco, tanque]);
+  useEffect(() => resaltar(null), [brazos, marco, tanque, tren, frente]);
 
   useEffect(() => {
     useVisor.setState({ radio });
@@ -478,21 +614,64 @@ function ChasisPlegable({
    * cae casi en el origen: la direccion quedaba degenerada, todos salian hacia
    * el mismo lado y se atravesaban entre si.
    */
+  /**
+   * Plan de despiece, distinto en cada capa:
+   *
+   *   capa 1  se apartan los CONJUNTOS: cada brazo, el marco, el tanque
+   *   capa 2  se aparta COMPONENTE por componente dentro de la zona abierta
+   *   capa 3  no hay nada que despiezar, ya es una sola pieza
+   *
+   * Antes el plan era siempre el de conjuntos, asi que dentro de un brazo el
+   * deslizador solo movia el brazo entero de sitio en vez de abrirlo.
+   *
+   * Se calcula con el modelo en su pose original (restaurarPose) porque lee
+   * las posiciones vivas de los objetos.
+   */
   const plan = useMemo(() => {
     restaurarPose();
-    const conjuntos: { clave: string; objetos: THREE.Object3D[] }[] = [
-      ...brazos.map((b) => ({ clave: b.nombre, objetos: [b.objeto] })),
-      ...(marco ? [{ clave: "marco", objetos: marco.objetos }] : []),
-      ...(tanque ? [{ clave: "tanque", objetos: tanque.objetos }] : []),
-    ];
 
-    const cajaTotal = new THREE.Box3().setFromObject(raiz);
-    const centroTotal = cajaTotal.getCenter(new THREE.Vector3());
+    let elementos: { objeto: THREE.Object3D; sku: string; orden: number }[];
 
-    const elementos = conjuntos.flatMap((c, i) =>
-      c.objetos.map((objeto) => ({ objeto, sku: c.clave, orden: i })),
-    );
-    const destinos = organizarEnCuadricula(elementos, radio, aspecto);
+    if (capa === 1) {
+      const conjuntos: { clave: string; objetos: THREE.Object3D[] }[] = [
+        ...brazos.map((b) => ({ clave: b.nombre, objetos: [b.objeto] })),
+        ...(marco ? [{ clave: "marco", objetos: marco.objetos }] : []),
+        ...(tanque ? [{ clave: "tanque", objetos: tanque.objetos }] : []),
+        ...(tren ? [{ clave: "tren", objetos: tren.objetos }] : []),
+        ...(frente ? [{ clave: "frente", objetos: frente.objetos }] : []),
+      ];
+      elementos = conjuntos.flatMap((c, i) =>
+        c.objetos.map((objeto) => ({ objeto, sku: c.clave, orden: i })),
+      );
+    } else if (capa === 2 && zona) {
+      // Las mallas hoja de la zona: cada componente va a su propia celda.
+      const hojas: THREE.Object3D[] = [];
+      for (const nombre of OBJETOS_POR_ZONA[zona] ?? []) {
+        const grupo = raiz.getObjectByName(nombre);
+        if (!grupo) continue;
+        if ((grupo as THREE.Mesh).isMesh) hojas.push(grupo);
+        else
+          grupo.traverse((n) => {
+            if ((n as THREE.Mesh).isMesh && n.name) hojas.push(n);
+          });
+      }
+      elementos = hojas.map((objeto, i) => ({
+        objeto,
+        sku: `${objeto.name}#${i}`,
+        orden: i,
+      }));
+    } else {
+      return [];
+    }
+
+    if (elementos.length === 0) return [];
+
+    const caja = new THREE.Box3();
+    for (const e of elementos) caja.expandByObject(e.objeto);
+    const centroTotal = caja.getCenter(new THREE.Vector3());
+    const radioPlan = caja.getBoundingSphere(new THREE.Sphere()).radius || radio;
+
+    const destinos = organizarEnCuadricula(elementos, radioPlan, aspecto);
 
     return elementos.map((e, i) => {
       const centro = new THREE.Box3()
@@ -507,9 +686,13 @@ function ChasisPlegable({
         rotBase: e.objeto.quaternion.clone(),
         direccion: direccion.normalize(),
         destino: destinos[i],
+        radioPlan,
       };
     });
-  }, [brazos, marco, tanque, raiz, radio, aspecto, restaurarPose]);
+  }, [
+    capa, zona, brazos, marco, tanque, tren, frente,
+    raiz, radio, aspecto, restaurarPose,
+  ]);
 
   /**
    * Plan del despiece ATOMICO: una celda por componente, no por conjunto.
@@ -537,6 +720,89 @@ function ChasisPlegable({
       destino: destinos[i],
     }));
   }, [raiz, radio, aspecto, restaurarPose]);
+
+  /**
+   * Que se ve en cada capa, y a donde mira la camara.
+   *
+   * Se oculta en vez de cargar otro GLB: el modelo del chasis ya trae cada
+   * zona como grupo nombrado, asi que entrar en un brazo no descarga nada ni
+   * puede desincronizarse del conjunto. Volver tampoco recarga.
+   */
+  const controles = useThree((s) => s.controls) as
+    | { target: THREE.Vector3; update: () => void }
+    | null;
+
+  useEffect(() => {
+    const visibles: THREE.Object3D[] = [];
+
+    // Se parte SIEMPRE de todo visible. Antes solo se reencendian los hijos
+    // directos de la raiz, asi que las mallas que la capa 3 habia apagado en
+    // profundidad se quedaban ocultas para siempre: al volver, el brazo
+    // aparecia vacio.
+    raiz.traverse((n) => {
+      n.visible = true;
+    });
+
+    if (capa === 1) {
+      visibles.push(raiz);
+    } else {
+      const nombres = zona ? (OBJETOS_POR_ZONA[zona] ?? []) : [];
+      const deZona = nombres
+        .map((n) => raiz.getObjectByName(n))
+        .filter((o): o is THREE.Object3D => Boolean(o));
+
+      for (const hijo of raiz.children) hijo.visible = false;
+      for (const o of deZona) {
+        // Se enciende el objeto y toda su cadena de padres hasta la raiz.
+        let actual: THREE.Object3D | null = o;
+        while (actual && actual !== raiz) {
+          actual.visible = true;
+          actual = actual.parent;
+        }
+      }
+
+      const pieza =
+        capa === 3 && piezaAislada ? raiz.getObjectByName(piezaAislada) : null;
+
+      // Solo se apaga el resto si la pieza existe de verdad. Si no resolviera,
+      // apagar primero dejaba la escena en negro sin forma de recuperarla.
+      if (pieza) {
+        for (const o of deZona) {
+          o.traverse((n) => {
+            if ((n as THREE.Mesh).isMesh) n.visible = false;
+          });
+        }
+        pieza.traverse((n) => (n.visible = true));
+        let actual: THREE.Object3D | null = pieza;
+        while (actual && actual !== raiz) {
+          actual.visible = true;
+          actual = actual.parent;
+        }
+        visibles.push(pieza);
+      } else {
+        visibles.push(...deZona);
+      }
+    }
+
+    if (visibles.length === 0) return;
+
+    // Reencuadre: la camara se planta a una distancia proporcional a lo que
+    // queda visible, mirando su centro. Sin esto, entrar en una pieza chica
+    // la deja como un punto en medio de la pantalla.
+    const caja = new THREE.Box3();
+    for (const o of visibles) caja.expandByObject(o);
+    const centro = caja.getCenter(new THREE.Vector3());
+    const radioVisible = caja.getBoundingSphere(new THREE.Sphere()).radius || 1;
+
+    camara.position
+      .copy(centro)
+      .add(new THREE.Vector3(1.1, 0.85, 1.4).normalize().multiplyScalar(radioVisible * 2.6));
+    camara.lookAt(centro);
+    if (controles) {
+      controles.target.copy(centro);
+      controles.update();
+    }
+  }, [capa, zona, piezaAislada, raiz, camara, controles]);
 
   useFrame((_, delta) => {
     // Despiece atomico: manda sobre todo lo demas. Mueve las mallas hoja, no
@@ -589,7 +855,7 @@ function ChasisPlegable({
     const tExplosion = Math.min(explosion, 1);
     const u = THREE.MathUtils.clamp(explosion - 1, 0, 1);
     const tOrganizar = u * u * (3 - 2 * u); // suavizado de entrada y salida
-    const separacion = tExplosion * radio * 1.15;
+    const separacion = tExplosion * (plan[0]?.radioPlan ?? radio) * 1.15;
 
     for (const g of plan) {
       destinoPos
@@ -653,9 +919,19 @@ function ChasisPlegable({
         // secuencia terminada. Fuera de eso el angulo vuelve a 0, para que el
         // giratorio quede siempre en la misma pose y no en una distinta segun
         // cuanto hubiera girado antes.
-        if (encendido <= 0 || p < 0.999) {
+        // Al soltar el acelerador las palas se QUEDAN donde pararon: un rotor
+        // que frena no vuelve solo a su marca. El angulo acumulado solo se
+        // borra cuando el dron deja de estar listo para volar, que es cuando
+        // esa pose ya no significa nada:
+        //   - el despliegue baja del 100% (los brazos se mueven)
+        //   - el despiece pasa del umbral (el dron se esta separando)
+        const dejaDeVolar =
+          p < 0.999 ||
+          explosion / DESPIECE_MAXIMO > DESPIECE_REINICIA_ROTOR;
+
+        if (dejaDeVolar) {
           anguloGiro.current[nombre] = 0;
-        } else {
+        } else if (encendido > 0) {
           anguloGiro.current[nombre] =
             (anguloGiro.current[nombre] ?? 0) +
             VELOCIDAD_GIRO_MOTOR * encendido * Math.PI * 2 * signoGiro * delta;
@@ -682,17 +958,26 @@ function ChasisPlegable({
         const b = brazoDesdeEvento(evento);
         const m = b ? null : marcoDesdeEvento(evento);
         const t = b || m ? null : tanqueDesdeEvento(evento);
+        const tr = b || m || t ? null : trenDesdeEvento(evento);
+        const fr = b || m || t || tr ? null : frenteDesdeEvento(evento);
         const siguiente: HoverItem = b
           ? { tipo: "brazo", datos: b }
           : m
             ? { tipo: "marco", datos: m }
             : t
               ? { tipo: "tanque", datos: t }
+              : tr
+                ? { tipo: "tren", datos: tr }
+                : fr
+                  ? { tipo: "frente", datos: fr }
               : null;
         if (siguiente === resaltado.current) return;
         if (siguiente) evento.stopPropagation();
         document.body.style.cursor = siguiente ? "pointer" : "auto";
         resaltar(siguiente);
+      }}
+      onPointerDown={(evento: ThreeEvent<PointerEvent>) => {
+        inicioPulsado.current = { x: evento.clientX, y: evento.clientY };
       }}
       onPointerOut={() => {
         if (!resaltado.current) return;
@@ -700,11 +985,26 @@ function ChasisPlegable({
         resaltar(null);
       }}
       onClick={(evento: ThreeEvent<MouseEvent>) => {
+        // Si el puntero se movio mas que un pelo entre pulsar y soltar, fue un
+        // giro de camara y no un clic: no se entra de capa.
+        const inicio = inicioPulsado.current;
+        inicioPulsado.current = null;
+        if (
+          inicio &&
+          Math.hypot(evento.clientX - inicio.x, evento.clientY - inicio.y) > 6
+        ) {
+          return;
+        }
         const b = brazoDesdeEvento(evento);
         if (b) {
           evento.stopPropagation();
           document.body.style.cursor = "auto";
-          alClicBrazo();
+          if (capa >= 2) {
+            const malla = evento.object as THREE.Object3D;
+            if (malla?.name) alClicPieza(malla.name);
+          } else {
+            alClicBrazo(b.nombre);
+          }
           return;
         }
         const m = marcoDesdeEvento(evento);
@@ -714,6 +1014,32 @@ function ChasisPlegable({
           alClicMarco();
           return;
         }
+        const fr = frenteDesdeEvento(evento);
+        if (fr) {
+          evento.stopPropagation();
+          document.body.style.cursor = "auto";
+          if (capa >= 2) {
+            const malla = evento.object as THREE.Object3D;
+            if (malla?.name) alClicPieza(malla.name);
+          } else {
+            alClicFrente();
+          }
+          return;
+        }
+
+        const tr = trenDesdeEvento(evento);
+        if (tr) {
+          evento.stopPropagation();
+          document.body.style.cursor = "auto";
+          if (capa >= 2) {
+            const malla = evento.object as THREE.Object3D;
+            if (malla?.name) alClicPieza(malla.name);
+          } else {
+            alClicTren();
+          }
+          return;
+        }
+
         const t = tanqueDesdeEvento(evento);
         if (t) {
           evento.stopPropagation();
@@ -730,17 +1056,32 @@ export function EscenaFrame({
   encendido,
   explosion,
   despieceAtomico,
+  capa,
+  zona,
+  piezaAislada,
   alClicBrazo,
+  alClicPieza,
   alClicMarco,
   alClicTanque,
+  alClicTren,
+  alClicFrente,
 }: {
   despliegue: number;
   encendido: number;
   explosion: number;
   despieceAtomico: number;
-  alClicBrazo: () => void;
+  capa: 1 | 2 | 3;
+  zona: string | null;
+  piezaAislada: string | null;
+  alClicBrazo: (nombreBrazo: string) => void;
+  /** Clic sobre una malla dentro de una zona: aisla esa pieza. */
+  alClicPieza: (nombre: string) => void;
   alClicMarco: () => void;
   alClicTanque: () => void;
+  /** Clic en el tren de aterrizaje. */
+  alClicTren: () => void;
+  /** Clic en la pieza del frente del dron. */
+  alClicFrente: () => void;
 }) {
   const [medidas, setMedidas] = useState<{ radio: number; semialto: number } | null>(null);
   const radio = medidas?.radio ?? null;
@@ -764,10 +1105,16 @@ export function EscenaFrame({
             encendido={encendido}
             explosion={explosion}
             despieceAtomico={despieceAtomico}
+            capa={capa}
+            zona={zona}
+            piezaAislada={piezaAislada}
             alMedir={setMedidas}
             alClicBrazo={alClicBrazo}
+            alClicPieza={alClicPieza}
             alClicMarco={alClicMarco}
             alClicTanque={alClicTanque}
+            alClicTren={alClicTren}
+            alClicFrente={alClicFrente}
           />
         </Suspense>
       </LimiteError>

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   BLOQUEA_DESPLIEGUE,
+  ETIQUETAS_ZONA,
   DESPIECE_APAGA_MOTORES,
   DESPIECE_MAXIMO,
   useVisor,
@@ -150,6 +151,12 @@ export function VisorFrame({ className = "" }: { className?: string }) {
   const despieceAtomico = useVisor((s) => s.despieceAtomico);
   const setDespieceAtomico = useVisor((s) => s.setDespieceAtomico);
   const reiniciarVista = useVisor((s) => s.reiniciarVista);
+  const capa = useVisor((s) => s.capa);
+  const zona = useVisor((s) => s.zona);
+  const piezaAislada = useVisor((s) => s.piezaAislada);
+  const entrarEnZona = useVisor((s) => s.entrarEnZona);
+  const entrarEnPieza = useVisor((s) => s.entrarEnPieza);
+  const volver = useVisor((s) => s.volver);
 
   // Estado limpio al entrar: brazos plegados, motores apagados, sin despiece.
   useEffect(() => {
@@ -157,17 +164,25 @@ export function VisorFrame({ className = "" }: { className?: string }) {
   }, [reiniciarVista]);
 
   const umbral = Math.round(DESPIECE_APAGA_MOTORES * 100);
-  const despiezado = explosion >= DESPIECE_APAGA_MOTORES;
+  // Normalizado: explosion va de 0 a DESPIECE_MAXIMO y la barra muestra la
+  // fraccion, asi que el umbral se compara contra la fraccion.
+  const despiezado = explosion / DESPIECE_MAXIMO >= DESPIECE_APAGA_MOTORES;
   // Bloqueo mutuo: el encendido necesita el despliegue al 100, y en cuanto hay
   // motor en marcha el despliegue se congela.
   // El despiece atomico deja el dron desarmado: congela los tres mandos y la
   // unica salida es ensamblar.
   const atomico = despieceAtomico > 0;
+  // Desplegar, encender y el despiece atomico son de la vista completa.
+  // Dentro de una zona o de una pieza ya no hay dron que plegar.
+  const enCompleto = capa === 1;
+  const MOTIVO_CAPA = "Solo disponible en la vista del dron completo";
   const MOTIVO_ATOMICO = "Bloqueado: el despiece atómico está activo";
-  const encendidoBloqueado = atomico || despliegue < 1 || despiezado;
-  const despliegueBloqueado = atomico || encendido > BLOQUEA_DESPLIEGUE || despiezado;
-  const motivoDespliegue = atomico
-    ? MOTIVO_ATOMICO
+  const encendidoBloqueado = !enCompleto || atomico || despliegue < 1 || despiezado;
+  const despliegueBloqueado = !enCompleto || atomico || encendido > BLOQUEA_DESPLIEGUE || despiezado;
+  const motivoDespliegue = !enCompleto
+    ? MOTIVO_CAPA
+    : atomico
+      ? MOTIVO_ATOMICO
     : despiezado
     ? `Bloqueado arriba del ${umbral}% de despiece`
     : encendido > BLOQUEA_DESPLIEGUE
@@ -195,10 +210,57 @@ export function VisorFrame({ className = "" }: { className?: string }) {
           encendido={encendido}
           explosion={explosion}
           despieceAtomico={despieceAtomico}
-          alClicBrazo={() => router.push("/catalogo/motor")}
-          alClicMarco={() => router.push("/catalogo/marco")}
-          alClicTanque={() => router.push("/catalogo/tanque")}
+          capa={capa}
+          zona={zona}
+          piezaAislada={piezaAislada}
+          alClicBrazo={(nombreBrazo) => {
+            // En la vista completa un clic ENTRA en la zona; dentro de una
+            // zona, aisla la pieza. Antes mandaba siempre a /catalogo/motor,
+            // sin importar en que brazo o en que pieza se hubiera hecho clic.
+            if (capa === 1) {
+              entrarEnZona(
+                nombreBrazo === "brazo" || nombreBrazo === "brazo_4"
+                  ? "brazo-ccw"
+                  : "brazo-cw",
+              );
+            }
+          }}
+          alClicMarco={() => {
+            if (capa === 1) entrarEnZona("frame");
+          }}
+          alClicTanque={() => {
+            if (capa === 1) entrarEnZona("tanque");
+          }}
+          alClicTren={() => {
+            if (capa === 1) entrarEnZona("tren-aterrizaje");
+          }}
+          alClicFrente={() => {
+            if (capa === 1) entrarEnZona("frente");
+          }}
+          alClicPieza={(nombre) => {
+            if (capa === 2) entrarEnPieza(nombre);
+          }}
         />
+        {/* Rastro de migas y vuelta atras: solo aparecen al haber bajado de
+            capa, para no ocupar el lienzo en la vista completa. */}
+        {capa > 1 && (
+          <div className="absolute left-2 top-2 z-10 flex items-center gap-2 lg:left-3 lg:top-3">
+            <button
+              type="button"
+              onClick={volver}
+              title="Volver a la vista anterior"
+              className="rounded-lg border border-mxd-borde bg-white/90 px-2.5 py-1.5 text-[11px] font-semibold text-mxd-tinta shadow-sm backdrop-blur transition-colors hover:border-mxd-verde hover:text-mxd-verde lg:text-xs"
+            >
+              ← Atrás
+            </button>
+            <span className="rounded-lg bg-white/80 px-2 py-1 text-[10px] font-medium text-mxd-gris backdrop-blur lg:text-[11px]">
+              {capa === 2
+                ? `MX80 · ${zona ? ETIQUETAS_ZONA[zona] : ""}`
+                : `MX80 · ${zona ? ETIQUETAS_ZONA[zona] : ""} · pieza`}
+            </span>
+          </div>
+        )}
+
         <button
           type="button"
           onClick={alternarPantallaCompleta}
@@ -242,7 +304,9 @@ export function VisorFrame({ className = "" }: { className?: string }) {
             onChange={setEncendido}
             bloqueada={encendidoBloqueado}
             motivo={
-              atomico
+              !enCompleto
+                ? MOTIVO_CAPA
+                : atomico
                 ? MOTIVO_ATOMICO
                 : despiezado
                   ? `Bloqueado arriba del ${umbral}% de despiece`
