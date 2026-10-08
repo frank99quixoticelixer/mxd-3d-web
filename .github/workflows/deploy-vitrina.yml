@@ -1,0 +1,108 @@
+name: Deploy vitrina a Hostinger
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/vitrina/**"
+      - ".github/workflows/deploy-vitrina.yml"
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      HOSTINGER_API: https://developers.hostinger.com
+      USERNAME: u352406053
+      DOMAIN: mxddrone.com
+    steps:
+      - uses: actions/checkout@v4
+
+      # El builder nativo de Git de Hostinger no funciona con este monorepo
+      # (npm workspaces hostea react/react-dom/next fuera de apps/vitrina y
+      # el output standalone de Next.js no los encuentra en runtime -> 503).
+      # Este workflow reproduce el deploy manual que si funciona: empaqueta
+      # solo apps/vitrina, aislado, sin ningun package.json de monorepo de
+      # por medio, y lo sube a Hostinger via su API publica.
+      - name: Empaquetar apps/vitrina
+        working-directory: apps/vitrina
+        run: zip -rq ../../app.zip . -x ".next/*" ".env" "node_modules/*" "web/*"
+
+      - name: Generar URL de subida
+        id: upload_url
+        run: |
+          RESPONSE=$(curl -sS -X POST "$HOSTINGER_API/api/hosting/v1/files/upload-urls" \
+            -H "Authorization: Bearer ${{ secrets.HOSTINGER_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"username\":\"$USERNAME\",\"domain\":\"$DOMAIN\"}")
+          echo "url=$(echo "$RESPONSE" | jq -r .url)" >> "$GITHUB_OUTPUT"
+          echo "auth_key=$(echo "$RESPONSE" | jq -r .auth_key)" >> "$GITHUB_OUTPUT"
+          echo "rest_auth_key=$(echo "$RESPONSE" | jq -r .rest_auth_key)" >> "$GITHUB_OUTPUT"
+
+      - name: Subir archivo via TUS
+        run: |
+          SIZE=$(wc -c < app.zip)
+          URL="${{ steps.upload_url.outputs.url }}"
+          AUTH="${{ steps.upload_url.outputs.auth_key }}"
+          REST="${{ steps.upload_url.outputs.rest_auth_key }}"
+
+          curl -sS -f -X POST "${URL}/app.zip?override=true" \
+            -H "X-Auth: ${AUTH}" -H "X-Auth-Rest: ${REST}" \
+            -H "Tus-Resumable: 1.0.0" -H "Upload-Length: ${SIZE}" -H "Upload-Offset: 0"
+
+          curl -sS -f -X PATCH "${URL}/app.zip?override=true" \
+            -H "X-Auth: ${AUTH}" -H "X-Auth-Rest: ${REST}" \
+            -H "Tus-Resumable: 1.0.0" -H "Content-Type: application/offset+octet-stream" \
+            -H "Upload-Offset: 0" --data-binary "@app.zip"
+
+      - name: Iniciar build en Hostinger
+        id: start_build
+        run: |
+          RESPONSE=$(curl -sS -f -X POST \
+            "$HOSTINGER_API/api/hosting/v1/accounts/$USERNAME/websites/$DOMAIN/nodejs/builds" \
+            -H "Authorization: Bearer ${{ secrets.HOSTINGER_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "node_version": 22,
+              "app_type": "next",
+              "root_directory": ".",
+              "output_directory": ".next",
+              "build_script": "build",
+              "package_manager": "npm",
+              "source_type": "archive",
+              "source_options": {"archive_path": "app.zip"}
+            }')
+          echo "uuid=$(echo "$RESPONSE" | jq -r .uuid)" >> "$GITHUB_OUTPUT"
+
+      - name: Esperar resultado del build
+        run: |
+          UUID="${{ steps.start_build.outputs.uuid }}"
+          for i in $(seq 1 40); do
+            STATE=$(curl -sS -f \
+              "$HOSTINGER_API/api/hosting/v1/accounts/$USERNAME/websites/$DOMAIN/nodejs/builds/$UUID" \
+              -H "Authorization: Bearer ${{ secrets.HOSTINGER_API_TOKEN }}" | jq -r .state)
+            echo "Estado del build: $STATE"
+            if [ "$STATE" = "completed" ]; then
+              exit 0
+            fi
+            if [ "$STATE" = "failed" ]; then
+              echo "::error::Build fallo en Hostinger"
+              curl -sS -f \
+                "$HOSTINGER_API/api/hosting/v1/accounts/$USERNAME/websites/$DOMAIN/nodejs/builds/$UUID/logs" \
+                -H "Authorization: Bearer ${{ secrets.HOSTINGER_API_TOKEN }}" | jq -r .logs
+              exit 1
+            fi
+            sleep 15
+          done
+          echo "::error::Timeout esperando el build"
+          exit 1
+
+      - name: Verificar que el sitio responde
+        run: |
+          sleep 5
+          CODE=$(curl -sS -o /dev/null -w "%{http_code}" "https://$DOMAIN/")
+          echo "HTTP status: $CODE"
+          if [ "$CODE" != "200" ]; then
+            echo "::error::El sitio no responde 200 despues del deploy"
+            exit 1
+          fi
