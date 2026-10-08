@@ -1,19 +1,6 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-
-  // En el monorepo, "npm install" en la raiz hostea react/react-dom/next al
-  // node_modules de la raiz. Sin esto, el output standalone solo rastrea
-  // dependencias dentro de apps/vitrina y falla en runtime con "Cannot find
-  // module 'react'" cuando el build corre via auto-deploy de Git (clona el
-  // repo completo). El deploy manual por archivo no lo sufria porque
-  // instalaba aislado dentro de apps/vitrina.
-  outputFileTracingRoot: path.join(__dirname, "../../"),
 
   // @react-pdf/renderer usa streams y Buffer de Node.js internamente.
   // Si webpack intenta empaquetarlo lo rompe; hay que dejarlo como modulo
