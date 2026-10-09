@@ -217,11 +217,9 @@ export const useVisor = create<EstadoVisor>((set) => ({
     set((s) => {
       const despieceAtomico = THREE.clamp01(valor);
       if (despieceAtomico === 0) return { despieceAtomico };
-      // El despiece atomico es de la vista completa: dentro de una zona ya se
-      // esta viendo un subconjunto y el despiece normal basta.
-      if (s.capa !== 1) return {};
-      // Al bajar a pieza suelta el dron queda desarmado: ni brazos abiertos,
-      // ni motores, ni el otro despiece encima.
+      // En capa 3 ya es una sola pieza: no tiene sentido despiezarla.
+      if (s.capa === 3) return {};
+      // Al activar: apagar brazos y motores (no aplican en despiece).
       return { despieceAtomico, explosion: 0, despliegue: 0, encendido: 0 };
     }),
 
