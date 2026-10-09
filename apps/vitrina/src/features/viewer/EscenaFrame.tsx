@@ -573,7 +573,13 @@ function ChasisPlegable({
 
   const materialesDeItem = (item: NonNullable<HoverItem>): MaterialGuardado[] => {
     if (item.tipo === "brazo-motor") return item.datos.materialesGiratorio;
-    if (item.tipo === "brazo-estructura") return item.datos.materialesEstructura;
+    if (item.tipo === "brazo-estructura") {
+      // Si toda la geometria del brazo esta dentro del giratorio, la estructura
+      // queda vacia: en ese caso se ilumina el brazo completo para dar feedback.
+      return item.datos.materialesEstructura.length > 0
+        ? item.datos.materialesEstructura
+        : item.datos.materiales;
+    }
     return item.datos.materiales;
   };
 
@@ -630,6 +636,24 @@ function ChasisPlegable({
     return () => {
       document.body.style.cursor = "auto";
     };
+  }, []);
+
+  /**
+   * Inicio del arrastre capturado a nivel de ventana.
+   *
+   * El onPointerDown del modelo solo se dispara cuando el puntero baja SOBRE
+   * una malla. Al orbitar la camara empezando el arrastre en el fondo, nunca se
+   * registraba el inicio, y al soltar sobre una parte el onClick lo tomaba como
+   * clic y navegaba sin querer. Capturar aqui cubre el arrastre venga de donde
+   * venga, asi que el guardado por distancia del onClick siempre tiene contra
+   * que comparar.
+   */
+  useEffect(() => {
+    const alBajar = (e: PointerEvent) => {
+      inicioPulsado.current = { x: e.clientX, y: e.clientY };
+    };
+    window.addEventListener("pointerdown", alBajar);
+    return () => window.removeEventListener("pointerdown", alBajar);
   }, []);
 
   /**
@@ -1073,7 +1097,7 @@ function ChasisPlegable({
       }}
       onClick={(evento: ThreeEvent<MouseEvent>) => {
         // Si el puntero se movio mas que un pelo entre pulsar y soltar, fue un
-        // giro de camara y no un clic: no se entra de capa.
+        // giro de camara y no un clic: no se entra de capa ni se navega.
         const inicio = inicioPulsado.current;
         inicioPulsado.current = null;
         if (
@@ -1082,14 +1106,33 @@ function ChasisPlegable({
         ) {
           return;
         }
+
+        // Se resuelve la parte tocada una sola vez, con la misma prioridad que
+        // el hover (brazo > marco > tanque > tren > frente).
         const b = brazoDesdeEvento(evento);
+        const m = b ? null : marcoDesdeEvento(evento);
+        const t = b || m ? null : tanqueDesdeEvento(evento);
+        const tr = b || m || t ? null : trenDesdeEvento(evento);
+        const fr = b || m || t || tr ? null : frenteDesdeEvento(evento);
+        const datosClic = b ?? m ?? t ?? tr ?? fr;
+        if (!datosClic) return;
+
+        // Clic estricto: solo cuenta si cae sobre la MISMA parte que esta
+        // resaltada bajo el cursor. Asi un clic que el rayo atrapa contra una
+        // parte ocluida detras del fondo (distinta de la que se señala) no
+        // dispara nada. En tactil no hay hover (resaltado.current null): se deja
+        // pasar para no romper el toque directo.
+        if (resaltado.current && resaltado.current.datos !== datosClic) return;
+
+        evento.stopPropagation();
+        document.body.style.cursor = "auto";
+
         if (b) {
-          evento.stopPropagation();
-          document.body.style.cursor = "auto";
           if (capa >= 2) {
             // En capa 2: no aislar la malla individual; usar el grupo logico.
-            // Si el clic cae en el giratorio, aislar todo el grupo (motor + balanceador + helices).
-            // Si cae en la estructura del brazo, no hay grupo unico que aislar: no navega.
+            // Si el clic cae en el giratorio, aislar todo el grupo (motor +
+            // balanceador + helices). Si cae en la estructura del brazo, no hay
+            // grupo unico que aislar: no navega.
             if (b.giratorio && esDescendiente(evento.object, b.giratorio.objeto)) {
               const nombreGiratorio = NOMBRES_GIRATORIO[b.nombre as (typeof NOMBRES_BRAZO)[number]];
               if (nombreGiratorio) alClicPieza(nombreGiratorio);
@@ -1099,17 +1142,11 @@ function ChasisPlegable({
           }
           return;
         }
-        const m = marcoDesdeEvento(evento);
         if (m) {
-          evento.stopPropagation();
-          document.body.style.cursor = "auto";
           alClicMarco();
           return;
         }
-        const fr = frenteDesdeEvento(evento);
         if (fr) {
-          evento.stopPropagation();
-          document.body.style.cursor = "auto";
           if (capa >= 2) {
             const malla = evento.object as THREE.Object3D;
             if (malla?.name) alClicPieza(malla.name);
@@ -1118,11 +1155,7 @@ function ChasisPlegable({
           }
           return;
         }
-
-        const tr = trenDesdeEvento(evento);
         if (tr) {
-          evento.stopPropagation();
-          document.body.style.cursor = "auto";
           if (capa >= 2) {
             const malla = evento.object as THREE.Object3D;
             if (malla?.name) alClicPieza(malla.name);
@@ -1131,11 +1164,7 @@ function ChasisPlegable({
           }
           return;
         }
-
-        const t = tanqueDesdeEvento(evento);
         if (t) {
-          evento.stopPropagation();
-          document.body.style.cursor = "auto";
           alClicTanque();
         }
       }}
