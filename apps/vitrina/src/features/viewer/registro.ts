@@ -12,5 +12,10 @@ import type { PiezaEnEscena } from "./resolverPiezas";
 export const registroPiezas: { actual: PiezaEnEscena[] } = { actual: [] };
 
 export function piezaPorSku(sku: string): PiezaEnEscena | undefined {
-  return registroPiezas.actual.find((p) => p.sku === sku);
+  // Busca primero por SKU exacto; si no hay (piezas padre como MX80-007 que
+  // solo existen como subpiezas en la escena), cae al primer elemento del grupo.
+  return (
+    registroPiezas.actual.find((p) => p.sku === sku) ??
+    registroPiezas.actual.find((p) => p.grupo === sku)
+  );
 }
