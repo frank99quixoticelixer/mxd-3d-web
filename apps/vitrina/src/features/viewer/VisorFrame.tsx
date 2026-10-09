@@ -172,13 +172,13 @@ export function VisorFrame({ className = "" }: { className?: string }) {
   // El despiece atomico deja el dron desarmado: congela los tres mandos y la
   // unica salida es ensamblar.
   const atomico = despieceAtomico > 0;
-  // Desplegar, encender y el despiece atomico son de la vista completa.
-  // Dentro de una zona o de una pieza ya no hay dron que plegar.
   const enCompleto = capa === 1;
   const MOTIVO_CAPA = "Solo disponible en la vista del dron completo";
   const MOTIVO_ATOMICO = "Bloqueado: el despiece atómico está activo";
   const encendidoBloqueado = !enCompleto || atomico || despliegue < 1 || despiezado;
   const despliegueBloqueado = !enCompleto || atomico || encendido > BLOQUEA_DESPLIEGUE || despiezado;
+  // Despiece atomico: disponible en capa 1 (dron completo) y capa 2 (zona activa).
+  const atomicoBloqueado = capa === 3;
   const motivoDespliegue = !enCompleto
     ? MOTIVO_CAPA
     : atomico
@@ -338,16 +338,23 @@ export function VisorFrame({ className = "" }: { className?: string }) {
           <div className="grid grid-cols-2 gap-1.5 lg:grid-cols-1 lg:gap-2">
           <button
             type="button"
-            title="Separar cada componente por separado, en cuadrícula"
+            title={
+              atomicoBloqueado
+                ? "No disponible en vista de pieza individual"
+                : "Separar cada componente por separado, en cuadrícula"
+            }
             aria-pressed={despieceAtomico > 0}
-            onClick={() => setDespieceAtomico(despieceAtomico > 0 ? 0 : 1)}
+            disabled={atomicoBloqueado}
+            onClick={() => !atomicoBloqueado && setDespieceAtomico(despieceAtomico > 0 ? 0 : 1)}
             className={`rounded-lg border px-2 py-1.5 text-[11px] font-semibold transition-colors lg:px-3 lg:py-2 lg:text-xs ${
-              despieceAtomico > 0
-                ? "border-mxd-verde bg-mxd-verde text-white hover:bg-mxd-verde-oscuro"
-                : "border-mxd-borde bg-white text-mxd-tinta hover:border-mxd-verde hover:text-mxd-verde"
+              atomicoBloqueado
+                ? "cursor-not-allowed border-mxd-borde bg-mxd-hueso text-mxd-gris/50"
+                : despieceAtomico > 0
+                  ? "border-mxd-verde bg-mxd-verde text-white hover:bg-mxd-verde-oscuro"
+                  : "border-mxd-borde bg-white text-mxd-tinta hover:border-mxd-verde hover:text-mxd-verde"
             }`}
           >
-            {despieceAtomico > 0 ? "Ensamblar" : "Despiece atómico"}
+            {despieceAtomico > 0 ? "Ensamblar" : "Despiece"}
           </button>
 
           <button
