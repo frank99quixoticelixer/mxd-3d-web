@@ -268,6 +268,37 @@ interface Brazo {
   palas: Pala[];
   giratorio: { objeto: THREE.Object3D; baseQuat: THREE.Quaternion } | null;
   materiales: MaterialGuardado[];
+  /** Materiales solo del grupo giratorio (motor + balanceador + helices). */
+  materialesGiratorio: MaterialGuardado[];
+  /** Materiales del cuerpo del brazo sin el giratorio. */
+  materialesEstructura: MaterialGuardado[];
+}
+
+/**
+ * Divide los MaterialGuardados de un brazo en dos grupos segun si pertenecen
+ * al subtree del giratorio o al resto. Funciona porque prepararMateriales()
+ * asigna los clones directamente a malla.material, asi que despues del call
+ * los materiales en el array son los mismos objetos que estan en los meshes.
+ */
+function clasificarMateriales(
+  todos: MaterialGuardado[],
+  giroObj: THREE.Object3D | null,
+): { enGiratorio: MaterialGuardado[]; enEstructura: MaterialGuardado[] } {
+  if (!giroObj) return { enGiratorio: [], enEstructura: todos };
+  const deGiratorio = new Set<THREE.MeshStandardMaterial>();
+  giroObj.traverse((n) => {
+    const m = n as THREE.Mesh;
+    if (!m.isMesh) return;
+    const mats = Array.isArray(m.material) ? m.material : [m.material];
+    for (const mat of mats) deGiratorio.add(mat as THREE.MeshStandardMaterial);
+  });
+  const enGiratorio: MaterialGuardado[] = [];
+  const enEstructura: MaterialGuardado[] = [];
+  for (const g of todos) {
+    if (deGiratorio.has(g.material)) enGiratorio.push(g);
+    else enEstructura.push(g);
+  }
+  return { enGiratorio, enEstructura };
 }
 
 /** true si objetivo es el mismo objeto que ancestro o un descendiente suyo. */
@@ -278,47 +309,6 @@ function esDescendiente(objetivo: THREE.Object3D, ancestro: THREE.Object3D): boo
     actual = actual.parent;
   }
   return false;
-}
-
-/**
- * Dado un mesh hovered, devuelve el hijo DIRECTO de una de las raices de zona
- * que lo contiene. En capa 2 ese hijo es el "sub-componente" logico:
- *   brazo → giratorio, tubo del brazo, soporte ESC, ...
- *   frame → agarrador_de_brazo, tubo_de_60_step, retenedor_brazo, ...
- * Si el mesh es hijo directo o es la raiz misma, devuelve la raiz.
- */
-function encontrarSubcomponente(
-  mesh: THREE.Object3D,
-  raices: THREE.Object3D[],
-): THREE.Object3D | null {
-  for (const r of raices) {
-    if (mesh !== r && !esDescendiente(mesh, r)) continue;
-    if (mesh === r || mesh.parent === r) return mesh;
-    let actual: THREE.Object3D | null = mesh;
-    while (actual && actual.parent !== r) actual = actual.parent;
-    return actual;
-  }
-  return null;
-}
-
-/**
- * Filtra los MaterialGuardados de una zona para quedarse solo con los que
- * pertenecen al subtree del sub-componente hovered.
- * Funciona porque prepararMateriales() asigna el clon directamente a
- * malla.material, asi que recorrer subcomp.traverse da los mismos objetos.
- */
-function filtrarPorSubcomp(
-  todos: MaterialGuardado[],
-  subcomp: THREE.Object3D,
-): MaterialGuardado[] {
-  const meshMats = new Set<THREE.MeshStandardMaterial>();
-  subcomp.traverse((n) => {
-    const m = n as THREE.Mesh;
-    if (!m.isMesh) return;
-    const mats = Array.isArray(m.material) ? m.material : [m.material];
-    for (const mat of mats) meshMats.add(mat as THREE.MeshStandardMaterial);
-  });
-  return todos.filter((g) => meshMats.has(g.material));
 }
 
 function ChasisPlegable({
@@ -403,13 +393,20 @@ function ChasisPlegable({
       const giratorio = objetoGiratorio
         ? { objeto: objetoGiratorio, baseQuat: objetoGiratorio.quaternion.clone() }
         : null;
+      const todosMateriales = prepararMateriales(objeto);
+      const { enGiratorio, enEstructura } = clasificarMateriales(
+        todosMateriales,
+        giratorio?.objeto ?? null,
+      );
       return {
         nombre,
         objeto,
         baseQuat: objeto.quaternion.clone(),
         palas,
         giratorio,
-        materiales: prepararMateriales(objeto),
+        materiales: todosMateriales,
+        materialesGiratorio: enGiratorio,
+        materialesEstructura: enEstructura,
       };
     });
 
@@ -564,7 +561,8 @@ function ChasisPlegable({
 
   type HoverItem =
     | { tipo: "brazo"; datos: Brazo }
-    | { tipo: "subcomponente"; objeto: THREE.Object3D; materiales: MaterialGuardado[] }
+    | { tipo: "brazo-motor"; datos: Brazo }
+    | { tipo: "brazo-estructura"; datos: Brazo }
     | { tipo: "marco"; datos: MarcoGrupo }
     | { tipo: "tanque"; datos: TanqueGrupo }
     | { tipo: "tren"; datos: TrenGrupo }
@@ -574,27 +572,16 @@ function ChasisPlegable({
   const resaltado = useRef<HoverItem>(null);
 
   const materialesDeItem = (item: NonNullable<HoverItem>): MaterialGuardado[] => {
-    if (item.tipo === "subcomponente") return item.materiales;
+    if (item.tipo === "brazo-motor") return item.datos.materialesGiratorio;
+    if (item.tipo === "brazo-estructura") {
+      // Si toda la geometria del brazo esta dentro del giratorio, la estructura
+      // queda vacia: en ese caso se ilumina el brazo completo para dar feedback.
+      return item.datos.materialesEstructura.length > 0
+        ? item.datos.materialesEstructura
+        : item.datos.materiales;
+    }
     return item.datos.materiales;
   };
-
-  /** Identidad del item para evitar re-iluminar el mismo objeto en cada frame. */
-  const idItem = (item: HoverItem): unknown => {
-    if (!item) return null;
-    if (item.tipo === "subcomponente") return item.objeto;
-    return item.datos;
-  };
-
-  /** Materiales preparados de todos los objetos de una zona, para filtrar luego. */
-  const obtenerMaterialesZona = useCallback((z: string): MaterialGuardado[] => {
-    if (z === "brazo-cw") return brazos.find((b) => b.nombre === "brazo_2")?.materiales ?? [];
-    if (z === "brazo-ccw") return brazos.find((b) => b.nombre === "brazo")?.materiales ?? [];
-    if (z === "frame") return marco?.materiales ?? [];
-    if (z === "tanque") return tanque?.materiales ?? [];
-    if (z === "tren-aterrizaje") return tren?.materiales ?? [];
-    if (z === "frente") return frente?.materiales ?? [];
-    return [];
-  }, [brazos, marco, tanque, tren, frente]);
 
   const apagar = (item: HoverItem) => {
     if (!item) return;
@@ -617,10 +604,11 @@ function ChasisPlegable({
   };
 
   const resaltar = (siguiente: HoverItem) => {
-    if (idItem(siguiente) === idItem(resaltado.current)) return;
+    if (siguiente === resaltado.current) return;
     apagar(resaltado.current);
     if (siguiente?.tipo === "brazo") encender(siguiente, COLOR_HOVER_BRAZO);
-    if (siguiente?.tipo === "subcomponente") encender(siguiente, COLOR_HOVER_BRAZO);
+    if (siguiente?.tipo === "brazo-motor") encender(siguiente, COLOR_HOVER_BRAZO, 1.2);
+    if (siguiente?.tipo === "brazo-estructura") encender(siguiente, COLOR_HOVER_BRAZO, 0.5);
     if (siguiente?.tipo === "marco") encender(siguiente, COLOR_HOVER_MARCO);
     if (siguiente?.tipo === "tanque") encender(siguiente, COLOR_HOVER_TANQUE, 1.8);
     if (siguiente?.tipo === "tren") encender(siguiente, COLOR_HOVER_TANQUE, 1.8);
@@ -1065,38 +1053,36 @@ function ChasisPlegable({
     <primitive
       object={raiz}
       onPointerMove={(evento: ThreeEvent<PointerEvent>) => {
-        let siguiente: HoverItem;
+        const b = brazoDesdeEvento(evento);
+        const m = b ? null : marcoDesdeEvento(evento);
+        const t = b || m ? null : tanqueDesdeEvento(evento);
+        const tr = b || m || t ? null : trenDesdeEvento(evento);
+        const fr = b || m || t || tr ? null : frenteDesdeEvento(evento);
 
-        if (capa >= 2 && zona) {
-          // En capa 2: resolver al hijo directo de la raiz de zona (sub-componente).
-          const raicesZona = (OBJETOS_POR_ZONA[zona] ?? [])
-            .map((n) => raiz.getObjectByName(n))
-            .filter((o): o is THREE.Object3D => Boolean(o));
-          const subcomp = encontrarSubcomponente(evento.object, raicesZona);
-          if (subcomp) {
-            const mats = filtrarPorSubcomp(obtenerMaterialesZona(zona), subcomp);
-            siguiente = mats.length > 0
-              ? { tipo: "subcomponente", objeto: subcomp, materiales: mats }
-              : null;
-          } else {
-            siguiente = null;
-          }
+        let siguiente: HoverItem;
+        if (b && capa >= 2) {
+          // En capa 2: distinguir giratorio (motor/balanceador) de estructura del brazo
+          const enGiratorio = b.giratorio
+            ? esDescendiente(evento.object, b.giratorio.objeto)
+            : false;
+          siguiente = enGiratorio
+            ? { tipo: "brazo-motor", datos: b }
+            : { tipo: "brazo-estructura", datos: b };
+        } else if (b) {
+          siguiente = { tipo: "brazo", datos: b };
+        } else if (m) {
+          siguiente = { tipo: "marco", datos: m };
+        } else if (t) {
+          siguiente = { tipo: "tanque", datos: t };
+        } else if (tr) {
+          siguiente = { tipo: "tren", datos: tr };
+        } else if (fr) {
+          siguiente = { tipo: "frente", datos: fr };
         } else {
-          // Capa 1: resolver a la zona completa.
-          const b = brazoDesdeEvento(evento);
-          const m = b ? null : marcoDesdeEvento(evento);
-          const t = b || m ? null : tanqueDesdeEvento(evento);
-          const tr = b || m || t ? null : trenDesdeEvento(evento);
-          const fr = b || m || t || tr ? null : frenteDesdeEvento(evento);
-          if (b) siguiente = { tipo: "brazo", datos: b };
-          else if (m) siguiente = { tipo: "marco", datos: m };
-          else if (t) siguiente = { tipo: "tanque", datos: t };
-          else if (tr) siguiente = { tipo: "tren", datos: tr };
-          else if (fr) siguiente = { tipo: "frente", datos: fr };
-          else siguiente = null;
+          siguiente = null;
         }
 
-        if (idItem(siguiente) === idItem(resaltado.current)) return;
+        if (siguiente === resaltado.current) return;
         if (siguiente) evento.stopPropagation();
         document.body.style.cursor = siguiente ? "pointer" : "auto";
         resaltar(siguiente);
@@ -1110,6 +1096,8 @@ function ChasisPlegable({
         resaltar(null);
       }}
       onClick={(evento: ThreeEvent<MouseEvent>) => {
+        // Si el puntero se movio mas que un pelo entre pulsar y soltar, fue un
+        // giro de camara y no un clic: no se entra de capa ni se navega.
         const inicio = inicioPulsado.current;
         inicioPulsado.current = null;
         if (
@@ -1119,26 +1107,8 @@ function ChasisPlegable({
           return;
         }
 
-        if (capa >= 2 && zona) {
-          // En capa 2: clic sobre un sub-componente → aislar en capa 3.
-          const raicesZona = (OBJETOS_POR_ZONA[zona] ?? [])
-            .map((n) => raiz.getObjectByName(n))
-            .filter((o): o is THREE.Object3D => Boolean(o));
-          const subcomp = encontrarSubcomponente(evento.object, raicesZona);
-          if (!subcomp) return;
-          // Clic estricto: solo si es el mismo sub-componente que esta resaltado.
-          if (
-            resaltado.current &&
-            (resaltado.current.tipo !== "subcomponente" ||
-              resaltado.current.objeto !== subcomp)
-          ) return;
-          evento.stopPropagation();
-          document.body.style.cursor = "auto";
-          if (subcomp.name) alClicPieza(subcomp.name);
-          return;
-        }
-
-        // Capa 1: resolver zona completa con la misma prioridad que el hover.
+        // Se resuelve la parte tocada una sola vez, con la misma prioridad que
+        // el hover (brazo > marco > tanque > tren > frente).
         const b = brazoDesdeEvento(evento);
         const m = b ? null : marcoDesdeEvento(evento);
         const t = b || m ? null : tanqueDesdeEvento(evento);
@@ -1147,21 +1117,56 @@ function ChasisPlegable({
         const datosClic = b ?? m ?? t ?? tr ?? fr;
         if (!datosClic) return;
 
-        if (
-          resaltado.current &&
-          "datos" in resaltado.current &&
-          resaltado.current.datos !== datosClic
-        )
-          return;
+        // Clic estricto: solo cuenta si cae sobre la MISMA parte que esta
+        // resaltada bajo el cursor. Asi un clic que el rayo atrapa contra una
+        // parte ocluida detras del fondo (distinta de la que se señala) no
+        // dispara nada. En tactil no hay hover (resaltado.current null): se deja
+        // pasar para no romper el toque directo.
+        if (resaltado.current && resaltado.current.datos !== datosClic) return;
 
         evento.stopPropagation();
         document.body.style.cursor = "auto";
 
-        if (b) { alClicBrazo(b.nombre); return; }
-        if (m) { alClicMarco(); return; }
-        if (fr) { alClicFrente(); return; }
-        if (tr) { alClicTren(); return; }
-        if (t) { alClicTanque(); }
+        if (b) {
+          if (capa >= 2) {
+            // En capa 2: no aislar la malla individual; usar el grupo logico.
+            // Si el clic cae en el giratorio, aislar todo el grupo (motor +
+            // balanceador + helices). Si cae en la estructura del brazo, no hay
+            // grupo unico que aislar: no navega.
+            if (b.giratorio && esDescendiente(evento.object, b.giratorio.objeto)) {
+              const nombreGiratorio = NOMBRES_GIRATORIO[b.nombre as (typeof NOMBRES_BRAZO)[number]];
+              if (nombreGiratorio) alClicPieza(nombreGiratorio);
+            }
+          } else {
+            alClicBrazo(b.nombre);
+          }
+          return;
+        }
+        if (m) {
+          alClicMarco();
+          return;
+        }
+        if (fr) {
+          if (capa >= 2) {
+            const malla = evento.object as THREE.Object3D;
+            if (malla?.name) alClicPieza(malla.name);
+          } else {
+            alClicFrente();
+          }
+          return;
+        }
+        if (tr) {
+          if (capa >= 2) {
+            const malla = evento.object as THREE.Object3D;
+            if (malla?.name) alClicPieza(malla.name);
+          } else {
+            alClicTren();
+          }
+          return;
+        }
+        if (t) {
+          alClicTanque();
+        }
       }}
     />
   );
