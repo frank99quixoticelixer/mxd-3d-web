@@ -1147,7 +1147,12 @@ function ChasisPlegable({
         const datosClic = b ?? m ?? t ?? tr ?? fr;
         if (!datosClic) return;
 
-        if (resaltado.current && resaltado.current.datos !== datosClic) return;
+        if (
+          resaltado.current &&
+          "datos" in resaltado.current &&
+          resaltado.current.datos !== datosClic
+        )
+          return;
 
         evento.stopPropagation();
         document.body.style.cursor = "auto";
