@@ -15,8 +15,17 @@ convenciones de codigo, ver [CLAUDE.md](CLAUDE.md).
 | Pedidos | pedidos.mxddrone.com | `apps/pedidos/` | todavia no existe |
 
 Las tres viven en el mismo repositorio y se despliegan por separado en
-Hostinger. Interna es por ahora un clon del catalogo de vitrina, con el
-panel de diagnostico del visor activado.
+Hostinger.
+
+**Vitrina e interna no muestran lo mismo, a proposito.** Vitrina es material de
+venta: se explora el dron y nada mas. Las cotas, el material, el proveedor, el
+numero de parte del BOM y las existencias se quedan en interna, y las fichas
+tecnicas en PDF tambien: esas rutas solo existen ahi. Interna arranca del mismo
+catalogo de vitrina y trae encendido el panel de diagnostico del visor, pero
+entra por contrasena.
+
+El recorte de vitrina esta en `apps/vitrina/src/lib/publico.ts`; la puerta de
+interna, en `apps/interna/src/proxy.ts`.
 
 Pedidos no tiene workflow: cuando lo necesite, se copia
 `.github/workflows/deploy-interna.yml`, se cambia `DOMAIN` y los `paths`.
@@ -33,7 +42,7 @@ salvo que sea en `public/` (ver [Assets compartidos](#assets-compartidos)).
 | Colores, logo, datos de contacto | `src/config/marca.ts` de cada app |
 | Catalogo de piezas, SKUs, especificaciones | `src/data/` de cada app |
 | Comportamiento del visor 3D | `src/features/viewer/` de cada app |
-| Fichas tecnicas PDF | `src/features/ficha-pdf/` de cada app |
+| Fichas tecnicas PDF | `src/features/ficha-pdf/` de interna (vitrina no las tiene) |
 | Que GLB carga el visor | `src/config/modelos3d.ts` de cada app |
 | Modelos 3D, renders, descargas | `apps/vitrina/public/` (para las dos webs) |
 | Editor de etiquetas de piezas | `apps/vitrina/public/brand/etiqueta-editor.html` |
@@ -144,6 +153,12 @@ medio. No conectar los sitios al builder de Git en hPanel.
 | `HOSTINGER_API_TOKEN` | GitHub, Settings > Secrets and variables > Actions | autentica al workflow contra la API de Hostinger |
 | `NEXT_PUBLIC_SITIO_URL` | hPanel, variables de entorno del sitio | URL publica en metadatos y Open Graph |
 | `NEXT_PUBLIC_DIAGNOSTICO_3D` | hPanel, variables de entorno del sitio | panel de piezas del GLB sin coincidencia en el catalogo. `false` en vitrina, `true` en interna |
+| `INTERNA_USUARIO` | hPanel, variables de entorno del sitio de interna | usuario del acceso al panel interno. **Sin el, interna responde 503 a todo** |
+| `INTERNA_CLAVE` | hPanel, variables de entorno del sitio de interna | contrasena del acceso al panel interno. Idem |
+
+A diferencia de las `NEXT_PUBLIC_*`, `INTERNA_USUARIO` e `INTERNA_CLAVE` se leen
+en cada peticion y no se hornean en el bundle: cambiarlas surte efecto al
+reiniciar el sitio, sin reconstruir.
 
 Las variables `NEXT_PUBLIC_*` se hornean en el bundle durante el build, no se
 leen en tiempo de ejecucion. **Cambiar una en hPanel no surte efecto hasta

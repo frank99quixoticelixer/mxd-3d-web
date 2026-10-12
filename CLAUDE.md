@@ -50,7 +50,7 @@ Ritmo: checkpoint semanal con demo desplegada en Hostinger.
 | GLB visor (brazo, frame) | `apps/vitrina/public/models/mx80/` | estatico `/models/mx80/...` |
 | GLB piezas individuales | `apps/vitrina/public/models/mx80/piezas/` | estatico `/models/mx80/piezas/...` |
 | GLB/STL descargas | `apps/vitrina/contenido/piezas_MX80/descargas/` | API `/api/descarga/[sku]/[formato]` |
-| PDFs fichas tecnicas | generados en el momento por `@react-pdf/renderer` | API `/api/ficha/...` |
+| PDFs fichas tecnicas | generados en el momento por `@react-pdf/renderer` | API `/api/ficha/...`, **solo en interna** |
 | Renders JPG | `apps/vitrina/public/renders/` | estatico `/renders/...` |
 
 `contenido/` es gitignored. No existe en Hostinger. Hay que subirlo por FTP
