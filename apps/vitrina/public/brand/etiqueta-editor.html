@@ -16,7 +16,7 @@ button.sec { background: #fff; color: #000; }
   #etiqueta { width: 90mm; height: 62mm; }
 }
 </style></head><body>
-<div class="panel"><label>Nombre de la pieza<input data-campo="nombre" type="text" autocomplete="off" value=""></label><label>SKU<input data-campo="sku" type="text" autocomplete="off" value="MX80-00"></label><label>Modelo<input data-campo="modelo" type="text" autocomplete="off" value="MX80"></label><label>Cantidad<input data-campo="cantidad" type="text" autocomplete="off" value=""></label><label>Modulo<input data-campo="modulo" type="text" autocomplete="off" value="brazo"></label><label>Ubicacion<input data-campo="ubicacion" type="text" autocomplete="off" value=""></label><label>No. de parte MXD (BOM)<input data-campo="numeroBom" type="text" autocomplete="off" value="" placeholder="MXD-MX80-PRO-PZA-005-R00"></label></div>
+<div class="panel"><label>Nombre de la pieza<input data-campo="nombre" type="text" autocomplete="off" value=""></label><label>SKU<input data-campo="sku" type="text" autocomplete="off" value="MX80-00"></label><label>Modelo<input data-campo="modelo" type="text" autocomplete="off" value="MX80"></label><label>Cantidad<input data-campo="cantidad" type="text" autocomplete="off" value=""></label><label>Modulo<input data-campo="modulo" type="text" autocomplete="off" value="brazo"></label><label>Ubicacion<input data-campo="ubicacion" type="text" autocomplete="off" value=""></label><label>No. de parte MXD (BOM)<input data-campo="numeroBom" type="text" autocomplete="off" value="" placeholder="MXD-MX80-PRO-PZA-005-R00"></label><label>Proveedor<input data-campo="proveedor" type="text" autocomplete="off" value="" placeholder="Nombre, o INTERNO si no tiene"></label></div>
 <div class="acciones"><button id="imprimir">Imprimir</button><button id="descargar" class="sec">Descargar SVG</button><button id="limpiar" class="sec">Limpiar</button></div>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="etiqueta" viewBox="0 0 900 620" font-family="Arial, Helvetica, sans-serif">
   <defs>
@@ -36,6 +36,7 @@ button.sec { background: #fff; color: #000; }
   <g fill="#000000" font-size="17" font-weight="700" letter-spacing="2">
     <text x="35" y="240">MODELO</text>
     <text x="35" y="350">CANTIDAD</text>
+    <text x="35" y="470">PROVEEDOR</text>
     <text x="300" y="112">NOMBRE DE LA PIEZA</text>
     <text x="300" y="226">SKU</text>
     <text x="300" y="352">MODULO</text>
@@ -45,6 +46,7 @@ button.sec { background: #fff; color: #000; }
   <g fill="#000000">
     <text id="campo-modelo" x="35" y="290" font-size="44" font-weight="700"></text>
     <text id="campo-cantidad" x="35" y="400" font-size="44" font-weight="700"></text>
+    <text id="campo-proveedor" x="35" y="520" font-size="32"></text>
     <text id="campo-nombre" x="300" y="168" font-size="46" font-weight="700"></text>
     <text id="campo-sku" x="300" y="294" font-size="68" font-weight="700" font-family="Consolas, 'Courier New', monospace"></text>
     <text id="campo-modulo" x="300" y="402" font-size="32" fill="#000000"></text>
@@ -54,6 +56,7 @@ button.sec { background: #fff; color: #000; }
   <g stroke="#000000" stroke-width="3">
     <line x1="35" y1="304" x2="235" y2="304"/>
     <line x1="35" y1="414" x2="235" y2="414"/>
+    <line x1="35" y1="534" x2="235" y2="534"/>
     <line x1="300" y1="182" x2="870" y2="182"/>
     <line x1="300" y1="308" x2="870" y2="308"/>
     <line x1="300" y1="414" x2="460" y2="414"/>
@@ -63,7 +66,7 @@ button.sec { background: #fff; color: #000; }
   <rect x="4" y="4" width="892" height="612" rx="28" fill="none" stroke="#000000" stroke-width="5"/>
 </svg>
 <script>
-const maxAncho = { nombre: 570, sku: 570, modelo: 200, cantidad: 200, modulo: 160, ubicacion: 370, numeroBom: 560 };
+const maxAncho = { nombre: 570, sku: 570, modelo: 200, cantidad: 200, modulo: 160, ubicacion: 370, numeroBom: 560, proveedor: 200 };
 const base = {};
 document.querySelectorAll('[data-campo]').forEach(inp => {
   const t = document.getElementById('campo-' + inp.dataset.campo);

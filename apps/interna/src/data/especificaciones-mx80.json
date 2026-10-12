@@ -1,0 +1,822 @@
+{
+  "_generado_por": "scripts/importar_specs.mjs a partir del CSV — no editar a mano",
+  "piezas": {
+    "MX80-001": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": 155,
+        "ancho_mm": 56.9,
+        "alto_mm": 50,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [
+          "Cotas: envolvente de brazo/balanceador_conjunto.PLY (SOLIDWORKS, mm)"
+        ],
+        "notas": "Pieza de catalogo formada por MX80-001-01, -02 y -03. Masa del conjunto pendiente."
+      },
+      "categoria": "Propulsion - sujecion de helice",
+      "proceso_fabricacion": "Conjunto: ver el proceso de cada subpieza",
+      "descripcion_funcional": "Conjunto que sujeta la helice al eje del motor. Las dos mitades aprietan la raiz de las palas y la tuerca mantiene la precarga durante el giro.",
+      "especificaciones_tecnicas": [
+        "Conjunto de 3 subpiezas: ver la hoja de cada una",
+        "Se balancea en conjunto con la helice",
+        "Cotas del conjunto armado tomadas de brazo/balanceador_conjunto.PLY"
+      ]
+    },
+    "MX80-001-01": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": 155,
+        "ancho_mm": 50,
+        "alto_mm": 9,
+        "material": "Aluminio 6061-T6 (propuesto); alternativa 7075-T6 si se requiere mayor resistencia a fatiga",
+        "acabado": "Negro mate satinado, suave al tacto: microgranallado + anodizado Tipo II negro (MIL-A-8625 Tipo II Clase 2) o pintura electrostática en polvo negra de textura fina (confirmar contra pieza original)",
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [
+          "Usuario: aluminio, CNC, color negro",
+          "Propuesta técnica: aleación y tipo de recubrimiento",
+          "Cotas: envolvente de brazo/balancin_motor/balanceador_helice_sup.PLY (SOLIDWORKS, unidades declaradas en mm)"
+        ],
+        "notas": "Aleación y recubrimiento por confirmar con pieza física o proveedor. Cotas, masa, tolerancias y par de apriete pendientes."
+      },
+      "categoria": "Propulsión - sujeción de hélice",
+      "proceso_fabricacion": "Mecanizado CNC (torneado y fresado) a partir de barra o placa; desbarbado y aristas matadas; recubrimiento posterior al mecanizado",
+      "descripcion_funcional": "Mitad superior del sujetador (hub) de hélices. Junto con el balanceador inferior sujeta la raíz de las palas y transmite el par del motor a la hélice.",
+      "especificaciones_tecnicas": [
+        "Tolerancias generales propuestas: ISO 2768-m",
+        "Rugosidad en superficies de apriete Ra ≤ 1.6 µm (propuesto)",
+        "Sin rebabas ni filos vivos en contacto con la pala",
+        "Espesor de recubrimiento controlado en superficies de apriete para no alterar la precarga",
+        "Patrón de barrenos y roscas: pendiente",
+        "Se balancea en conjunto con la hélice"
+      ]
+    },
+    "MX80-001-02": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": 155,
+        "ancho_mm": 50,
+        "alto_mm": 21,
+        "material": "Aluminio 6061-T6 (propuesto); alternativa 7075-T6 si se requiere mayor resistencia a fatiga",
+        "acabado": "Negro mate satinado, suave al tacto: microgranallado + anodizado Tipo II negro (MIL-A-8625 Tipo II Clase 2) o pintura electrostática en polvo negra de textura fina (confirmar contra pieza original)",
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [
+          "Usuario: aluminio, CNC, color negro",
+          "Propuesta técnica: aleación y tipo de recubrimiento",
+          "Interfaz del rotor: especificación técnica del motor 15623-45KV",
+          "Cotas: envolvente de brazo/balancin_motor/balanceador_helice_inf.PLY (SOLIDWORKS, unidades declaradas en mm)"
+        ],
+        "notas": "Verificar que el patrón 8 × M6-6H en Ø46 mm del plano del motor corresponde a esta pieza. Cotas, masa, tolerancias y par de apriete pendientes."
+      },
+      "categoria": "Propulsión - sujeción de hélice",
+      "proceso_fabricacion": "Mecanizado CNC (torneado y fresado) a partir de barra o placa; desbarbado y aristas matadas; recubrimiento posterior al mecanizado",
+      "descripcion_funcional": "Mitad inferior del sujetador (hub) de hélices. Se fija al rotor del motor y sirve de asiento a la raíz de las palas.",
+      "especificaciones_tecnicas": [
+        "Tolerancias generales propuestas: ISO 2768-m",
+        "Interfaz con el rotor del motor: 8 × M6-6H en círculo Ø46 mm y barreno central Ø8.5 mm (según plano del motor, por verificar)",
+        "Planitud y perpendicularidad de la cara de asiento respecto al eje de giro: por definir (crítica para el balanceo)",
+        "Ra ≤ 1.6 µm en superficies de apriete (propuesto)"
+      ]
+    },
+    "MX80-001-03": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": 44.763,
+        "ancho_mm": 44.452,
+        "alto_mm": 32.5,
+        "material": "Aluminio 7075-T6 (propuesto, mayor resistencia para piezas roscadas); alternativa 6061-T6",
+        "acabado": "Anodizado Tipo II negro mate (propuesto), igual al de los balanceadores",
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [
+          "Usuario: aluminio, función de refuerzo, 2 piezas",
+          "Propuesta técnica: aleación, acabado y requisitos de rosca",
+          "Cotas: envolvente de brazo/balancin_motor/sujetador_balanceador.PLY (SOLIDWORKS, unidades declaradas en mm)"
+        ],
+        "notas": "Rosca, par de apriete y sentido de rosca pendientes. Cotas y masa pendientes."
+      },
+      "categoria": "Propulsión - sujeción de hélice",
+      "proceso_fabricacion": "Torneado CNC con roscado; desbarbado; anodizado",
+      "descripcion_funcional": "Refuerza la precarga del sujetador de hélices para evitar deslizamiento o fractura de la raíz de las palas.",
+      "especificaciones_tecnicas": [
+        "Rosca métrica ISO, clase de tolerancia 6H (propuesto; diámetro y paso pendientes)",
+        "Definir sentido de rosca respecto al giro CW para que el par de reacción no la afloje",
+        "Aplicar fijador de roscas anaeróbico de resistencia media en ensamble (propuesto)",
+        "Tolerancias generales propuestas: ISO 2768-m"
+      ]
+    },
+    "MX80-001-04": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Nombre y geometria segun la entrega del BOM maestro (Wear-Resistant Plate A). El nombre en ingles sugiere una pieza resistente al desgaste (posible material metalico o polimero de alto desempeno); material, proceso, masa y cotas pendientes de confirmar, no se copian de la tuerca completa porque esa fila describia el conjunto armado, no esta pieza sola."
+      },
+      "categoria": "Propulsión - sujeción de hélice",
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Espaciador que va junto al tornillo dentro de la tuerca del balanceador, entre la camisa (steel sleeve) y la cabeza del tornillo.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-001-05": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Mismo caso que el espaciador A (Wear-Resistant Plate B del BOM maestro): material, proceso, masa y cotas pendientes de confirmar."
+      },
+      "categoria": "Propulsión - sujeción de hélice",
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Segundo espaciador de la tuerca del balanceador, junto al primero (A) a los lados de la camisa (steel sleeve).",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-001-06": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Nombre del BOM maestro (Steel Sleeve) ya indica el material probable (acero); tratamiento, masa y cotas pendientes de confirmar con el proveedor, no se asume el aluminio anodizado que se propuso para el conjunto completo."
+      },
+      "categoria": "Propulsión - sujeción de hélice",
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Camisa metalica que envuelve el tornillo dentro de la tuerca del balanceador y reparte la carga de apriete sobre los espaciadores.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-001-07": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Nombre del BOM maestro (Propeller Clamp Rotation Bolt). Rosca, par de apriete, material, masa y cotas pendientes de confirmar."
+      },
+      "categoria": "Propulsión - sujeción de hélice",
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Tornillo que atraviesa la camisa y los espaciadores y cierra la tuerca del balanceador, permitiendo el giro del conjunto sobre su eje.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-004-01": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": 771.859,
+        "ancho_mm": 84.96,
+        "alto_mm": 36.842,
+        "material": "Polímero reforzado con fibra de carbono (CFRP), preimpregnado de matriz epóxica",
+        "acabado": "Superficie de molde con tejido de carbono visible; recubrimiento transparente con protección UV (propuesto)",
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [
+          "Usuario: fibra de carbono, proceso con molde",
+          "Hoja del motor: hélice de referencia 63 × 24 y cargas de operación",
+          "Propuesta técnica: proceso y requisitos de balanceo",
+          "Cotas: envolvente de brazo/propelas/Propela_CW.PLY (SOLIDWORKS, unidades declaradas en mm)"
+        ],
+        "notas": "Cantidad registrada como 1 hoja de las 2 que arma la helice CW de este brazo (la otra es geometria escaneada por separado, ver render CW_2 en la biblioteca local; mismo numero de parte). Confirmar tamano 63 x 24 in contra la pieza real. Masa pendiente. Cota = UNA pala (771.9 mm); dos palas dan ~1543 mm mas el cubo, consistente con la helice de referencia 63 in."
+      },
+      "categoria": "Propulsión - hélice",
+      "proceso_fabricacion": "Moldeo por compresión en molde metálico cerrado con preimpregnado de fibra de carbono y curado térmico; recorte y acabado de bordes; balanceo estático y dinámico",
+      "descripcion_funcional": "Hoja de la helice del brazo CW (una de las 2 que arman la helice). Convierte el par del motor en empuje.",
+      "especificaciones_tecnicas": [
+        "Sentido de giro: CW (horario; confirmar convención de observación)",
+        "Tamaño de referencia en la hoja del motor: 63 × 24 in (diámetro × paso)",
+        "Condición de operación máxima: 2371 RPM y 82 kgf de empuje (≈ 804 N)",
+        "Balanceo estático y dinámico obligatorio (grado por definir)",
+        "Sin delaminaciones, porosidad visible ni fibras expuestas en bordes",
+        "Juego de palas con masa y centro de gravedad pareados"
+      ]
+    },
+    "MX80-004-02": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": "Polímero reforzado con fibra de carbono (CFRP), preimpregnado de matriz epóxica",
+        "acabado": "Superficie de molde con tejido de carbono visible; recubrimiento transparente con protección UV (propuesto)",
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [
+          "Usuario: fibra de carbono, proceso con molde",
+          "Hoja del motor: hélice de referencia 63 × 24 y cargas de operación",
+          "Propuesta técnica: proceso y requisitos de balanceo",
+          "Cotas: envolvente de brazo/propelas/Propela_CW.PLY (SOLIDWORKS, unidades declaradas en mm)"
+        ],
+        "notas": "Geometria entregada como espejo de una sola hoja escaneada (las 2 copias en el GLB son identicas, rotadas 180 grados entre si: no hay 2 escaneos distintos como en la CW). Se asume mismo material y proceso que la hoja CW por ser la misma familia de pieza; MASA Y COTAS PENDIENTES de medicion propia, no se copian de la CW. Confirmar sentido de giro CCW y numero de parte con Eduardo."
+      },
+      "categoria": "Propulsión - hélice",
+      "proceso_fabricacion": "Moldeo por compresión en molde metálico cerrado con preimpregnado de fibra de carbono y curado térmico; recorte y acabado de bordes; balanceo estático y dinámico",
+      "descripcion_funcional": "Hoja de la helice del brazo CW (una de las 2 que arman la helice). Convierte el par del motor en empuje.",
+      "especificaciones_tecnicas": [
+        "Sentido de giro: CCW (antihorario; confirmar convencion de observacion)",
+        "Mismo tamano y condiciones de operacion de referencia que la hoja CW, por confirmar",
+        "Balanceo estatico y dinamico obligatorio (grado por definir)",
+        "Sin delaminaciones, porosidad visible ni fibras expuestas en bordes",
+        "Juego de palas con masa y centro de gravedad pareados"
+      ]
+    },
+    "MX80-004": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Pieza de catalogo formada por MX80-004-01 (hoja CW) y MX80-004-02 (hoja CCW). Cada rotor monta la que le corresponde segun su sentido de giro. Cotas y masa del conjunto: ver la hoja de cada una."
+      },
+      "categoria": "Propulsión - hélice",
+      "proceso_fabricacion": "Conjunto: ver el proceso de cada subpieza",
+      "descripcion_funcional": "Par de helices de fibra de carbono, una de sentido horario (CW) y otra antihorario (CCW). Cada rotor monta la que le corresponde.",
+      "especificaciones_tecnicas": [
+        "Conjunto de 2 subpiezas: ver la hoja de cada una"
+      ]
+    },
+    "MX80-005": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": 104.168,
+        "ancho_mm": 94.843,
+        "alto_mm": 92.601,
+        "material": "Aluminio 6061-T6 (propuesto)",
+        "acabado": "Anodizado Tipo II negro mate (propuesto)",
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [
+          "Usuario: aluminio, CNC",
+          "Tubo: diámetro exterior 60.5 mm",
+          "Cargas: especificación técnica del motor 15623-45KV",
+          "Propuesta técnica: aleación y acabado",
+          "Cotas: envolvente de brazo/sujetador_motor.PLY (SOLIDWORKS, unidades declaradas en mm)"
+        ],
+        "notas": "Patrón de fijación del motor y tipo de abrazadera pendientes. Cotas, masa y par de apriete pendientes."
+      },
+      "categoria": "Estructura",
+      "proceso_fabricacion": "Mecanizado CNC (fresado de 3 a 5 ejes) a partir de placa o bloque; desbarbado; anodizado",
+      "descripcion_funcional": "Une el motor al extremo del tubo de fibra de carbono y transmite al brazo el empuje y el par de reacción del motor.",
+      "especificaciones_tecnicas": [
+        "Alojamiento o abrazadera para tubo Ø60.5 mm (ajuste por definir)",
+        "Cargas de diseño: empuje máximo 82 kgf (≈ 804 N) y par máximo 51.79 N·m, más cargas de vibración",
+        "Perpendicularidad entre la cara de montaje del motor y el eje del tubo: por definir",
+        "Tolerancias generales propuestas: ISO 2768-m"
+      ]
+    },
+    "MX80-006": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": 129.107,
+        "ancho_mm": 105.552,
+        "alto_mm": 86.138,
+        "material": "Elastómero termoplástico (TPE/TPV) inyectado con tacto tipo espuma, temperatura de servicio continua ≥ 100 °C, estabilizado UV (propuesto); alternativa: EPP expandido si la pieza original es espuma de perlas",
+        "acabado": "Color negro, textura de molde mate",
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [
+          "Usuario: inyección de plástico, tacto tipo foami, resistente al calor",
+          "Propuesta técnica: material y temperatura de servicio",
+          "Cotas: envolvente de brazo/cubierta_motor.PLY (SOLIDWORKS, unidades declaradas en mm)"
+        ],
+        "notas": "Confirmar material real: si es espuma de perlas (EPP) el proceso es moldeo por vapor, no inyección. Cotas y masa pendientes."
+      },
+      "categoria": "Protección",
+      "proceso_fabricacion": "Moldeo por inyección",
+      "descripcion_funcional": "Cubierta protectora del motor contra impacto, agua y residuos de aplicación.",
+      "especificaciones_tecnicas": [
+        "No debe obstruir el sistema de ventilación del motor (Ø190 mm)",
+        "Compatible con la protección IPX6 del motor",
+        "Resistencia a agroquímicos y a lavado con agua a presión",
+        "Temperatura ambiente de operación −20 a +50 °C (del motor)"
+      ]
+    },
+    "MX80-007": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": 190,
+        "ancho_mm": 190,
+        "alto_mm": 65,
+        "material": "Ensamble electromecánico: estator de acero eléctrico laminado, imanes NdFeB, devanado de cobre esmaltado (clase 200 °C)",
+        "acabado": "Según proveedor",
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [
+          "Especificación técnica MXD - Motor UAV Heavy-Lift 15623-45KV"
+        ],
+        "notas": "Largo y ancho = Ø190 mm del sistema de ventilación (diámetro de carcasa Ø167.1 mm); alto = 65 mm. Masa pendiente: es entregable del proveedor según la sección 7 de la especificación. El PLY del motor mide 190.1 x 190.1 x 72.4 mm: el diametro coincide con la hoja del proveedor, el alto no (65 mm en la hoja). Verificar que miden lo mismo antes de cotizar. El modulo de conexion, su base y su empaque dejan de ser piezas de catalogo: son subconjuntos del motor y sus cotas siguen pendientes. Se desarma en 9 subpiezas (MX80-007-01 a -09); cada una tiene su propia hoja."
+      },
+      "categoria": "Propulsión - motor",
+      "proceso_fabricacion": "Componente de proveedor; balanceo dinámico del rotor requerido",
+      "descripcion_funcional": "Motor PMSM/BLDC outrunner que impulsa la hélice del brazo CW.",
+      "especificaciones_tecnicas": [
+        "PMSM/BLDC outrunner trifásico",
+        "Estator Ø156 × 23 mm",
+        "36N44P (36 ranuras, 44 polos, 22 pares de polos)",
+        "KV = 45 RPM/V",
+        "18S LiPo, 69 V nominal, rango del sistema 25–80 V",
+        "Punto nominal (60 %): 69.5 A, 1627 RPM, 24.08 N·m, 38.3 kgf, 4.10 kW mecánicos, eficiencia 85.5 %",
+        "Punto máximo (100 %): 246.6 A, 2371 RPM, 51.79 N·m, 82.5 kgf, 12.86 kW mecánicos, 17.02 kW eléctricos",
+        "KT ≈ 0.2122 N·m/A",
+        "Frecuencia eléctrica máxima ≈ 869 Hz",
+        "Montaje superior 8 × M6-6H en Ø46 mm, barreno central Ø8.5 mm",
+        "IPX6",
+        "−20 a +50 °C",
+        "Modulo de conexion (subconjunto del motor): Poliuretano termoplástico (TPU) base poliéter, dureza Shore 85–95 A (propuesto); alternativa: silicona líquida (LSR); Moldeo por inyección (o sobremoldeo sobre el cableado, a confirmar)",
+        "Base del modulo de conexion (subconjunto del motor): Aluminio 6061-T6 (propuesto); Mecanizado CNC (fresado); desbarbado; anodizado",
+        "Empaque del modulo de conexion (subconjunto del motor): Silicona (VMQ) Shore 60–70 A (propuesto, por cercanía térmica al motor); alternativa: elastómero termoplástico vulcanizado (TPV); Moldeo por compresión o inyección; alternativa: troquelado de lámina"
+      ]
+    },
+    "MX80-007-01": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [
+          "Nombre tomado del GLB del brazo CW. Datos tecnicos pendientes del proveedor."
+        ],
+        "notas": null
+      },
+      "categoria": "Propulsion - motor",
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Cubierta superior del motor. Subconjunto del motor 15623-45KV.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-007-02": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [
+          "Nombre tomado del GLB del brazo CW. Datos tecnicos pendientes del proveedor."
+        ],
+        "notas": null
+      },
+      "categoria": "Propulsion - motor",
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Escobillas y rodamiento del motor. Subconjunto del motor 15623-45KV.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-007-03": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [
+          "Nombre tomado del GLB del brazo CW. Datos tecnicos pendientes del proveedor."
+        ],
+        "notas": null
+      },
+      "categoria": "Propulsion - motor",
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Eje del motor. Subconjunto del motor 15623-45KV.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-007-04": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [
+          "Nombre tomado del GLB del brazo CW. Datos tecnicos pendientes del proveedor."
+        ],
+        "notas": null
+      },
+      "categoria": "Propulsion - motor",
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Rotor del motor. Subconjunto del motor 15623-45KV.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-007-05": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [
+          "Nombre tomado del GLB del brazo CW. Datos tecnicos pendientes del proveedor."
+        ],
+        "notas": null
+      },
+      "categoria": "Propulsion - motor",
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Estator del motor. Subconjunto del motor 15623-45KV.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-007-06": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [
+          "Nombre tomado del GLB del brazo CW. Datos tecnicos pendientes del proveedor."
+        ],
+        "notas": null
+      },
+      "categoria": "Propulsion - motor",
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Cubierta inferior del motor. Subconjunto del motor 15623-45KV.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-007-07": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [
+          "Nombre tomado del GLB del brazo CW. Datos tecnicos pendientes del proveedor."
+        ],
+        "notas": null
+      },
+      "categoria": "Propulsion - motor",
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Modulo de conexion. Subconjunto del motor 15623-45KV.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-007-08": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [
+          "Nombre tomado del GLB del brazo CW. Datos tecnicos pendientes del proveedor."
+        ],
+        "notas": null
+      },
+      "categoria": "Propulsion - motor",
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Base del modulo de conexion. Subconjunto del motor 15623-45KV.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-007-09": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [
+          "Nombre tomado del GLB del brazo CW. Datos tecnicos pendientes del proveedor."
+        ],
+        "notas": null
+      },
+      "categoria": "Propulsion - motor",
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Empaque del modulo de conexion. Subconjunto del motor 15623-45KV.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-008": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": 830,
+        "ancho_mm": 60.5,
+        "alto_mm": 60.5,
+        "material": "Polímero reforzado con fibra de carbono (CFRP), preimpregnado de matriz epóxica",
+        "acabado": "Capa exterior de tejido de carbono 3K twill, acabado mate o brillante (propuesto); extremos sellados",
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [
+          "Usuario: largo 830 mm, Ø exterior 60.5 mm, espesor 2 mm",
+          "Cálculo: Ø interior y carga de diseño",
+          "Propuesta técnica: proceso y acabado"
+        ],
+        "notas": "Ancho y alto = Ø exterior. Masa estimada ≈ 470 g con densidad de 1.55 g/cm³ (estimación, no medida). Tolerancias de diámetro pendientes."
+      },
+      "categoria": "Estructura",
+      "proceso_fabricacion": "Enrollado de preimpregnado sobre mandril (roll-wrapping) con curado en horno o autoclave; alternativa: devanado de filamento; corte a longitud con disco diamantado",
+      "descripcion_funcional": "Brazo estructural que soporta el motor y la hélice y los une al cuerpo del dron.",
+      "especificaciones_tecnicas": [
+        "Longitud 830 mm",
+        "Ø exterior 60.5 mm",
+        "Espesor de pared 2.0 mm",
+        "Ø interior 56.5 mm (calculado)",
+        "Carga de diseño: momento flector ≈ 667 N·m en el empotramiento con 82 kgf en el extremo (supuesto de voladizo de 830 mm)",
+        "Extremos cortados a escuadra, sin delaminación ni astillado",
+        "Ajuste con soporte de motor y con el cuerpo: por definir"
+      ]
+    },
+    "MX80-009": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [
+          "Agrupacion definida en el catalogo"
+        ],
+        "notas": "Pieza de catalogo formada por MX80-009-01 y -02. Cotas del conjunto armado pendientes: no hay PLY del ensamble."
+      },
+      "categoria": "Electrónica de potencia",
+      "proceso_fabricacion": "Conjunto: ver el proceso de cada subpieza",
+      "descripcion_funcional": "Controlador electronico de velocidad de 300 A con su base de montaje. Regula la potencia entregada al motor y se fija al brazo.",
+      "especificaciones_tecnicas": [
+        "Conjunto de 2 subpiezas: ver la hoja de cada una"
+      ]
+    },
+    "MX80-009-01": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": 156.2,
+        "ancho_mm": 84,
+        "alto_mm": 44.3,
+        "material": "Ensamble electrónico: PCB de potencia con carcasa-disipador de aluminio aleteado (aleación por confirmar)",
+        "acabado": "Según proveedor",
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [
+          "Usuario: ESC 300A FOC para el motor del brazo",
+          "Requisitos derivados de la especificación técnica del motor 15623-45KV",
+          "Envolvente: reconstrucción CAD del escaneo del ESC",
+          "Cotas: envolvente del escaneo del ESC (pendiente de verificar con calibrador)"
+        ],
+        "notas": "Envolvente medida en el escaneo: 156.2 × 84.0 × 44.3 mm (pendiente de verificar con calibrador). Confirmar con la hoja de datos si 300 A es corriente continua o pico. Masa pendiente."
+      },
+      "categoria": "Electrónica de potencia",
+      "proceso_fabricacion": "Componente de proveedor",
+      "descripcion_funcional": "Variador electrónico de velocidad que alimenta y controla el motor del brazo mediante control FOC (control por orientación de campo, con corrientes sinusoidales).",
+      "especificaciones_tecnicas": [
+        "Designación 300 A / 18S, control FOC",
+        "Tensión de entrada máxima ≥ 80 V (rango del sistema 25–80 V; 18S LiPo = 75.6 V a plena carga)",
+        "Corriente continua ≥ 70 A (punto nominal del motor)",
+        "Soportar picos de 246.6 A (punto máximo del motor)",
+        "Configurable para motor de 44 polos (22 pares de polos)",
+        "Frecuencia eléctrica ≥ 869 Hz (2371 RPM)",
+        "Protección ambiental ≥ IPX6 (recomendado, igual al motor)",
+        "Por confirmar con hoja de datos: señal de mando, telemetría y protecciones (sobrecorriente, sobretemperatura, bajo voltaje)"
+      ]
+    },
+    "MX80-009-02": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": 158.286,
+        "ancho_mm": 84.682,
+        "alto_mm": 56.909,
+        "material": "Aleación de policarbonato/ABS (PC/ABS) con retardante a la flama UL94 V-0 (propuesto); alternativa: poliamida 66 con 30 % de fibra de vidrio (PA66-GF30)",
+        "acabado": "Color negro, textura de molde mate",
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [
+          "Usuario: aleación de plásticos resistente al calor y al impacto",
+          "Propuesta técnica: material y requisitos térmicos",
+          "Cotas: envolvente de brazo/base_ESC.PLY (SOLIDWORKS, unidades declaradas en mm)"
+        ],
+        "notas": "Confirmar temperatura real del disipador del ESC en operación para validar el material. Cotas y masa pendientes."
+      },
+      "categoria": "Estructura - electrónica",
+      "proceso_fabricacion": "Moldeo por inyección; insertos roscados de latón colocados por calor o ultrasonido si lleva tornillería (propuesto)",
+      "descripcion_funcional": "Soporte que fija el ESC al brazo y lo aísla mecánicamente de la estructura.",
+      "especificaciones_tecnicas": [
+        "Temperatura de deflexión (HDT a 1.8 MPa) ≥ 95 °C (propuesto)",
+        "Autoextinguible UL94 V-0 por proximidad a electrónica de potencia (recomendado)",
+        "Alta resistencia al impacto",
+        "Estabilizado UV",
+        "Resistencia a agroquímicos"
+      ]
+    },
+    "MX80-011": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Conjunto del marco estructural del MX80."
+      },
+      "categoria": "Estructura - marco",
+      "proceso_fabricacion": "Ver subpiezas",
+      "descripcion_funcional": "Marco central del MX80. Integra los tubos de fibra de carbono, los retenedores y los agarradores de brazo que unen los cuatro brazos plegables al cuerpo del dron.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-011-01": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "4 unidades por dron, una por brazo."
+      },
+      "categoria": "Estructura - marco",
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Pieza que sujeta cada brazo plegable al marco central y actua como punto de pivote de la bisagra.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-011-02": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "4 unidades por dron, una por brazo."
+      },
+      "categoria": "Estructura - marco",
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Retiene el brazo en su posicion (plegado o desplegado) y evita el juego lateral en la bisagra.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-011-03": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": "Fibra de carbono (propuesto)",
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "2 unidades por dron."
+      },
+      "categoria": "Estructura - marco",
+      "proceso_fabricacion": "Tubo pultruido o enrollado de fibra de carbono",
+      "descripcion_funcional": "Tubo de fibra de carbono de 42 mm de diametro que forma parte del marco central del MX80.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-011-04": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": "Fibra de carbono (propuesto)",
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "2 unidades por dron."
+      },
+      "categoria": "Estructura - marco",
+      "proceso_fabricacion": "Tubo pultruido o enrollado de fibra de carbono",
+      "descripcion_funcional": "Tubo de fibra de carbono de 60 mm de diametro que forma parte del marco central del MX80.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-012": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Cuerpo del deposito. Bombas, valvulas y accesorios de aspercion pendientes de modelado."
+      },
+      "categoria": "Sistema de aspercion",
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Deposito de liquido fitosanitario del MX80. Aloja el sistema de bombeo y las conexiones al conjunto de boquillas.",
+      "especificaciones_tecnicas": []
+    }
+  }
+}

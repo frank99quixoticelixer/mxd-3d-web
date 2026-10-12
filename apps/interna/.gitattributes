@@ -1,0 +1,8 @@
+# A diferencia de vitrina, aqui no se versiona ningun binario 3D: public/ y
+# contenido/ estan gitignored y se espejan desde apps/vitrina/public en cada
+# build. Por eso no hay filtros de Git LFS en esta app — y no hay que
+# agregarlos: Hostinger no soporta LFS.
+
+# Normalizacion de saltos de linea
+* text=auto eol=lf
+*.ps1 text eol=crlf

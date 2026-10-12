@@ -8,7 +8,7 @@ cada una se despliega en Hostinger como sitio independiente.
 ```
 apps/vitrina/   → mxddrone.com            — visor 3D publico, catalogo, descargas
 apps/pedidos/   → pedidos.mxddrone.com    — portal de pedidos de piezas para clientes
-apps/interna/   → interna.mxddrone.com    — BOM, modelos, stock (acceso interno)
+apps/interna/   → interno.mxddrone.com    — clon de vitrina + BOM, stock (acceso interno)
 packages/datos/ → catalogo y tipos compartidos entre las tres apps
 packages/ui/    → componentes y estilos MXD compartidos
 ```
@@ -59,6 +59,22 @@ del proyecto Next.js tal como Hostinger la despliega.
 
 La ruta `/api/descarga/[sku]/glb` tiene fallback a `public/models/mx80/piezas/`
 cuando `contenido/` no existe — cubre el caso de Hostinger sin FTP.
+
+### interna comparte los assets de vitrina
+
+`apps/interna` es un clon del catalogo de vitrina y usa los mismos GLB,
+renders y descargas (103 MB). Esos archivos **no se duplican en git**:
+
+- `apps/interna/public/` y `apps/interna/contenido/` estan gitignored.
+- La fuente de verdad es siempre `apps/vitrina/public/`.
+- `apps/interna/scripts/sincronizar-publico.mjs` los espeja. Lo corren
+  `predev` y `prebuild`, asi que `npm run dev` y `npm run build` en interna
+  ya los traen solos. La copia es incremental (compara tamanio y mtime).
+- El workflow de deploy corre el script antes de empaquetar, porque el zip
+  que sube a Hostinger lleva solo `apps/interna` y alla no hay vitrina.
+
+Un asset nuevo para interna se pone en `apps/vitrina/public/` igual: el
+espejo es unidireccional y lo que quede solo en interna se pierde.
 
 ## Como agregar o actualizar un GLB
 
@@ -115,7 +131,7 @@ pero con distinto "Application root":
 |-----------------|------|--------|-----------------|---------|
 | Vitrina | mxd-3d-web | main | apps/vitrina | mxddrone.com |
 | Pedidos | mxd-3d-web | main | apps/pedidos | pedidos.mxddrone.com |
-| Interna | mxd-3d-web | main | apps/interna | interna.mxddrone.com |
+| Interna | mxd-3d-web | main | apps/interna | interno.mxddrone.com |
 
 Build command para los tres: `npm run build`
 Start command para los tres: `npm run start`
