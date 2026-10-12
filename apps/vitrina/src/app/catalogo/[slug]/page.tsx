@@ -21,7 +21,6 @@ import {
   type Pieza,
 } from "@/lib/esquema";
 import { conVersion } from "@/lib/imagenes";
-import { valorOPendiente } from "@/lib/texto";
 
 /** Genera una ruta estatica por pieza: carga instantanea y SEO correcto. */
 export function generateStaticParams() {
@@ -65,14 +64,6 @@ function FilaEspecificacion({
       </dd>
     </div>
   );
-}
-
-function dimensiones(pieza: Pieza): string {
-  const { largo_mm, ancho_mm, alto_mm } = pieza.especificaciones;
-  if (largo_mm && ancho_mm && alto_mm) {
-    return `${largo_mm} x ${ancho_mm} x ${alto_mm} mm`;
-  }
-  return "Pendiente";
 }
 
 /**
@@ -133,6 +124,8 @@ export default async function PaginaPieza({
   const ancestros = cadenaAncestros(pieza, catalogo);
   // El inmediato anterior en la cadena: a donde lleva el boton de "volver".
   const padre = ancestros[ancestros.length - 1];
+  // Se resuelven aqui, en el servidor, y bajan por props al visor.
+  const subpiezas = catalogo.filter((p) => p.parteDe === pieza.sku);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
@@ -160,7 +153,7 @@ export default async function PaginaPieza({
         {pieza.glb ? (
           <VisorPieza
             glb={pieza.glb}
-            sku={pieza.sku}
+            subpiezas={subpiezas}
             nombre={pieza.nombre}
             sinDespiece={pieza.sinDespiece}
             className="h-[46vh] min-h-[360px] w-full lg:h-[62vh]"
@@ -220,39 +213,14 @@ export default async function PaginaPieza({
             </div>
           )}
 
+          {/* Donde va la pieza y cuantas lleva el dron. Las cotas, el
+              material y los requisitos de proveedor NO salen aqui: son datos
+              internos y viven en la app interna (ver lib/publico.ts). */}
           <section className="mt-8">
             <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
-              Especificaciones
+              En el dron
             </h2>
             <dl className="mt-3 rounded-xl border border-mxd-borde bg-white px-4">
-              <FilaEspecificacion
-                etiqueta="Masa"
-                valor={valorOPendiente(pieza.especificaciones.masa_g, "g")}
-              />
-              <FilaEspecificacion
-                etiqueta="Dimensiones (L x A x H)"
-                valor={dimensiones(pieza)}
-              />
-              <FilaEspecificacion
-                etiqueta="Tolerancia general"
-                valor={valorOPendiente(pieza.especificaciones.tolerancia_mm, "mm")}
-              />
-              <FilaEspecificacion
-                etiqueta="Par de apriete"
-                valor={valorOPendiente(pieza.especificaciones.par_apriete_nm, "N·m")}
-              />
-              <FilaEspecificacion
-                etiqueta="Material"
-                valor={valorOPendiente(pieza.especificaciones.material)}
-              />
-              <FilaEspecificacion
-                etiqueta="Acabado"
-                valor={valorOPendiente(pieza.especificaciones.acabado)}
-              />
-              <FilaEspecificacion
-                etiqueta="Proceso de fabricación"
-                valor={valorOPendiente(pieza.proceso_fabricacion)}
-              />
               <FilaEspecificacion
                 etiqueta="Se monta en"
                 valor={seccionesTexto(pieza)}
@@ -261,54 +229,12 @@ export default async function PaginaPieza({
                 etiqueta="Cantidad por dron"
                 valor={cantidadTexto(pieza)}
               />
-              <FilaEspecificacion
-                etiqueta="Notas"
-                valor={valorOPendiente(pieza.especificaciones.notas)}
-              />
             </dl>
-            <p className="mt-2 text-[11px] leading-relaxed text-mxd-gris">
-              Los campos marcados como pendientes aún no han sido medidos ni
-              verificados. No se publican valores estimados. Los valores
-              marcados como propuestos son una recomendación técnica, no una
-              especificación aprobada.
-            </p>
           </section>
 
-          {pieza.especificaciones_tecnicas.length > 0 && (
-            <section className="mt-8">
-              <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
-                Requisitos técnicos
-              </h2>
-              <ul className="mt-3 space-y-1.5">
-                {pieza.especificaciones_tecnicas.map((punto) => (
-                  <li
-                    key={punto}
-                    className="flex gap-2 text-[13px] leading-relaxed text-mxd-tinta"
-                  >
-                    <span aria-hidden className="text-mxd-verde">
-                      -
-                    </span>
-                    <span>{punto}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          <DescargasMalla
-            pieza={pieza}
-            subpiezas={catalogo.filter((p) => p.parteDe === pieza.sku)}
-          />
+          <DescargasMalla pieza={pieza} subpiezas={subpiezas} />
 
           <div className="mt-6 flex flex-wrap gap-3">
-            {/* Descarga directa: es un route handler, no una pagina, asi que va
-                con <a> y no con <Link> (no hay navegacion del router). */}
-            <a
-              href={`/api/ficha/pieza/${pieza.sku}`}
-              className="rounded-lg bg-mxd-verde px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-mxd-verde-oscuro"
-            >
-              Descargar ficha en PDF
-            </a>
             {padre && (
               // El boton para "subir" un nivel: de la pieza especifica de
               // vuelta a la mas general de la que forma parte (p. ej. de un

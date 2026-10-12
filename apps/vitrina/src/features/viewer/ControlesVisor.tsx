@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useMemo } from "react";
 
 import { ETIQUETAS_SUBSISTEMA, type Pieza } from "@/lib/esquema";
-import { valorOPendiente } from "@/lib/texto";
 import { DIAGNOSTICO_ACTIVO } from "@/config/modelos3d";
 import {
   FORMATOS,
@@ -186,19 +185,6 @@ export function FichaRapida({ catalogo }: { catalogo: Pieza[] }) {
     : undefined;
   const descargas = descargasDe(pieza.sku);
 
-  const specs: Array<[string, string]> = [
-    ["Masa", valorOPendiente(pieza.especificaciones.masa_g, "g")],
-    ["Material", valorOPendiente(pieza.especificaciones.material)],
-    [
-      "Dimensiones",
-      pieza.especificaciones.largo_mm &&
-      pieza.especificaciones.ancho_mm &&
-      pieza.especificaciones.alto_mm
-        ? `${pieza.especificaciones.largo_mm} x ${pieza.especificaciones.ancho_mm} x ${pieza.especificaciones.alto_mm} mm`
-        : "Pendiente",
-    ],
-  ];
-
   return (
     <div className="w-full p-4">
       <div className="flex items-start justify-between gap-3">
@@ -232,23 +218,6 @@ export function FichaRapida({ catalogo }: { catalogo: Pieza[] }) {
           </svg>
         </button>
       </div>
-
-      <dl className="mt-3 space-y-1.5 border-t border-mxd-borde pt-3">
-        {specs.map(([etiqueta, valor]) => (
-          <div key={etiqueta} className="flex justify-between gap-3 text-[11px]">
-            <dt className="text-mxd-gris">{etiqueta}</dt>
-            <dd
-              className={
-                valor === "Pendiente"
-                  ? "italic text-mxd-gris/70"
-                  : "font-medium text-mxd-tinta"
-              }
-            >
-              {valor}
-            </dd>
-          </div>
-        ))}
-      </dl>
 
       <div className="mt-3 border-t border-mxd-borde pt-3">
         <p className="text-[10px] font-bold uppercase tracking-widest text-mxd-gris">

@@ -7,7 +7,6 @@ import {
   type Pieza,
 } from "@/lib/esquema";
 import { conVersion } from "@/lib/imagenes";
-import { valorOPendiente } from "@/lib/texto";
 
 /** Icono geometrico generado a partir del SKU: sustituto visual mientras no hay miniatura. */
 function Marcador({ sku }: { sku: string }) {
@@ -87,19 +86,11 @@ export function TarjetaPieza({ pieza }: { pieza: Pieza }) {
         {pieza.descripcion}
       </p>
 
-      <dl className="mt-3 flex items-center justify-between border-t border-mxd-borde pt-2.5 text-[11px]">
-        <div>
-          <dt className="text-mxd-gris">Masa</dt>
-          <dd className="font-medium text-mxd-tinta">
-            {valorOPendiente(pieza.especificaciones.masa_g, "g")}
-          </dd>
-        </div>
-        <div className="text-right">
-          <dt className="text-mxd-gris">Estado</dt>
-          <dd className="font-medium text-mxd-tinta">
-            {ETIQUETAS_ESTADO[pieza.estado]}
-          </dd>
-        </div>
+      <dl className="mt-3 border-t border-mxd-borde pt-2.5 text-[11px]">
+        <dt className="text-mxd-gris">Estado</dt>
+        <dd className="font-medium text-mxd-tinta">
+          {ETIQUETAS_ESTADO[pieza.estado]}
+        </dd>
       </dl>
     </Link>
   );

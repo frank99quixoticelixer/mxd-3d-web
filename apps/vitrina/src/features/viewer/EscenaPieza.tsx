@@ -7,7 +7,6 @@ import { Html, OrbitControls, useGLTF, useProgress } from "@react-three/drei";
 import * as THREE from "three";
 
 import { COLORES } from "@/config/marca";
-import { obtenerSubpiezas } from "@/lib/catalogo";
 import type { Pieza } from "@/lib/esquema";
 import { normalizarNombre } from "@/lib/texto";
 
@@ -200,7 +199,7 @@ function emparejarPartesConCatalogo(
 /** Muestra solo la pieza, centrada, girando sobre su eje vertical. */
 function PiezaGirando({
   url,
-  sku,
+  subpiezas,
   alMedir,
   alDetectarPartes,
   alPasarSobreSubpieza,
@@ -208,9 +207,15 @@ function PiezaGirando({
   girando,
 }: {
   url: string;
-  /** SKU de catalogo de esta pieza: si tiene subpiezas, sus nodos de primer
-   * nivel se vuelven clicables (llevan a la ficha de la subpieza tocada). */
-  sku?: string;
+  /**
+   * Subpiezas de catalogo de esta pieza. Sus nodos de primer nivel en el GLB
+   * se vuelven clicables y llevan a la ficha de la subpieza tocada.
+   *
+   * Llegan por prop y no de obtenerSubpiezas() a proposito: este componente
+   * corre en el navegador, e importar el catalogo aqui metia data/mx80.ts
+   * entero —con el JSON de especificaciones— en un chunk publico.
+   */
+  subpiezas: Pieza[];
   alMedir: (medidas: { radio: number; semialto: number }) => void;
   /** Numero de sub-piezas de nivel superior detectadas en el GLB (1 = no hay despiece posible). */
   alDetectarPartes?: (n: number) => void;
@@ -226,7 +231,6 @@ function PiezaGirando({
   const router = useRouter();
   const giro = useRef<THREE.Group>(null);
   const factorActual = useRef(0);
-  const subpiezas = useMemo(() => (sku ? obtenerSubpiezas(sku) : []), [sku]);
 
   const { raiz, partes, nodosTuerca, radio, semialto } = useMemo(() => {
     const copia = gltf.scene.clone(true);
@@ -469,15 +473,15 @@ function PiezaGirando({
 
 export function EscenaPieza({
   url,
-  sku,
+  subpiezas = [],
   despiece = false,
   girando = true,
   alDetectarPartes,
   alPasarSobreSubpieza,
 }: {
   url: string;
-  /** SKU de catalogo de la pieza mostrada: activa el clic a subpiezas. */
-  sku?: string;
+  /** Subpiezas de catalogo: activan el clic para ir a la ficha de cada una. */
+  subpiezas?: Pieza[];
   /** true = mostrar las sub-piezas separadas en vez del ensamble. */
   despiece?: boolean;
   /** false = pausar el giro automatico (el usuario sigue pudiendo arrastrar). */
@@ -508,7 +512,7 @@ export function EscenaPieza({
         <Suspense fallback={<Cargando />}>
           <PiezaGirando
             url={url}
-            sku={sku}
+            subpiezas={subpiezas}
             alMedir={setMedidas}
             alDetectarPartes={alDetectarPartes}
             alPasarSobreSubpieza={alPasarSobreSubpieza}

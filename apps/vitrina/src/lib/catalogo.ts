@@ -1,4 +1,5 @@
 import { PIEZAS_MX80 } from "@/data/mx80";
+import { aPiezaPublica } from "@/lib/publico";
 import {
   CatalogoEsquema,
   ORDEN_SECCIONES,
@@ -16,8 +17,17 @@ import {
  * interfaz, no de la fuente de datos. Esa es la razon de que exista este archivo.
  */
 
-/** Valida los datos semilla al arrancar. Si hay un error de formato, falla aqui y no en la interfaz. */
-const CATALOGO: Pieza[] = CatalogoEsquema.parse([...PIEZAS_MX80]);
+/**
+ * Valida los datos semilla al arrancar y los recorta a lo publico. Si hay un
+ * error de formato, falla aqui y no en la interfaz.
+ *
+ * El recorte vive en esta linea y no en cada pagina porque este archivo es la
+ * unica puerta al catalogo en toda la vitrina: una pagina nueva sale recortada
+ * sin que nadie tenga que acordarse. El porque esta en lib/publico.ts.
+ */
+const CATALOGO: Pieza[] = CatalogoEsquema.parse([...PIEZAS_MX80]).map(
+  aPiezaPublica,
+);
 
 /**
  * Piezas de CATALOGO: las que se cotizan, se listan y ocupan una celda en la

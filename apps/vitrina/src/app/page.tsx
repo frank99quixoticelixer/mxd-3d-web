@@ -22,8 +22,8 @@ export default function PaginaInicio() {
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-mxd-gris">
             Conoce tu dron por dentro antes de tocar una herramienta.
-              Despliega los brazos, enciende los motores y toca cualquier
-              componente para ver su ficha técnica al instante.
+            Despliega los brazos, enciende los motores y toca cualquier
+            componente para verlo por separado.
           </p>
         </div>
 
