@@ -36,3 +36,6 @@ npm-debug.log*
 
 # TypeScript
 *.tsbuildinfo
+
+# Archivos de bloqueo de Office (documento abierto en Word o Excel)
+~$*
