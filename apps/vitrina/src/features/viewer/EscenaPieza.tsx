@@ -10,6 +10,14 @@ import { COLORES } from "@/config/marca";
 import type { Pieza } from "@/lib/esquema";
 import { normalizarNombre } from "@/lib/texto";
 
+/**
+ * Lo unico que el visor necesita de una subpieza. La pagina recorta a esto
+ * antes de pasarla: todo lo que recibe un componente de cliente viaja en el
+ * HTML, y con la pieza entera viajaban tambien los nombres de los campos
+ * internos (vacios, pero visibles).
+ */
+export type SubpiezaVisor = Pick<Pieza, "sku" | "slug" | "nombre" | "nombresBlender">;
+
 import { ajustarDetalleAlPlaceholder } from "./ajusteTuerca";
 import { useVisor } from "./estado";
 import { Escenario } from "./Escenario";
@@ -171,13 +179,13 @@ interface ParteDespiece {
  */
 function emparejarPartesConCatalogo(
   partes: { objeto: THREE.Object3D }[],
-  subpiezas: Pieza[],
-): Map<THREE.Object3D, Pieza> {
-  const indice = new Map<string, Pieza>();
+  subpiezas: SubpiezaVisor[],
+): Map<THREE.Object3D, SubpiezaVisor> {
+  const indice = new Map<string, SubpiezaVisor>();
   // Indice por nombre EXACTO: normalizarNombre le quita el sufijo _N, asi que
   // spacer_balanceador_1 y spacer_balanceador_2 (dos piezas distintas) se
   // volverian el mismo nombre y las dos caerian en la primera subpieza.
-  const indiceExacto = new Map<string, Pieza>();
+  const indiceExacto = new Map<string, SubpiezaVisor>();
   for (const sub of subpiezas) {
     for (const clave of [sub.sku, sub.slug, sub.nombre, ...sub.nombresBlender]) {
       const normalizada = normalizarNombre(clave);
@@ -186,7 +194,7 @@ function emparejarPartesConCatalogo(
       if (!indiceExacto.has(exacta)) indiceExacto.set(exacta, sub);
     }
   }
-  const emparejadas = new Map<THREE.Object3D, Pieza>();
+  const emparejadas = new Map<THREE.Object3D, SubpiezaVisor>();
   for (const { objeto } of partes) {
     const nombre = objeto.name ?? "";
     const sub =
@@ -215,12 +223,12 @@ function PiezaGirando({
    * corre en el navegador, e importar el catalogo aqui metia data/mx80.ts
    * entero —con el JSON de especificaciones— en un chunk publico.
    */
-  subpiezas: Pieza[];
+  subpiezas: SubpiezaVisor[];
   alMedir: (medidas: { radio: number; semialto: number }) => void;
   /** Numero de sub-piezas de nivel superior detectadas en el GLB (1 = no hay despiece posible). */
   alDetectarPartes?: (n: number) => void;
   /** Se llama con la subpieza bajo el cursor, o null al salir. */
-  alPasarSobreSubpieza?: (pieza: Pieza | null) => void;
+  alPasarSobreSubpieza?: (pieza: SubpiezaVisor | null) => void;
   /** true = animar hacia la vista explosionada; false = volver al ensamble. */
   despiece: boolean;
   /** false = pausar el giro automatico. */
@@ -368,7 +376,7 @@ function PiezaGirando({
   /** Sube por los padres desde el objeto tocado hasta dar con una parte de
    * primer nivel emparejada con el catalogo, o null si el clic no toco
    * ninguna (p. ej. el piso del estudio). */
-  const piezaDesdeEvento = (evento: { object: THREE.Object3D }): Pieza | null => {
+  const piezaDesdeEvento = (evento: { object: THREE.Object3D }): SubpiezaVisor | null => {
     let actual: THREE.Object3D | null = evento.object;
     while (actual) {
       const pieza = piezasPorObjeto.get(actual);
@@ -481,7 +489,7 @@ export function EscenaPieza({
 }: {
   url: string;
   /** Subpiezas de catalogo: activan el clic para ir a la ficha de cada una. */
-  subpiezas?: Pieza[];
+  subpiezas?: SubpiezaVisor[];
   /** true = mostrar las sub-piezas separadas en vez del ensamble. */
   despiece?: boolean;
   /** false = pausar el giro automatico (el usuario sigue pudiendo arrastrar). */
@@ -489,7 +497,7 @@ export function EscenaPieza({
   /** Se llama al cargar con el numero de sub-piezas del GLB. */
   alDetectarPartes?: (n: number) => void;
   /** Se llama con la subpieza bajo el cursor, o null al salir. */
-  alPasarSobreSubpieza?: (pieza: Pieza | null) => void;
+  alPasarSobreSubpieza?: (pieza: SubpiezaVisor | null) => void;
 }) {
   // Los limites de zoom dependen del tamano real de la pieza: los controles
   // se montan hasta conocerlo, ya con la camara encuadrada.

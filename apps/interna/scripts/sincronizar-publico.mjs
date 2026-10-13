@@ -75,18 +75,26 @@ async function espejar(origen, destino) {
 }
 
 const origenVitrina = await datos(raizVitrina);
-if (!origenVitrina?.isDirectory()) {
+const hayVitrina = Boolean(origenVitrina?.isDirectory());
+if (!hayVitrina) {
   console.log("[interna] apps/vitrina no esta presente; se usan los assets ya copiados.");
-  process.exit(0);
 }
 
-for (const carpeta of CARPETAS) {
+for (const carpeta of hayVitrina ? CARPETAS : []) {
   const origen = join(raizVitrina, carpeta);
   if (!(await datos(origen))?.isDirectory()) {
     console.log(`[interna] vitrina/${carpeta} no existe; se omite.`);
     continue;
   }
   await espejar(origen, join(raizInterna, carpeta));
+}
+
+// Las descargas GLB/STL de cada pieza son solo de interna: viven en
+// apps/interna/descargas (en git) y se publican aqui como /downloads. No estan
+// en vitrina porque todo lo de su public/ se puede pedir por URL.
+const descargas = join(raizInterna, "descargas");
+if ((await datos(descargas))?.isDirectory()) {
+  await espejar(descargas, join(raizInterna, "public", "downloads"));
 }
 
 console.log(`[interna] assets sincronizados: ${copiados} copiados, ${omitidos} sin cambios.`);

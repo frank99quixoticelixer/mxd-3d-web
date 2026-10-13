@@ -49,6 +49,12 @@ export function organizarEnCuadricula(
    * 1 la deja cuadrada, que es como se comportaba antes.
    */
   aspecto = 1,
+  /**
+   * Centro de la rejilla en coordenadas del mundo. Por omision el origen, que
+   * es el centro del dron. Dentro de una zona hay que pasar el centro de lo
+   * que se ve: si no, la rejilla se arma lejos de donde mira la camara.
+   */
+  centro: THREE.Vector3 = new THREE.Vector3(),
 ): DestinoCuadricula[] {
   const cajas = elementos.map((e) => new THREE.Box3().setFromObject(e.objeto));
 
@@ -132,7 +138,7 @@ export function organizarEnCuadricula(
     const centroY = y - fila.alto / 2;
 
     for (const g of fila.grupos) {
-      const destino = new THREE.Vector3(x + g.ancho / 2, centroY, 0);
+      const destino = new THREE.Vector3(x + g.ancho / 2, centroY, 0).add(centro);
       const centroGrupo = g.caja.getCenter(new THREE.Vector3());
 
       for (const i of g.indices) {

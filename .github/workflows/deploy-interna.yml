@@ -37,7 +37,7 @@ jobs:
       # por medio, y lo sube a Hostinger via su API publica.
       - name: Empaquetar apps/interna
         working-directory: apps/interna
-        run: zip -rq ../../app.zip . -x ".next/*" ".env" "node_modules/*" "web/*"
+        run: zip -rq ../../app.zip . -x ".next/*" ".env" "node_modules/*" "web/*" "descargas/*"
 
       - name: Generar URL de subida
         id: upload_url

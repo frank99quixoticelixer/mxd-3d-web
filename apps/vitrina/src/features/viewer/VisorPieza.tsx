@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 
 import { urlModelo } from "@/config/modelos3d";
-import type { Pieza } from "@/lib/esquema";
+import type { SubpiezaVisor } from "./EscenaPieza";
 
 const EscenaPieza = dynamic(
   () => import("./EscenaPieza").then((m) => m.EscenaPieza),
@@ -36,7 +36,7 @@ export function VisorPieza({
    * su ficha. Las resuelve quien llama, desde el servidor; este componente no
    * importa el catalogo para no arrastrarlo al bundle del navegador.
    */
-  subpiezas?: Pieza[];
+  subpiezas?: SubpiezaVisor[];
   nombre: string;
   className?: string;
   /** Oculta el boton de despiece aunque el GLB tenga varias sub-piezas. */
@@ -47,7 +47,7 @@ export function VisorPieza({
   // null mientras el GLB no ha cargado: el boton solo aparece si de verdad
   // hay mas de una sub-pieza que separar (y la pieza no lo tiene deshabilitado).
   const [numPartes, setNumPartes] = useState<number | null>(null);
-  const [subpiezaActiva, setSubpiezaActiva] = useState<Pieza | null>(null);
+  const [subpiezaActiva, setSubpiezaActiva] = useState<SubpiezaVisor | null>(null);
   const puedeExplotar = !sinDespiece && (numPartes ?? 0) > 1;
 
   return (

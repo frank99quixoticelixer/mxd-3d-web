@@ -49,6 +49,8 @@ Thumbs.db
 *.blend
 *.blend1
 *.stl
+# Las descargas de piezas si van en git (ver scripts/sincronizar-publico.mjs).
+!descargas/**/*.stl
 *.ply
 *.obj
 

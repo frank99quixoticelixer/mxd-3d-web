@@ -23,8 +23,8 @@ export function PieDePagina() {
           </p>
           <ul className="mt-3 space-y-2 text-sm">
             <li>
-              <Link href="/explorador" className="text-mxd-tinta hover:text-mxd-verde">
-                Explorador 3D
+              <Link href="/" className="text-mxd-tinta hover:text-mxd-verde">
+                Visor 3D
               </Link>
             </li>
             <li>

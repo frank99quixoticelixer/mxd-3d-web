@@ -3,9 +3,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { DescargasMalla } from "@/components/catalogo/DescargasMalla";
+import { BotonAtras } from "@/components/layout/BotonAtras";
+import { MARCA } from "@/config/marca";
 import { MODELO_PREDETERMINADO } from "@/config/modelos3d";
-import { VisorMXD } from "@/features/viewer/VisorMXD";
+import { MANUAL_MX80, MANUAL_POR_PIEZA } from "@/data/manual-mx80";
+import { ubicacionDeSku } from "@/features/viewer/componentes";
 import { VisorPieza } from "@/features/viewer/VisorPieza";
 import {
   obtenerPiezaPorSlug,
@@ -126,9 +128,28 @@ export default async function PaginaPieza({
   const padre = ancestros[ancestros.length - 1];
   // Se resuelven aqui, en el servidor, y bajan por props al visor.
   const subpiezas = catalogo.filter((p) => p.parteDe === pieza.sku);
+  // A donde lleva "Ver en el dron": la pieza misma si el visor la tiene
+  // ubicada, si no la mas cercana de sus ancestros (un tornillo del motor
+  // abre el motor). Sin ninguna, la vista completa.
+  const enVisor = [pieza, ...[...ancestros].reverse()].find((p) =>
+    ubicacionDeSku(p.sku),
+  );
+  // Lo que dice el manual de usuario de esta pieza, si la describe.
+  const delManual = MANUAL_POR_PIEZA[pieza.sku];
+  const urlVisor = enVisor ? `/?sku=${encodeURIComponent(enVisor.sku)}` : "/";
+  const correoPedido = `mailto:${MARCA.contacto.correo}?subject=${encodeURIComponent(
+    `Solicitud de pieza ${pieza.sku} - ${pieza.nombre}`,
+  )}&body=${encodeURIComponent(
+    `Hola, necesito la pieza ${pieza.sku} (${pieza.nombre}) para mi MX80.\n\n` +
+      "Cantidad:\nNúmero de serie del dron:\nNombre y teléfono:\n",
+  )}`;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
+      <BotonAtras
+        respaldo="/catalogo"
+        className="mb-3 rounded-lg border border-mxd-borde px-3 py-1.5 text-xs font-semibold text-mxd-tinta transition-colors hover:border-mxd-verde hover:text-mxd-verde"
+      />
       <nav aria-label="Ruta de navegación" className="text-xs text-mxd-gris">
         <Link href="/catalogo" className="hover:text-mxd-verde">
           Catálogo
@@ -149,24 +170,25 @@ export default async function PaginaPieza({
       </nav>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[1.15fr_1fr]">
-        {/* Solo la pieza, girando. Si aun no hay GLB de la pieza, se usa el ensamble. */}
+        {/* Solo la pieza, girando. Sin GLB propio se muestra un aviso: el
+            ensamble completo vive en la portada. */}
         {pieza.glb ? (
           <VisorPieza
             glb={pieza.glb}
-            subpiezas={subpiezas}
+            subpiezas={subpiezas.map(({ sku, slug, nombre, nombresBlender }) => ({
+              sku,
+              slug,
+              nombre,
+              nombresBlender,
+            }))}
             nombre={pieza.nombre}
             sinDespiece={pieza.sinDespiece}
             className="h-[46vh] min-h-[360px] w-full lg:h-[62vh]"
           />
         ) : (
-          <VisorMXD
-            catalogo={catalogo}
-            modelo={MODELO_PREDETERMINADO}
-            skuInicial={pieza.sku}
-            compacto
-            sinFicha
-            className="h-[46vh] min-h-[360px] w-full lg:h-[62vh]"
-          />
+          <div className="flex h-[46vh] min-h-[360px] w-full items-center justify-center rounded-2xl border border-mxd-borde bg-mxd-hueso p-6 text-center text-sm text-mxd-gris lg:h-[62vh]">
+            Esta pieza todavía no tiene modelo 3D propio.
+          </div>
         )}
 
         {/* Ficha tecnica */}
@@ -229,10 +251,40 @@ export default async function PaginaPieza({
                 etiqueta="Cantidad por dron"
                 valor={cantidadTexto(pieza)}
               />
+              {delManual?.datos.map((d) => (
+                <FilaEspecificacion key={d.etiqueta} etiqueta={d.etiqueta} valor={d.valor} />
+              ))}
             </dl>
           </section>
 
-          <DescargasMalla pieza={pieza} subpiezas={subpiezas} />
+          {delManual && delManual.cuidados.length > 0 && (
+            <section className="mt-8">
+              <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
+                Cuidados
+              </h2>
+              <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-mxd-tinta marker:text-mxd-verde">
+                {delManual.cuidados.map((c) => (
+                  <li key={c}>{c}</li>
+                ))}
+              </ul>
+              <p className="mt-3 text-xs text-mxd-gris">
+                Del{" "}
+                <a href={MANUAL_MX80.archivo} className="underline hover:text-mxd-verde">
+                  Manual de Usuario MX80 {MANUAL_MX80.version}
+                </a>
+                , págs. {delManual.paginas}.
+              </p>
+            </section>
+          )}
+
+          {/* Siguiente paso de quien llego hasta aqui: pedirla. Mientras no
+              exista el portal de pedidos, el pedido es un correo ya armado. */}
+          <a
+            href={correoPedido}
+            className="mt-6 inline-block rounded-lg bg-mxd-verde px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-mxd-verde-oscuro"
+          >
+            Pedir esta pieza
+          </a>
 
           <div className="mt-6 flex flex-wrap gap-3">
             {padre && (
@@ -247,10 +299,10 @@ export default async function PaginaPieza({
               </Link>
             )}
             <Link
-              href="/explorador"
+              href={urlVisor}
               className="rounded-lg border border-mxd-borde px-5 py-2.5 text-sm font-semibold text-mxd-tinta transition-colors hover:border-mxd-verde hover:text-mxd-verde"
             >
-              Ver en el ensamble completo
+              Ver en el dron
             </Link>
             <Link
               href="/catalogo"
