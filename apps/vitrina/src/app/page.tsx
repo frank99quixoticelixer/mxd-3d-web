@@ -101,12 +101,14 @@ export default function PaginaInicio() {
             <h2 className="text-2xl font-bold tracking-tight text-mxd-tinta">
               Especificaciones
             </h2>
-            <a
-              href={MANUAL_MX80.archivo}
-              className="text-sm font-semibold text-mxd-verde hover:text-mxd-verde-oscuro"
-            >
-              Manual de usuario {MANUAL_MX80.version} (PDF, {MANUAL_MX80.tamano}) →
-            </a>
+            {MANUAL_MX80.archivo && (
+              <a
+                href={MANUAL_MX80.archivo}
+                className="text-sm font-semibold text-mxd-verde hover:text-mxd-verde-oscuro"
+              >
+                Manual de usuario {MANUAL_MX80.version} (PDF, {MANUAL_MX80.tamano}) →
+              </a>
+            )}
           </div>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             {ESPECIFICACIONES_MX80.map((g) => (

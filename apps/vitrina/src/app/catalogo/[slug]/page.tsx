@@ -269,9 +269,13 @@ export default async function PaginaPieza({
               </ul>
               <p className="mt-3 text-xs text-mxd-gris">
                 Del{" "}
-                <a href={MANUAL_MX80.archivo} className="underline hover:text-mxd-verde">
-                  Manual de Usuario MX80 {MANUAL_MX80.version}
-                </a>
+                {MANUAL_MX80.archivo ? (
+                  <a href={MANUAL_MX80.archivo} className="underline hover:text-mxd-verde">
+                    Manual de Usuario MX80 {MANUAL_MX80.version}
+                  </a>
+                ) : (
+                  <>Manual de Usuario MX80 {MANUAL_MX80.version}</>
+                )}
                 , págs. {delManual.paginas}.
               </p>
             </section>

@@ -11,12 +11,21 @@
  * cuando salga una version nueva del manual.
  */
 
-export const MANUAL_MX80 = {
-  version: "V1.0",
-  archivo: "/manuales/mx80/manual-usuario-mx80-v1.0.pdf",
+export const MANUAL_MX80: {
+  version: string;
+  /**
+   * Ruta del PDF publicado, o null mientras no este publicado. Con null los
+   * datos se siguen mostrando (citando el manual) pero sin enlace de descarga.
+   * Para publicarlo: poner el PDF en public/manuales/mx80/ y su ruta aqui.
+   */
+  archivo: string | null;
   /** Peso del PDF, para avisar antes de descargarlo. */
-  tamano: "33 MB",
-} as const;
+  tamano: string;
+} = {
+  version: "V1.0",
+  archivo: null,
+  tamano: "5 MB",
+};
 
 export interface Dato {
   etiqueta: string;
