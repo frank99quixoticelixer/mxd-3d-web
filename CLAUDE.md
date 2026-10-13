@@ -6,7 +6,7 @@ cada una se despliega en Hostinger como sitio independiente.
 ## Estructura del monorepo
 
 ```
-apps/vitrina/   → mxddrone.com            — visor 3D publico, catalogo, descargas
+apps/vitrina/   → mxddrone.com            — visor 3D publico, catalogo, manual
 apps/pedidos/   → pedidos.mxddrone.com    — portal de pedidos de piezas para clientes
 apps/interna/   → interno.mxddrone.com    — clon de vitrina + BOM, stock (detras de contrasena)
 packages/datos/ → catalogo y tipos compartidos entre las tres apps
@@ -31,6 +31,22 @@ Para simular produccion exactamente antes de hacer push:
 ```
 cd apps/vitrina && npm run build && npm run start
 ```
+
+## Lineamientos (obligatorios)
+
+Todo cambio sigue [docs/lineamientos/](docs/lineamientos/README.md). Antes de
+tocar codigo, lee el que aplique:
+
+- [SEGURIDAD.md](docs/lineamientos/SEGURIDAD.md): frontera de datos, cabeceras,
+  secretos, dependencias. Su seccion 8 es la revision de seguridad de cada PR.
+- [DESARROLLO-WEB.md](docs/lineamientos/DESARROLLO-WEB.md): servidor/cliente,
+  rendimiento, accesibilidad, visor 3D, estilo de codigo.
+- [CONTRIBUIR.md](docs/lineamientos/CONTRIBUIR.md): ramas, commits, PR y
+  definicion de listo.
+- [decisiones/](docs/lineamientos/decisiones/README.md): por que las cosas son
+  como son. Una decision nueva que cambie una regla se escribe ahi primero.
+
+Los requerimientos de cada app estan en [requerimientos/](requerimientos/README.md).
 
 ## Para que es cada app
 
@@ -156,17 +172,19 @@ Ritmo: checkpoint semanal con demo desplegada en Hostinger.
 |------|-------------|----------------------|
 | GLB visor (brazo, frame) | `apps/vitrina/public/models/mx80/` | estatico `/models/mx80/...` |
 | GLB piezas individuales | `apps/vitrina/public/models/mx80/piezas/` | estatico `/models/mx80/piezas/...` |
-| GLB/STL descargas | `apps/vitrina/public/downloads/<SKU>/` | estatico `/downloads/<SKU>/<SKU>.glb` y `.stl` |
+| GLB/STL descargas | `apps/interna/descargas/<SKU>/` | estatico `/downloads/...`, **solo en interna** |
+| Manual de usuario PDF | `apps/vitrina/public/manuales/mx80/` | estatico `/manuales/mx80/...` (publico) |
 | PDFs fichas tecnicas | generados en el momento por `@react-pdf/renderer` | API `/api/ficha/...`, **solo en interna** |
 | Renders JPG | `apps/vitrina/public/renders/` | estatico `/renders/...` |
 
-Las descargas se commitearon en `public/downloads/` (56 archivos, 65 MB) y se
-sirven como estaticos, sin pasar por ninguna ruta de API. Ya no hace falta
-subirlas por FTP.
+Las descargas de modelos 3D (56 archivos, 65 MB) son **solo de interna**
+(ADR 0003). Viven en `apps/interna/descargas/`, en git, y el script de espejo
+de interna las publica en su `public/downloads/`. No pueden volver a
+`apps/vitrina/public/`: todo lo que esta ahi se puede pedir por URL aunque no
+haya boton.
 
-`contenido/` sigue gitignored y no existe en Hostinger. La ruta
-`/api/descarga/[sku]/[formato]` todavia existe en el repo pero **la interfaz de
-vitrina ya no la usa**; quedo como respaldo.
+Los datos del manual de usuario que muestra la vitrina estan en
+`apps/vitrina/src/data/manual-mx80.ts`, con la pagina de donde sale cada uno.
 
 ### interna comparte los assets de vitrina
 
@@ -207,12 +225,29 @@ Flujo para actualizar un modelo:
    # debe decir: filter: unspecified
    ```
 4. Si dice `filter: lfs`, NO hagas `git add`. Algo sobreescribio el
-   `.gitattributes` local. Revisa y corrige antes de continuar.
-5. Stagea solo ese archivo:
+   `.gitattributes` local. Revisa y corrige antes de continuar. Revisa tambien
+   `git check-attr text`: tiene que decir `unset`. Si dice `set` o `auto`, git
+   va a tratar el GLB como texto y lo va a truncar al commitearlo (paso con 30
+   GLB en `138aae2`).
+   Despues del commit, `cd apps/vitrina && npm run glb:validar` tiene que dar
+   0 danados.
+5. Si es el ensamble principal, cambia `GLB_FRAME` en
+   `apps/vitrina/src/config/modelos3d.ts` y revisa que el GLB conserve los
+   nombres de nodo de los que depende el visor (GLB v2): `brazo`,
+   `brazo_2..4`, `giratorio`, `motor_giratorio`, `estatico`, `balanceador`,
+   `helices`, `propela_*`, `tanque`, `frontcase` y `tren_aterrizaje`, que
+   contiene marco y tren juntos (se separan con `ES_MARCO`). Todo vive en
+   `nodosDeZonaEn()` de `EscenaFrame.tsx` y en `features/viewer/componentes.ts`.
+   Un nombre que cambie deja esa zona o ese componente sin poder tocarse.
+   El GLB que sale de Blender sin comprimir no se commitea (el del dron pesaba
+   132 MB y GitHub rechaza mas de 100 MB): se optimiza primero con
+   `npm run glb:optimizar -- entrada.glb salida_web.glb`. Las fuentes sin
+   comprimir viven en Drive, no en `public/`.
+6. Stagea solo ese archivo:
    ```
    git add apps/vitrina/public/models/mx80/piezas/MX80-007_v2.glb
    ```
-6. Commit y push.
+7. Commit y push.
 
 ## Como hacer commits — reglas criticas
 
@@ -248,8 +283,8 @@ en "Estado y pendientes"). El detalle completo esta en
 Rama de trabajo: `dev` (o ramas por feature). Merge a `main` dispara el
 redeploy en Hostinger.
 
-Las descargas GLB/STL si estan en git, en `apps/vitrina/public/downloads/`.
-Viajan en el zip del deploy y no hay que subir nada por FTP.
+Las descargas GLB/STL estan en git, en `apps/interna/descargas/`. Viajan en el
+zip de interna (ya copiadas a `public/downloads`) y no hay que subir nada por FTP.
 
 ## Estado y pendientes
 
@@ -264,7 +299,12 @@ Viajan en el zip del deploy y no hay que subir nada por FTP.
 > redespliegue, porque si faltan el sitio responde 503.
 
 - **vitrina**: en linea. El recorte de datos y la baja de las rutas de ficha PDF
-  estan hechos en la rama, pendientes de desplegar.
+  estan hechos en la rama, pendientes de desplegar. En la rama
+  `vitrina-visor-catalogo` se retiro la pagina `/explorador` (redirige a `/`):
+  el visor de la portada es el unico visor del dron. Ese visor ya tiene la
+  descomposicion del brazo de interna (`features/viewer/componentes.ts`) y, al
+  aislar una pieza, una tarjeta con "Ver ficha" que lleva a su pagina del
+  catalogo.
 - **interna**: en linea, **todavia sin contrasena** hasta el merge. Su visor
   esta **adelante** del de vitrina: tiene el explorador in-place, que descompone
   el brazo en sus componentes reales (`giratorio`, `motor_giratorio`,
@@ -280,7 +320,8 @@ Viajan en el zip del deploy y no hay que subir nada por FTP.
 
 ### Pendientes, en orden
 
-1. Bajar el explorador in-place de interna a vitrina.
+1. Bajar el explorador in-place de interna a vitrina. Hecho en
+   `vitrina-visor-catalogo`; falta probarlo en el navegador y mergear.
 2. Partir el esquema en los tres niveles de datos.
 3. Unificar el deploy de interna. `deploy-interna.yml` puede empaquetar
    `apps/vitrina` y subirlo a `interno.mxddrone.com`: la URL de subida la genera
