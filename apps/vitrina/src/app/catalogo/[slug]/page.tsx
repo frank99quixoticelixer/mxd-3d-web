@@ -318,6 +318,40 @@ export default async function PaginaPieza({
         </div>
       </div>
 
+      {/* Lo que compone esta pieza. En un GLB con nodos clicables (el
+          balanceador, p. ej.) esto ya se descubre tocando el visor 3D, pero
+          mientras una pieza no tenga modelo propio (todo el tren de
+          aterrizaje, hoy) el visor no existe y esta lista es la UNICA forma
+          de llegar a sus subpiezas: por eso va fuera del "if" del visor, no
+          como complemento opcional. */}
+      {subpiezas.length > 0 && (
+        <section className="mt-14">
+          <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
+            Piezas que la componen
+            <span className="ml-2 font-normal normal-case tracking-normal text-mxd-gris/70">
+              ({subpiezas.length})
+            </span>
+          </h2>
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {subpiezas.map((p) => (
+              <li key={p.sku}>
+                <Link
+                  href={`/catalogo/${p.slug}`}
+                  className="flex flex-col rounded-lg border border-mxd-borde bg-white px-4 py-3 transition-colors hover:border-mxd-verde"
+                >
+                  <span className="font-mono text-[10px] tracking-widest text-mxd-verde">
+                    {p.sku}
+                  </span>
+                  <span className="mt-0.5 text-sm font-medium text-mxd-tinta">
+                    {p.nombre}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {relacionadas.length > 0 && (
         <section className="mt-14">
           <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
