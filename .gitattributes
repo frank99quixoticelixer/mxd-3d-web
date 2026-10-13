@@ -6,4 +6,18 @@
 # Excepcion: los GLB estaticos de vitrina se sirven directamente y
 # Hostinger no soporta LFS, asi que van como binarios normales en git.
 # La regla especifica despues de la general gana en gitattributes.
-apps/vitrina/public/models/**/*.glb !filter !diff !merge text
+#
+# Tiene que ser -text. Esta linea decia "text" y git trato los GLB como
+# texto: al commitearlos cambio cada CRLF por LF y los trunco. Paso con 30
+# de los 36 GLB del commit 138aae2 (visor del catalogo en blanco con
+# "Invalid typed array length").
+apps/vitrina/public/models/**/*.glb !filter !diff !merge -text
+
+# Binarios que nunca se deben tocar, por si autocrlf decide mal.
+*.stl  binary
+*.jpg  binary
+*.jpeg binary
+*.png  binary
+*.webp binary
+*.zip  binary
+*.pdf  binary
