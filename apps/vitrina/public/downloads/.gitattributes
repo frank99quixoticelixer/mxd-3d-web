@@ -1,2 +1,0 @@
-# GLBs de descarga como binarios reales (Hostinger no soporta LFS).
-*.glb !filter !diff !merge -text

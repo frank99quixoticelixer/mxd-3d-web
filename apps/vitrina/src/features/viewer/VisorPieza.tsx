@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 
 import { urlModelo } from "@/config/modelos3d";
-import type { Pieza } from "@/lib/esquema";
+import type { SubpiezaVisor } from "./EscenaPieza";
 
 const EscenaPieza = dynamic(
   () => import("./EscenaPieza").then((m) => m.EscenaPieza),
@@ -22,7 +22,7 @@ const EscenaPieza = dynamic(
 export function VisorPieza({
   glb,
   url,
-  sku,
+  subpiezas = [],
   nombre,
   className = "",
   sinDespiece = false,
@@ -31,9 +31,12 @@ export function VisorPieza({
   glb?: string;
   /** URL completa del GLB (p. ej. una subpieza servida por /api/descarga). */
   url?: string;
-  /** SKU de catalogo de esta pieza: si tiene subpiezas, se pueden clickear
-   * en el visor para ir directo a su ficha (render + 3D propios). */
-  sku?: string;
+  /**
+   * Subpiezas de catalogo: se pueden clickear en el visor para ir directo a
+   * su ficha. Las resuelve quien llama, desde el servidor; este componente no
+   * importa el catalogo para no arrastrarlo al bundle del navegador.
+   */
+  subpiezas?: SubpiezaVisor[];
   nombre: string;
   className?: string;
   /** Oculta el boton de despiece aunque el GLB tenga varias sub-piezas. */
@@ -44,7 +47,7 @@ export function VisorPieza({
   // null mientras el GLB no ha cargado: el boton solo aparece si de verdad
   // hay mas de una sub-pieza que separar (y la pieza no lo tiene deshabilitado).
   const [numPartes, setNumPartes] = useState<number | null>(null);
-  const [subpiezaActiva, setSubpiezaActiva] = useState<Pieza | null>(null);
+  const [subpiezaActiva, setSubpiezaActiva] = useState<SubpiezaVisor | null>(null);
   const puedeExplotar = !sinDespiece && (numPartes ?? 0) > 1;
 
   return (
@@ -56,7 +59,7 @@ export function VisorPieza({
       <div className="absolute inset-0 mxd-reticula opacity-60" />
       <EscenaPieza
         url={url ?? urlModelo(glb ?? "")}
-        sku={sku}
+        subpiezas={subpiezas}
         despiece={despiece}
         girando={girando}
         alDetectarPartes={setNumPartes}

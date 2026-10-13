@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "glb:optimizar": "node scripts/optimizar_glb.mjs",
+    "glb:validar": "node scripts/validar_glb.mjs",
     "verificar": "npm run specs:importar && npm run typecheck && npm run lint && npm run build",
     "specs:importar": "node scripts/importar_specs.mjs",
     "logo:png": "node scripts/logo_a_png.mjs",
