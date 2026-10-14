@@ -30,15 +30,6 @@ export const GLB_FRAME = "models/mx80/MX80_completo_v3_web.glb";
  */
 export const ANGULO_MAX_PLEGADO_FRAME = 135;
 
-/** URL de un GLB servido desde contenido/piezas_MX80/. */
-export function urlGlbContenido(rutaRelativa: string): string {
-  const limpia = rutaRelativa.replace(/^\/+/, "");
-  if (ORIGEN === "cdn" && BASE_CDN) {
-    return `${BASE_CDN.replace(/\/+$/, "")}/${limpia}`;
-  }
-  return `/api/modelo/${limpia}`;
-}
-
 /**
  * Devuelve la URL publica de un archivo de modelo.
  * - origen "local": /models/...            (archivos dentro de public/)
