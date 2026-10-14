@@ -5,11 +5,13 @@ import { Component, type ReactNode } from "react";
 /**
  * Frontera de error para la carga del modelo 3D.
  *
- * Si el GLB no existe, esta corrupto o falla su decodificacion, en lugar de
- * romper toda la pagina se muestra el contenido de respaldo (el ensamble de
- * demostracion) y se registra el error en la consola.
+ * Si el GLB no existe, esta corrupto o falla su decodificacion, o si el
+ * navegador no puede crear el contexto WebGL, en lugar de romper toda la
+ * pagina se muestra el contenido de respaldo y se registra el error en la
+ * consola.
  *
- * Debe ir DENTRO del <Canvas>, porque su hijo de respaldo son elementos 3D.
+ * Dentro del <Canvas> el respaldo tiene que ser 3D (o un <Html> de drei);
+ * fuera de el, HTML normal.
  */
 export class LimiteError extends Component<
   { children: ReactNode; respaldo: ReactNode; alFallar?: (e: Error) => void },
@@ -30,7 +32,7 @@ export class LimiteError extends Component<
 
   componentDidCatch(error: Error) {
     console.error(
-      "[MXD] No se pudo cargar el modelo 3D. Se muestra el ensamble de demostracion.",
+      "[MXD] No se pudo mostrar el modelo 3D.",
       error,
     );
     this.props.alFallar?.(error);

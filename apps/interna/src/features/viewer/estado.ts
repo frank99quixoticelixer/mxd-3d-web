@@ -3,7 +3,7 @@
 import { create } from "zustand";
 
 /** Recorta a 0..1 sin arrastrar three.js a un archivo de estado. */
-const THREE = { clamp01: (v: number) => Math.min(1, Math.max(0, v)) };
+const recortar01 = (v: number) => Math.min(1, Math.max(0, v));
 
 /** Valor maximo del despiece (2 = 200%, piezas en filas y columnas). */
 export const DESPIECE_MAXIMO = 2;
@@ -18,8 +18,7 @@ export const DESPIECE_MAXIMO = 2;
  *
  * A partir de aqui las piezas empiezan a separarse del chasis, y unas helices
  * girando sobre un dron a medio desarmar no representan nada real. Es una
- * regla del modelo, no del boton: se aplica venga de donde venga el cambio
- * (el deslizador, "Explotar" o "Organizar").
+ * regla del modelo, no del boton: se aplica venga de donde venga el cambio.
  */
 export const DESPIECE_APAGA_MOTORES = 0.3;
 
@@ -51,6 +50,12 @@ export const ETIQUETAS_ZONA: Record<ZonaVisor, string> = {
   frente: "Frente del dron",
 };
 
+export const ZONAS = Object.keys(ETIQUETAS_ZONA) as ZonaVisor[];
+
+export function esZona(valor: string | null): valor is ZonaVisor {
+  return valor !== null && valor in ETIQUETAS_ZONA;
+}
+
 /**
  * Estado compartido del visor 3D.
  *
@@ -58,7 +63,6 @@ export const ETIQUETAS_ZONA: Record<ZonaVisor, string> = {
  * react-three-fiber lee este estado 60 veces por segundo: Zustand permite
  * leerlo sin provocar re-renders de React en cada cuadro.
  */
-
 export interface EstadoVisor {
   /**
    * Grado de despiece:
@@ -66,36 +70,8 @@ export interface EstadoVisor {
    *   2 = piezas organizadas en filas y columnas.
    */
   explosion: number;
-  /** SKU de la pieza seleccionada, o null. */
-  seleccion: string | null;
-  /** SKU de la pieza bajo el cursor, o null. */
-  hover: string | null;
-  /** Atenua todas las piezas salvo la seleccionada. */
-  aislar: boolean;
-  /** Rotacion automatica de la camara. */
-  autoRotar: boolean;
-  /**
-   * Muestra la pieza seleccionada SOLA en un visor propio (el de la ficha del
-   * catalogo), en lugar del ensamble. Distinto de "aislar", que solo atenua.
-   */
-  verSola: boolean;
-
-  /** SKUs efectivamente encontrados dentro del modelo cargado. */
-  skusEnEscena: string[];
-  /** Nombres de nodos del GLB que no coincidieron con ninguna pieza del catalogo. */
-  nodosSinCoincidencia: string[];
-  /** Centro de cada pieza en coordenadas del mundo, para enfocar la camara. */
-  centros: Record<string, [number, number, number]>;
-  /** Radio envolvente de cada pieza, para calcular el acercamiento. */
-  radios: Record<string, number>;
-  /** Radio de la esfera envolvente del ensamble (define zoom y separacion). */
+  /** Radio de la esfera envolvente del modelo cargado (escala luces y sombra). */
   radio: number;
-  /** Centro del ensamble completo. */
-  centroEnsamble: [number, number, number];
-  /** Dimensiones completas del ensamble (ancho, alto, profundidad). */
-  tamanoEnsamble: [number, number, number];
-  /** true cuando el visor esta mostrando el ensamble de demostracion. */
-  modoDemo: boolean;
 
   /**
    * Despliegue de los brazos, 0 = plegados, 1 = abiertos del todo.
@@ -117,12 +93,17 @@ export interface EstadoVisor {
   /** Zona abierta en la capa 2 y 3. */
   zona: ZonaVisor | null;
   /**
-   * Nombres de los nodos del GLB aislados en la capa 3. Es una lista (no un
-   * solo nombre) porque un componente logico puede abarcar varios nodos: p. ej.
-   * el motor del brazo = motor_giratorio (parte que gira) + estatico (la mitad
-   * fija pegada al tubo).
+   * Lo aislado en la capa 3: la clave del componente en un brazo ("motor") o
+   * el nombre del nodo en las demas zonas. Es una clave y no la lista de nodos
+   * para que quepa en la URL y se pueda restaurar desde un enlace; la escena
+   * la traduce a nodos.
    */
-  piezaAislada: string[] | null;
+  pieza: string | null;
+  /**
+   * Pieza senalada desde fuera del lienzo (la lista de piezas de la zona):
+   * la escena la ilumina como si tuviera el cursor encima.
+   */
+  senalada: string | null;
 
   /**
    * Despiece ATOMICO, 0..1: cada componente por separado en su propia celda.
@@ -133,57 +114,38 @@ export interface EstadoVisor {
    */
   despieceAtomico: number;
 
-  /** Peticion de reencuadre: se incrementa para pedir a la camara que vuelva al inicio. */
-  solicitudReencuadre: number;
-
   setExplosion: (valor: number) => void;
-  seleccionar: (sku: string | null) => void;
-  setHover: (sku: string | null) => void;
   setDespliegue: (valor: number) => void;
   setDespieceAtomico: (valor: number) => void;
-  entrarEnZona: (zona: ZonaVisor) => void;
-  entrarEnPieza: (nombres: string[]) => void;
-  volver: () => void;
   setEncendido: (valor: number) => void;
-  alternarAislar: () => void;
-  alternarAutoRotar: () => void;
-  alternarVerSola: () => void;
+  entrarEnZona: (zona: ZonaVisor) => void;
+  entrarEnPieza: (pieza: string) => void;
+  volver: () => void;
+  /** Salta directo a una vista (desde la URL o un enlace). */
+  irA: (zona: ZonaVisor | null, pieza: string | null) => void;
+  setSenalada: (pieza: string | null) => void;
   reiniciarVista: () => void;
-  registrarEscena: (datos: {
-    skus: string[];
-    sinCoincidencia: string[];
-    centros: Record<string, [number, number, number]>;
-    radios: Record<string, number>;
-    radio: number;
-    centroEnsamble: [number, number, number];
-    tamanoEnsamble: [number, number, number];
-    modoDemo: boolean;
-  }) => void;
 }
+
+/** Mandos en reposo: lo que se aplica al cambiar de vista. */
+const REPOSO = {
+  explosion: 0,
+  despieceAtomico: 0,
+  despliegue: 0,
+  encendido: 0,
+  senalada: null,
+} as const;
 
 export const useVisor = create<EstadoVisor>((set) => ({
   explosion: 0,
-  seleccion: null,
-  hover: null,
-  aislar: false,
-  autoRotar: false,
-  verSola: false,
-
-  skusEnEscena: [],
-  nodosSinCoincidencia: [],
-  centros: {},
-  radios: {},
   radio: 1,
-  centroEnsamble: [0, 0, 0],
-  tamanoEnsamble: [1, 1, 1],
-  modoDemo: true,
   despliegue: 0,
   encendido: 0,
   despieceAtomico: 0,
   capa: 1,
   zona: null,
-  piezaAislada: null,
-  solicitudReencuadre: 0,
+  pieza: null,
+  senalada: null,
 
   setExplosion: (valor) =>
     set((s) => {
@@ -194,7 +156,6 @@ export const useVisor = create<EstadoVisor>((set) => ({
       const pasoUmbral = explosion / DESPIECE_MAXIMO >= DESPIECE_APAGA_MOTORES;
       return {
         explosion,
-        // Pasado el umbral, los motores se apagan solos.
         // Pasado el umbral el dron se considera desarmado: los motores se
         // apagan y los brazos vuelven a plegados. Deja de tener sentido
         // sostener un despliegue sobre un dron que ya se esta separando.
@@ -215,12 +176,12 @@ export const useVisor = create<EstadoVisor>((set) => ({
       // Con el dron a medio desarmar tampoco: los brazos ya no estan en su
       // sitio, asi que plegarlos no representa nada real.
       if (s.explosion / DESPIECE_MAXIMO >= DESPIECE_APAGA_MOTORES) return {};
-      return { despliegue: THREE.clamp01(valor) };
+      return { despliegue: recortar01(valor) };
     }),
 
   setDespieceAtomico: (valor) =>
     set((s) => {
-      const despieceAtomico = THREE.clamp01(valor);
+      const despieceAtomico = recortar01(valor);
       if (despieceAtomico === 0) return { despieceAtomico };
       // El despiece atomico es de la vista completa: dentro de una zona ya se
       // esta viendo un subconjunto y el despiece normal basta.
@@ -230,59 +191,11 @@ export const useVisor = create<EstadoVisor>((set) => ({
       return { despieceAtomico, explosion: 0, despliegue: 0, encendido: 0 };
     }),
 
-  /**
-   * Al bajar de capa se dejan los mandos en reposo. En una zona o en una pieza
-   * suelta no hay brazos que desplegar ni motores que acelerar, y arrastrar el
-   * estado de la capa anterior dejaria el modelo a medio animar.
-   */
-  entrarEnZona: (zona) =>
-    set({
-      capa: 2,
-      zona,
-      piezaAislada: null,
-      explosion: 0,
-      despieceAtomico: 0,
-      despliegue: 0,
-      encendido: 0,
-      seleccion: null,
-    }),
-
-  entrarEnPieza: (nombres) =>
-    set((s) => {
-      const limpios = nombres.filter(Boolean);
-      if (limpios.length === 0) return {};
-      return {
-        capa: 3,
-        zona: s.zona,
-        piezaAislada: limpios,
-        explosion: 0,
-        despieceAtomico: 0,
-      };
-    }),
-
-  volver: () =>
-    set((s) => {
-      if (s.capa === 3) {
-        return { capa: 2, piezaAislada: null, explosion: 0, despieceAtomico: 0 };
-      }
-      if (s.capa === 2) {
-        return {
-          capa: 1,
-          zona: null,
-          piezaAislada: null,
-          explosion: 0,
-          despieceAtomico: 0,
-        };
-      }
-      return {};
-    }),
-
   setEncendido: (valor) =>
     set((s) => {
       // Los motores solo se mueven con los brazos abiertos del todo y con el
-      // dron entero: a medio desplegar o a medio desarmar no hay nada que
-      // acelerar. Bajar a cero siempre se puede.
-      const objetivo = THREE.clamp01(valor);
+      // dron entero. Bajar a cero siempre se puede.
+      const objetivo = recortar01(valor);
       if (objetivo <= s.encendido) return { encendido: objetivo };
       if (s.capa !== 1 || s.despieceAtomico > 0) return {};
       if (
@@ -293,49 +206,35 @@ export const useVisor = create<EstadoVisor>((set) => ({
       return { encendido: objetivo };
     }),
 
-  seleccionar: (sku) =>
-    set((s) => ({
-      seleccion: sku,
-      // Salir del modo aislar si se deselecciona: evita dejar la escena en gris.
-      aislar: sku === null ? false : s.aislar,
-      verSola: sku === null ? false : s.verSola,
-    })),
+  /**
+   * Al bajar de capa se dejan los mandos en reposo. En una zona o en una pieza
+   * suelta no hay brazos que desplegar ni motores que acelerar, y arrastrar el
+   * estado de la capa anterior dejaria el modelo a medio animar.
+   */
+  entrarEnZona: (zona) => set({ ...REPOSO, capa: 2, zona, pieza: null }),
 
-  setHover: (sku) => set({ hover: sku }),
+  entrarEnPieza: (pieza) =>
+    set((s) =>
+      s.capa === 2 && pieza ? { ...REPOSO, capa: 3, pieza } : {},
+    ),
 
-  alternarAislar: () =>
-    set((s) => ({ aislar: s.seleccion ? !s.aislar : false })),
+  volver: () =>
+    set((s) => {
+      if (s.capa === 3) return { ...REPOSO, capa: 2, pieza: null };
+      if (s.capa === 2) return { ...REPOSO, capa: 1, zona: null, pieza: null };
+      return {};
+    }),
 
-  alternarAutoRotar: () => set((s) => ({ autoRotar: !s.autoRotar })),
+  irA: (zona, pieza) =>
+    set({
+      ...REPOSO,
+      capa: zona ? (pieza ? 3 : 2) : 1,
+      zona,
+      pieza: zona ? pieza : null,
+    }),
 
-  alternarVerSola: () =>
-    set((s) => ({ verSola: s.seleccion ? !s.verSola : false })),
+  setSenalada: (senalada) => set({ senalada }),
 
   reiniciarVista: () =>
-    set((s) => ({
-      explosion: 0,
-      seleccion: null,
-      hover: null,
-      aislar: false,
-      verSola: false,
-      despliegue: 0,
-      encendido: 0,
-      despieceAtomico: 0,
-      capa: 1,
-      zona: null,
-      piezaAislada: null,
-      solicitudReencuadre: s.solicitudReencuadre + 1,
-    })),
-
-  registrarEscena: (datos) =>
-    set({
-      skusEnEscena: datos.skus,
-      nodosSinCoincidencia: datos.sinCoincidencia,
-      centros: datos.centros,
-      radios: datos.radios,
-      radio: datos.radio,
-      centroEnsamble: datos.centroEnsamble,
-      tamanoEnsamble: datos.tamanoEnsamble,
-      modoDemo: datos.modoDemo,
-    }),
+    set({ ...REPOSO, capa: 1, zona: null, pieza: null }),
 }));

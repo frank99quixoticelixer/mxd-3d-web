@@ -1,16 +1,28 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
+import {
+  NOMBRE_COMPONENTE,
+  SKU_ZONA,
+  nombreDeNodo,
+  skuDePieza,
+  ubicacionDeSku,
+  type FichaEnlace,
+} from "./componentes";
+import type { ObjetivoHover, PiezaDeZona } from "./EscenaFrame";
 import {
   BLOQUEA_DESPLIEGUE,
   ETIQUETAS_ZONA,
   DESPIECE_APAGA_MOTORES,
   DESPIECE_MAXIMO,
+  ZONAS,
+  esZona,
   useVisor,
 } from "./estado";
+import { LimiteError } from "./LimiteError";
 
 const EscenaFrame = dynamic(
   () => import("./EscenaFrame").then((m) => m.EscenaFrame),
@@ -40,6 +52,8 @@ function BarraLateral({
   motivo: string;
 }) {
   const porcentaje = Math.round(valor * 100);
+  // La etiqueta puede llevar espacios y acentos, que no valen en un id.
+  const id = useId();
   return (
     <div
       className={`rounded-lg border px-2.5 py-1.5 lg:px-3 lg:py-2.5 ${
@@ -48,7 +62,7 @@ function BarraLateral({
     >
       <div className="flex items-baseline justify-between gap-2">
         <label
-          htmlFor={`barra-${etiqueta}`}
+          htmlFor={id}
           className={`text-[11px] font-bold uppercase tracking-widest ${
             bloqueada ? "text-mxd-gris/50" : "text-mxd-gris"
           }`}
@@ -64,7 +78,7 @@ function BarraLateral({
         </span>
       </div>
       <input
-        id={`barra-${etiqueta}`}
+        id={id}
         type="range"
         min={0}
         max={100}
@@ -103,8 +117,17 @@ function BarraLateral({
  *   - al contraer, los motores se apagan
  *   - pasado el umbral de despiece, los motores se apagan solos
  */
-export function VisorFrame({ className = "" }: { className?: string }) {
-  const router = useRouter();
+export function VisorFrame({
+  fichas,
+  className = "",
+}: {
+  /**
+   * Piezas del catalogo a las que puede llevar el visor. Las arma la pagina en
+   * el servidor: este componente no importa lib/catalogo.
+   */
+  fichas: FichaEnlace[];
+  className?: string;
+}) {
   const contenedor = useRef<HTMLDivElement>(null);
   const [pantallaCompleta, setPantallaCompleta] = useState(false);
 
@@ -153,15 +176,142 @@ export function VisorFrame({ className = "" }: { className?: string }) {
   const reiniciarVista = useVisor((s) => s.reiniciarVista);
   const capa = useVisor((s) => s.capa);
   const zona = useVisor((s) => s.zona);
-  const piezaAislada = useVisor((s) => s.piezaAislada);
+  const pieza = useVisor((s) => s.pieza);
+  const senalada = useVisor((s) => s.senalada);
+  const setSenalada = useVisor((s) => s.setSenalada);
   const entrarEnZona = useVisor((s) => s.entrarEnZona);
   const entrarEnPieza = useVisor((s) => s.entrarEnPieza);
   const volver = useVisor((s) => s.volver);
+  const irA = useVisor((s) => s.irA);
 
-  // Estado limpio al entrar: brazos plegados, motores apagados, sin despiece.
+  const [hover, setHover] = useState<ObjetivoHover | null>(null);
+  const [piezasZona, setPiezasZona] = useState<PiezaDeZona[]>([]);
+  const fichaPorSku = useMemo(
+    () => new Map(fichas.map((f) => [f.sku, f])),
+    [fichas],
+  );
+
+  /** Nombre para mostrar de una pieza de la zona: su ficha, o su nodo. */
+  const nombreDe = useCallback(
+    (p: { clave: string; sku: string | null }) =>
+      (p.sku ? fichaPorSku.get(p.sku)?.nombre : undefined) ??
+      NOMBRE_COMPONENTE[p.clave] ??
+      nombreDeNodo(p.clave),
+    [fichaPorSku],
+  );
+
+  // Lo que se esta viendo: en la capa 3 la pieza aislada; en la capa 2 la
+  // zona, si la zona entera es una pieza del catalogo (el marco, el tanque).
+  const skuActual =
+    capa === 3 && pieza
+      ? skuDePieza(zona, pieza)
+      : capa === 2 && zona
+        ? (SKU_ZONA[zona] ?? null)
+        : null;
+  const fichaActual = skuActual ? fichaPorSku.get(skuActual) : undefined;
+  const nombreActual =
+    capa === 3 && pieza ? nombreDe({ clave: pieza, sku: skuActual }) : null;
+  const nombreHover = hover
+    ? hover.zona
+      ? ETIQUETAS_ZONA[hover.zona]
+      : nombreDe(hover)
+    : null;
+
+  /**
+   * La vista vive tambien en la URL (?zona=brazo-cw&pieza=motor), por tres
+   * razones: el boton Atras del navegador vuelve a la vista anterior, una
+   * vista se puede compartir, y al regresar de una ficha del catalogo el
+   * visor aparece donde se dejo.
+   *
+   * El estado manda y la URL lo sigue: cada cambio de vista agrega una
+   * entrada al historial, salvo cuando el cambio viene de la propia URL.
+   */
+  const modoHistorial = useRef<"agregar" | "reemplazar" | "ninguno">("reemplazar");
+
   useEffect(() => {
-    reiniciarVista();
-  }, [reiniciarVista]);
+    const aplicarUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      const sku = params.get("sku");
+      const desdeSku = sku ? ubicacionDeSku(sku) : null;
+      const zonaUrl = desdeSku?.zona ?? params.get("zona");
+      const piezaUrl = desdeSku ? desdeSku.pieza : params.get("pieza");
+      if (esZona(zonaUrl)) irA(zonaUrl, piezaUrl);
+      else reiniciarVista();
+    };
+
+    // Al montar: la vista que pida la URL. Un enlace con ?sku= se reescribe
+    // a su forma de zona y pieza sin agregar una entrada al historial.
+    modoHistorial.current = "reemplazar";
+    aplicarUrl();
+    modoHistorial.current = "agregar";
+
+    const alRetroceder = () => {
+      modoHistorial.current = "ninguno";
+      aplicarUrl();
+      modoHistorial.current = "agregar";
+    };
+    window.addEventListener("popstate", alRetroceder);
+
+    const cancelar = useVisor.subscribe((s, previo) => {
+      if (s.capa === previo.capa && s.zona === previo.zona && s.pieza === previo.pieza) {
+        return;
+      }
+      const params = new URLSearchParams();
+      if (s.zona) params.set("zona", s.zona);
+      if (s.zona && s.pieza) params.set("pieza", s.pieza);
+      const consulta = params.toString();
+      const url = `${window.location.pathname}${consulta ? `?${consulta}` : ""}`;
+      if (modoHistorial.current === "ninguno") return;
+      const profundidad = (window.history.state?.mxdVisor ?? 0) as number;
+      if (modoHistorial.current === "agregar") {
+        window.history.pushState(
+          { ...window.history.state, mxdVisor: profundidad + 1 },
+          "",
+          url,
+        );
+      } else {
+        window.history.replaceState(
+          { ...window.history.state, mxdVisor: profundidad },
+          "",
+          url,
+        );
+      }
+    });
+
+    // El cambio de URL de arriba ya ocurrio antes de suscribirse; se
+    // sincroniza a mano la primera vez.
+    const s = useVisor.getState();
+    const params = new URLSearchParams();
+    if (s.zona) params.set("zona", s.zona);
+    if (s.zona && s.pieza) params.set("pieza", s.pieza);
+    const consulta = params.toString();
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${window.location.pathname}${consulta ? `?${consulta}` : ""}`,
+    );
+
+    return () => {
+      window.removeEventListener("popstate", alRetroceder);
+      cancelar();
+    };
+  }, [irA, reiniciarVista]);
+
+  /**
+   * Atras: si la vista anterior la puso este visor, se retrocede en el
+   * historial (asi el boton del navegador y este hacen lo mismo). Si se llego
+   * directo por un enlace, no hay a donde retroceder sin salir del sitio, y se
+   * sube una capa reemplazando la entrada.
+   */
+  const atras = useCallback(() => {
+    if ((window.history.state?.mxdVisor ?? 0) > 0) {
+      window.history.back();
+      return;
+    }
+    modoHistorial.current = "reemplazar";
+    volver();
+    modoHistorial.current = "agregar";
+  }, [volver]);
 
   const umbral = Math.round(DESPIECE_APAGA_MOTORES * 100);
   // Normalizado: explosion va de 0 a DESPIECE_MAXIMO y la barra muestra la
@@ -188,10 +338,32 @@ export function VisorFrame({ className = "" }: { className?: string }) {
     : encendido > BLOQUEA_DESPLIEGUE
       ? "Bloqueado: apaga los motores para mover los brazos"
       : "Abre los cuatro brazos del dron";
-  const porcentaje = Math.round(explosion * 100);
-  const maximoDespiece = DESPIECE_MAXIMO * 100;
-  const relleno = (porcentaje / maximoDespiece) * 100;
 
+  // Piezas con el mismo nombre (los cuatro agarradores del marco) se numeran
+  // para que la lista no repita etiquetas identicas.
+  const listaZona = useMemo(() => {
+    const total = new Map<string, number>();
+    for (const p of piezasZona) {
+      const n = nombreDe(p);
+      total.set(n, (total.get(n) ?? 0) + 1);
+    }
+    const vistos = new Map<string, number>();
+    return piezasZona.map((p) => {
+      const n = nombreDe(p);
+      const i = (vistos.get(n) ?? 0) + 1;
+      vistos.set(n, i);
+      const etiqueta = (total.get(n) ?? 0) > 1 ? `${n} ${i}` : n;
+      // Las piezas identicas agrupadas (tornillos) dicen cuantas son.
+      return { ...p, nombre: p.cantidad > 1 ? `${etiqueta} (${p.cantidad})` : etiqueta };
+    });
+  }, [piezasZona, nombreDe]);
+
+  const claseBotonLista = (activo: boolean) =>
+    `w-full rounded-md px-2 py-1.5 text-left text-[11px] font-medium transition-colors lg:text-xs ${
+      activo
+        ? "bg-mxd-verde text-white"
+        : "text-mxd-tinta hover:bg-mxd-verde-claro hover:text-mxd-verde-oscuro focus-visible:bg-mxd-verde-claro"
+    }`;
 
   return (
     <div
@@ -205,64 +377,89 @@ export function VisorFrame({ className = "" }: { className?: string }) {
       {/* Lienzo 3D: ocupa lo que le deja la barra, nunca queda debajo de ella. */}
       <div className="mxd-lienzo-3d relative min-h-0 flex-1 overflow-hidden">
         <div className="absolute inset-0 mxd-reticula opacity-60" />
-        <EscenaFrame
-          despliegue={despliegue}
-          encendido={encendido}
-          explosion={explosion}
-          despieceAtomico={despieceAtomico}
-          capa={capa}
-          zona={zona}
-          piezaAislada={piezaAislada}
-          alClicBrazo={(nombreBrazo) => {
-            // En la vista completa un clic ENTRA en la zona; dentro de una
-            // zona, aisla la pieza. Antes mandaba siempre a /catalogo/motor,
-            // sin importar en que brazo o en que pieza se hubiera hecho clic.
-            if (capa === 1) {
-              entrarEnZona(
-                nombreBrazo === "brazo" || nombreBrazo === "brazo_4"
-                  ? "brazo-ccw"
-                  : "brazo-cw",
-              );
-            }
-          }}
-          alClicMarco={() => {
-            // El marco ya tiene ficha de catalogo (MX80-011) con su propio
-            // despiece y hover, que ya funcionan bien ahi (Escena.tsx /
-            // resolverPiezas.ts) — no hace falta repetir esa logica en el
-            // explorador. Tren, frente y brazo todavia no tienen pieza de
-            // catalogo propia, asi que esos siguen entrando a su zona aqui.
-            if (capa === 1) router.push("/catalogo/marco");
-          }}
-          alClicTanque={() => {
-            if (capa === 1) router.push("/catalogo/tanque");
-          }}
-          alClicTren={() => {
-            if (capa === 1) entrarEnZona("tren-aterrizaje");
-          }}
-          alClicFrente={() => {
-            if (capa === 1) entrarEnZona("frente");
-          }}
-          alClicPieza={(nombres) => {
-            if (capa === 2) entrarEnPieza(nombres);
-          }}
-        />
-        {/* Rastro de migas y vuelta atras: solo aparecen al haber bajado de
-            capa, para no ocupar el lienzo en la vista completa. */}
+        <LimiteError
+          respaldo={
+            <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-mxd-gris">
+              Este navegador no pudo mostrar el modelo 3D. El catálogo sigue
+              disponible abajo.
+            </div>
+          }
+        >
+          <EscenaFrame
+            despliegue={despliegue}
+            encendido={encendido}
+            explosion={explosion}
+            despieceAtomico={despieceAtomico}
+            capa={capa}
+            zona={zona}
+            pieza={pieza}
+            senalada={senalada}
+            alEntrarZona={entrarEnZona}
+            alAislar={entrarEnPieza}
+            alPasarSobre={setHover}
+            alListarPiezas={setPiezasZona}
+          />
+        </LimiteError>
+
+        {/* Atras y ruta: solo al haber bajado de capa. Cada tramo de la ruta
+            lleva a esa vista. */}
         {capa > 1 && (
-          <div className="absolute left-2 top-2 z-10 flex items-center gap-2 lg:left-3 lg:top-3">
+          <nav
+            aria-label="Ruta en el visor"
+            className="absolute left-2 top-2 z-10 flex items-center gap-2 lg:left-3 lg:top-3"
+          >
             <button
               type="button"
-              onClick={volver}
+              onClick={atras}
               title="Volver a la vista anterior"
               className="rounded-lg border border-mxd-borde bg-white/90 px-2.5 py-1.5 text-[11px] font-semibold text-mxd-tinta shadow-sm backdrop-blur transition-colors hover:border-mxd-verde hover:text-mxd-verde lg:text-xs"
             >
               ← Atrás
             </button>
-            <span className="rounded-lg bg-white/80 px-2 py-1 text-[10px] font-medium text-mxd-gris backdrop-blur lg:text-[11px]">
-              {capa === 2
-                ? `MX80 · ${zona ? ETIQUETAS_ZONA[zona] : ""}`
-                : `MX80 · ${zona ? ETIQUETAS_ZONA[zona] : ""} · pieza`}
+            <span className="flex items-center gap-1 rounded-lg bg-white/80 px-2 py-1 text-[10px] font-medium text-mxd-gris backdrop-blur lg:text-[11px]">
+              <button type="button" onClick={() => irA(null, null)} className="hover:text-mxd-verde">
+                MX80
+              </button>
+              {zona && (
+                <>
+                  <span aria-hidden>·</span>
+                  {capa === 3 ? (
+                    <button type="button" onClick={() => irA(zona, null)} className="hover:text-mxd-verde">
+                      {ETIQUETAS_ZONA[zona]}
+                    </button>
+                  ) : (
+                    <span className="text-mxd-tinta">{ETIQUETAS_ZONA[zona]}</span>
+                  )}
+                </>
+              )}
+              {nombreActual && (
+                <>
+                  <span aria-hidden>·</span>
+                  <span className="text-mxd-tinta">{nombreActual}</span>
+                </>
+              )}
             </span>
+          </nav>
+        )}
+
+        {/* Tarjeta de lo que se esta viendo, con la puerta a su ficha. El
+            visor ensena donde va la pieza; la ficha dice que es. */}
+        {fichaActual && (
+          <div className="absolute inset-x-2 bottom-8 z-10 flex items-center justify-between gap-3 rounded-xl border border-mxd-borde bg-white/95 px-3 py-2 shadow-sm backdrop-blur sm:inset-x-auto sm:left-3 sm:max-w-sm">
+            <div className="min-w-0">
+              <p className="font-mono text-[10px] tracking-widest text-mxd-verde">
+                {fichaActual.sku}
+              </p>
+              <p className="truncate text-sm font-semibold text-mxd-tinta">
+                {fichaActual.nombre}
+              </p>
+            </div>
+            <Link
+              href={`/catalogo/${fichaActual.slug}`}
+              className="shrink-0 rounded-lg bg-mxd-verde px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-mxd-verde-oscuro"
+            >
+              Ver ficha
+            </Link>
           </div>
         )}
 
@@ -279,14 +476,21 @@ export function VisorFrame({ className = "" }: { className?: string }) {
         </button>
 
         <p className="pointer-events-none absolute inset-x-0 bottom-3 text-center text-[10px] text-mxd-gris">
-          <span className="lg:hidden">
-            Un dedo gira · dos dedos acercan y desplazan · toca una pieza
-          </span>
-          <span className="hidden lg:inline">
-            Arrastra para girar · botón derecho desplaza · clic en una pieza
-          </span>
+          {nombreHover ? (
+            <span className="font-semibold text-mxd-tinta">
+              {nombreHover} · {capa === 1 ? "clic para entrar" : "clic para aislar"}
+            </span>
+          ) : (
+            <>
+              <span className="lg:hidden">
+                Un dedo gira · dos dedos acercan y desplazan · toca una pieza
+              </span>
+              <span className="hidden lg:inline">
+                Arrastra para girar · botón derecho desplaza · clic en una pieza
+              </span>
+            </>
+          )}
         </p>
-
       </div>
 
       {/* Barra de mandos: abajo en movil, a la derecha en escritorio. */}
@@ -329,31 +533,32 @@ export function VisorFrame({ className = "" }: { className?: string }) {
             motivo={
               atomico
                 ? MOTIVO_ATOMICO
-                :
-              explosion > 1.5
-                ? "Conjuntos acomodados en cuadrícula"
-                : explosion > 0
-                  ? "Separa los conjuntos del dron"
-                  : "Arrastra para separar el dron"
+                : explosion > 1.5
+                  ? "Piezas acomodadas en cuadrícula"
+                  : explosion > 0
+                    ? "Separa las piezas de lo que ves"
+                    : "Arrastra para separar las piezas"
             }
           />
 
-          {/* Otro despiece, no un atajo del deslizador: aquel separa
-              conjuntos (brazo, marco, tanque) y este baja a componente. */}
-          <div className="grid grid-cols-2 gap-1.5 lg:grid-cols-1 lg:gap-2">
-          <button
-            type="button"
-            title="Separar cada componente por separado, en cuadrícula"
-            aria-pressed={despieceAtomico > 0}
-            onClick={() => setDespieceAtomico(despieceAtomico > 0 ? 0 : 1)}
-            className={`rounded-lg border px-2 py-1.5 text-[11px] font-semibold transition-colors lg:px-3 lg:py-2 lg:text-xs ${
-              despieceAtomico > 0
-                ? "border-mxd-verde bg-mxd-verde text-white hover:bg-mxd-verde-oscuro"
-                : "border-mxd-borde bg-white text-mxd-tinta hover:border-mxd-verde hover:text-mxd-verde"
-            }`}
-          >
-            {despieceAtomico > 0 ? "Ensamblar" : "Despiece atómico"}
-          </button>
+          {/* Otro despiece, no un atajo del deslizador de arriba: aquel
+              separa lo que se ve y este baja a cada pieza del dron. A la
+              mitad se ve el dron explotado; al final, en cuadricula. */}
+          <BarraLateral
+            etiqueta="Despiece atómico"
+            valor={despieceAtomico}
+            onChange={setDespieceAtomico}
+            bloqueada={!enCompleto}
+            motivo={
+              !enCompleto
+                ? MOTIVO_CAPA
+                : despieceAtomico === 0
+                  ? "Separa cada pieza del dron"
+                  : despieceAtomico <= 0.5
+                    ? "Vista explotada: cada pieza fuera de su conjunto"
+                    : "Piezas acomodadas en cuadrícula"
+            }
+          />
 
           <button
             type="button"
@@ -363,8 +568,48 @@ export function VisorFrame({ className = "" }: { className?: string }) {
           >
             Reiniciar
           </button>
-          </div>
         </div>
+
+        {/* Lo mismo que se puede tocar en el lienzo, como lista: se recorre
+            con teclado y con lector de pantalla, y en el celular evita tener
+            que atinarle a una pieza chica con el dedo. */}
+        <section className="mt-3 border-t border-mxd-borde pt-2 lg:mt-4 lg:pt-3">
+          <h2 className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-mxd-gris">
+            {capa === 1 ? "Zonas del dron" : `Piezas · ${zona ? ETIQUETAS_ZONA[zona] : ""}`}
+          </h2>
+          <ul className="flex flex-col gap-0.5">
+            {capa === 1
+              ? ZONAS.map((z) => (
+                  <li key={z}>
+                    <button
+                      type="button"
+                      onClick={() => entrarEnZona(z)}
+                      className={claseBotonLista(false)}
+                    >
+                      {ETIQUETAS_ZONA[z]}
+                    </button>
+                  </li>
+                ))
+              : listaZona.map((p) => (
+                  <li key={p.clave}>
+                    <button
+                      type="button"
+                      aria-current={p.clave === pieza ? "true" : undefined}
+                      onClick={() =>
+                        capa === 2 ? entrarEnPieza(p.clave) : irA(zona, p.clave)
+                      }
+                      onMouseEnter={() => setSenalada(p.clave)}
+                      onMouseLeave={() => setSenalada(null)}
+                      onFocus={() => setSenalada(p.clave)}
+                      onBlur={() => setSenalada(null)}
+                      className={claseBotonLista(p.clave === pieza)}
+                    >
+                      {p.nombre}
+                    </button>
+                  </li>
+                ))}
+          </ul>
+        </section>
       </aside>
     </div>
   );

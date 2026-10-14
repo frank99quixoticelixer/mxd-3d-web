@@ -305,15 +305,11 @@ zip de interna (ya copiadas a `public/downloads`) y no hay que subir nada por FT
   descomposicion del brazo de interna (`features/viewer/componentes.ts`) y, al
   aislar una pieza, una tarjeta con "Ver ficha" que lleva a su pagina del
   catalogo.
-- **interna**: en linea, **todavia sin contrasena** hasta el merge. Su visor
-  esta **adelante** del de vitrina: tiene el explorador in-place, que descompone
-  el brazo en sus componentes reales (`giratorio`, `motor_giratorio`,
-  `balanceador`, `helices`, `estatico`) y permite aislar un componente sin
-  salir de la zona.
-  Son unas 290 lineas de `EscenaFrame.tsx` que vitrina no tiene, mas el cambio
-  de `piezaAislada` de `string` a `string[]` en el store: un componente logico
-  abarca varios nodos del GLB (el motor es `motor_giratorio` + `estatico`).
-  Ese es el arreglo de que al picar un brazo la camara mandaba al motor.
+- **interna**: en linea, **todavia sin contrasena** hasta el merge. En
+  `vitrina-visor-catalogo` usa el mismo visor que vitrina (`features/viewer/`
+  es una copia exacta; un cambio al visor se hace en vitrina y se copia) y su
+  ficha agrega lo interno: especificaciones, numero de parte, proveedor,
+  precio, existencias, requisitos tecnicos, descargas GLB/STL y ficha PDF.
 - **pedidos**: cascaron de 7 archivos, nunca instalado. Va en Next 15.3.3
   mientras las otras dos van en 16.3.5.
 - **packages/**: declarados y vacios.

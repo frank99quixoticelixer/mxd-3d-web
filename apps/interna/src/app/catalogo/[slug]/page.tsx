@@ -4,8 +4,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { DescargasMalla } from "@/components/catalogo/DescargasMalla";
+import { BotonAtras } from "@/components/layout/BotonAtras";
 import { MODELO_PREDETERMINADO } from "@/config/modelos3d";
-import { VisorMXD } from "@/features/viewer/VisorMXD";
+import { MANUAL_MX80, MANUAL_POR_PIEZA } from "@/data/manual-mx80";
+import { ubicacionDeSku } from "@/features/viewer/componentes";
 import { VisorPieza } from "@/features/viewer/VisorPieza";
 import {
   obtenerPiezaPorSlug,
@@ -75,6 +77,16 @@ function dimensiones(pieza: Pieza): string {
   return "Pendiente";
 }
 
+function precioTexto(pieza: Pieza): string {
+  return pieza.precio_mxn === null
+    ? "Pendiente"
+    : pieza.precio_mxn.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
+}
+
+function existenciasTexto(pieza: Pieza): string {
+  return pieza.stock === null ? "Pendiente" : `${pieza.stock} pzas`;
+}
+
 /**
  * Secciones del dron donde se monta la pieza, en el orden de presentacion.
  * Sin secciones asignadas devuelve "Pendiente": no se infiere una ubicacion.
@@ -133,14 +145,25 @@ export default async function PaginaPieza({
   const ancestros = cadenaAncestros(pieza, catalogo);
   // El inmediato anterior en la cadena: a donde lleva el boton de "volver".
   const padre = ancestros[ancestros.length - 1];
+  // Se resuelven aqui, en el servidor, y bajan por props al visor.
+  const subpiezas = catalogo.filter((p) => p.parteDe === pieza.sku);
+  // A donde lleva "Ver en el dron": la pieza misma si el visor la tiene
+  // ubicada, si no la mas cercana de sus ancestros (un tornillo del motor
+  // abre el motor). Sin ninguna, la vista completa.
+  const enVisor = [pieza, ...[...ancestros].reverse()].find((p) =>
+    ubicacionDeSku(p.sku),
+  );
+  // Lo que dice el manual de usuario de esta pieza, si la describe.
+  const delManual = MANUAL_POR_PIEZA[pieza.sku];
+  const urlVisor = enVisor ? `/?sku=${encodeURIComponent(enVisor.sku)}` : "/";
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
+      <BotonAtras
+        respaldo="/catalogo"
+        className="mb-3 rounded-lg border border-mxd-borde px-3 py-1.5 text-xs font-semibold text-mxd-tinta transition-colors hover:border-mxd-verde hover:text-mxd-verde"
+      />
       <nav aria-label="Ruta de navegación" className="text-xs text-mxd-gris">
-        <Link href="/" className="hover:text-mxd-verde">
-          Inicio
-        </Link>
-        <span className="mx-2">/</span>
         <Link href="/catalogo" className="hover:text-mxd-verde">
           Catálogo
         </Link>
@@ -160,24 +183,25 @@ export default async function PaginaPieza({
       </nav>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[1.15fr_1fr]">
-        {/* Solo la pieza, girando. Si aun no hay GLB de la pieza, se usa el ensamble. */}
+        {/* Solo la pieza, girando. Sin GLB propio se muestra un aviso: el
+            ensamble completo vive en la portada. */}
         {pieza.glb ? (
           <VisorPieza
             glb={pieza.glb}
-            sku={pieza.sku}
+            subpiezas={subpiezas.map(({ sku, slug, nombre, nombresBlender }) => ({
+              sku,
+              slug,
+              nombre,
+              nombresBlender,
+            }))}
             nombre={pieza.nombre}
             sinDespiece={pieza.sinDespiece}
             className="h-[46vh] min-h-[360px] w-full lg:h-[62vh]"
           />
         ) : (
-          <VisorMXD
-            catalogo={catalogo}
-            modelo={MODELO_PREDETERMINADO}
-            skuInicial={pieza.sku}
-            compacto
-            sinFicha
-            className="h-[46vh] min-h-[360px] w-full lg:h-[62vh]"
-          />
+          <div className="flex h-[46vh] min-h-[360px] w-full items-center justify-center rounded-2xl border border-mxd-borde bg-mxd-hueso p-6 text-center text-sm text-mxd-gris lg:h-[62vh]">
+            Esta pieza todavía no tiene modelo 3D propio.
+          </div>
         )}
 
         {/* Ficha tecnica */}
@@ -224,6 +248,9 @@ export default async function PaginaPieza({
             </div>
           )}
 
+          {/* Interna ve la pieza completa: el catalogo de esta app no se
+              recorta (ver lib/catalogo.ts). Todo lo que sigue esta detras de
+              la contrasena de proxy.ts. */}
           <section className="mt-8">
             <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
               Especificaciones
@@ -271,48 +298,97 @@ export default async function PaginaPieza({
               />
             </dl>
             <p className="mt-2 text-[11px] leading-relaxed text-mxd-gris">
-              Los campos marcados como pendientes aún no han sido medidos ni
-              verificados. No se publican valores estimados. Los valores
-              marcados como propuestos son una recomendación técnica, no una
-              especificación aprobada.
+              Los campos pendientes aún no han sido medidos ni verificados. No
+              se publican valores estimados. Los valores marcados como
+              propuestos son una recomendación técnica, no una especificación
+              aprobada.
             </p>
           </section>
+
+          <section className="mt-8">
+            <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
+              Compras e inventario
+            </h2>
+            <dl className="mt-3 rounded-xl border border-mxd-borde bg-white px-4">
+              <FilaEspecificacion
+                etiqueta="Número de parte (BOM)"
+                valor={valorOPendiente(pieza.numeroBom)}
+              />
+              <FilaEspecificacion
+                etiqueta="Proveedor"
+                valor={valorOPendiente(pieza.especificaciones.proveedor)}
+              />
+              <FilaEspecificacion
+                etiqueta="Parte del proveedor"
+                valor={valorOPendiente(pieza.especificaciones.parte_proveedor)}
+              />
+              <FilaEspecificacion etiqueta="Precio" valor={precioTexto(pieza)} />
+              <FilaEspecificacion etiqueta="Existencias" valor={existenciasTexto(pieza)} />
+            </dl>
+          </section>
+
+          {delManual && delManual.datos.length > 0 && (
+            <section className="mt-8">
+              <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
+                Según el manual de usuario
+              </h2>
+              <dl className="mt-3 rounded-xl border border-mxd-borde bg-white px-4">
+                {delManual.datos.map((d) => (
+                  <FilaEspecificacion key={d.etiqueta} etiqueta={d.etiqueta} valor={d.valor} />
+                ))}
+              </dl>
+            </section>
+          )}
 
           {pieza.especificaciones_tecnicas.length > 0 && (
             <section className="mt-8">
               <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
                 Requisitos técnicos
               </h2>
-              <ul className="mt-3 space-y-1.5">
+              <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[13px] leading-relaxed text-mxd-tinta marker:text-mxd-verde">
                 {pieza.especificaciones_tecnicas.map((punto) => (
-                  <li
-                    key={punto}
-                    className="flex gap-2 text-[13px] leading-relaxed text-mxd-tinta"
-                  >
-                    <span aria-hidden className="text-mxd-verde">
-                      -
-                    </span>
-                    <span>{punto}</span>
-                  </li>
+                  <li key={punto}>{punto}</li>
                 ))}
               </ul>
             </section>
           )}
 
-          <DescargasMalla
-            pieza={pieza}
-            subpiezas={catalogo.filter((p) => p.parteDe === pieza.sku)}
-          />
+          {delManual && delManual.cuidados.length > 0 && (
+            <section className="mt-8">
+              <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
+                Cuidados
+              </h2>
+              <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-mxd-tinta marker:text-mxd-verde">
+                {delManual.cuidados.map((c) => (
+                  <li key={c}>{c}</li>
+                ))}
+              </ul>
+              <p className="mt-3 text-xs text-mxd-gris">
+                Del{" "}
+                {MANUAL_MX80.archivo ? (
+                  <a href={MANUAL_MX80.archivo} className="underline hover:text-mxd-verde">
+                    Manual de Usuario MX80 {MANUAL_MX80.version}
+                  </a>
+                ) : (
+                  <>Manual de Usuario MX80 {MANUAL_MX80.version}</>
+                )}
+                , págs. {delManual.paginas}.
+              </p>
+            </section>
+          )}
+
+          <DescargasMalla pieza={pieza} subpiezas={subpiezas} />
+
+          {/* Descarga directa: es un route handler, no una pagina, asi que va
+              con <a> y no con <Link>. */}
+          <a
+            href={`/api/ficha/pieza/${pieza.sku}`}
+            className="mt-6 inline-block rounded-lg bg-mxd-verde px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-mxd-verde-oscuro"
+          >
+            Descargar ficha en PDF
+          </a>
 
           <div className="mt-6 flex flex-wrap gap-3">
-            {/* Descarga directa: es un route handler, no una pagina, asi que va
-                con <a> y no con <Link> (no hay navegacion del router). */}
-            <a
-              href={`/api/ficha/pieza/${pieza.sku}`}
-              className="rounded-lg bg-mxd-verde px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-mxd-verde-oscuro"
-            >
-              Descargar ficha en PDF
-            </a>
             {padre && (
               // El boton para "subir" un nivel: de la pieza especifica de
               // vuelta a la mas general de la que forma parte (p. ej. de un
@@ -325,22 +401,16 @@ export default async function PaginaPieza({
               </Link>
             )}
             <Link
-              href="/explorador"
+              href={urlVisor}
               className="rounded-lg border border-mxd-borde px-5 py-2.5 text-sm font-semibold text-mxd-tinta transition-colors hover:border-mxd-verde hover:text-mxd-verde"
             >
-              Ver en el ensamble completo
+              Ver en el dron
             </Link>
             <Link
               href="/catalogo"
               className="rounded-lg border border-mxd-borde px-5 py-2.5 text-sm font-semibold text-mxd-tinta transition-colors hover:border-mxd-verde hover:text-mxd-verde"
             >
               Volver al catálogo
-            </Link>
-            <Link
-              href="/"
-              className="rounded-lg border border-mxd-borde px-5 py-2.5 text-sm font-semibold text-mxd-tinta transition-colors hover:border-mxd-verde hover:text-mxd-verde"
-            >
-              Volver al inicio
             </Link>
           </div>
         </div>
