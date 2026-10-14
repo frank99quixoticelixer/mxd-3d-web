@@ -19,7 +19,7 @@ const BASE_CDN = process.env.NEXT_PUBLIC_ASSETS_URL ?? "";
 export const GLB_ACTIVO = "models/mx80/MX80_brazo_CW_web.glb";
 
 /** MX80 completo: 4 brazos plegables, marco, tanque y tren de aterrizaje. */
-export const GLB_FRAME = "models/mx80/MX80_completo_v2_web.glb";
+export const GLB_FRAME = "models/mx80/MX80_completo_v3_web.glb";
 
 /**
  * Angulo maximo del control de plegado del chasis (grados), 0 = desplegado.

@@ -69,7 +69,7 @@ function nodosDeZonaEn(raiz: THREE.Object3D, zona: ZonaVisor): THREE.Object3D[] 
     case "tanque":
       return uno("tanque");
     case "frente":
-      return uno("frontcase");
+      return uno("frente_dron");
     case "frame":
       return marcoYTren.filter((n) => ES_MARCO.test(n.name));
     case "tren-aterrizaje":

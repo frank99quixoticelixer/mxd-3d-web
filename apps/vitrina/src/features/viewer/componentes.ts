@@ -148,6 +148,12 @@ export const NOMBRE_COMPONENTE: Record<string, string> = {
   esc: "Conjunto ESC",
   soporte: "Soporte del motor",
   tubo: "Tubo de fibra de carbono",
+  // Piezas del frente del dron (GLB v3). Sus nombres vienen de la exportacion
+  // y no dicen que son; renombrarlas en Blender y quitar esto.
+  camara_frontal_dummy: "Cámara frontal",
+  camara_inferior_dummy: "Cámara inferior",
+  ModeloAvantiv9: "Cubierta frontal",
+  Open_CASCADE_STEP_translator_79_1: "Pieza del frente sin nombre",
 };
 
 /** true si `obj` es `ancestro` o cuelga de el. */
