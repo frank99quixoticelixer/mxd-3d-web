@@ -780,7 +780,7 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-02",
-    imagen: "/renders/MX80-014.jpg",
+    imagen: "/renders/MX80-013-02.jpg",
     slug: "patin-izquierdo",
     nombre: "Patín izquierdo",
     descripcion:
@@ -1108,5 +1108,35 @@ export const PIEZAS_MX80: Pieza[] = [
     ...datosDeFicha("MX80-013-22"),
     glb: "models/mx80/piezas/MX80-013-22_v1.glb",
     orden: 2,
+  },
+
+  // ===================================================================
+  // MX80-014  Carcasa frontal
+  //
+  // Nodo "frontcase" en el GLB del dron completo: ya es raiz de la escena
+  // (no cuelga de ningun grupo) y trae 4 tornillos M2x10 + el cascaron
+  // (nodo sin nombre dentro del grupo) como hijos — se extrajo el subarbol
+  // completo, no una pieza suelta.
+  //
+  // numeroBom asignado con confianza alta: el maestro de partes trae
+  // "MXD-MX80-EST-ENS-001-R00 — Front Housing Assembly", que es
+  // practicamente el mismo nombre que el nodo del GLB.
+  // ===================================================================
+  {
+    ...BASE,
+    sku: "MX80-014",
+    imagen: "/renders/MX80-014.jpg",
+    slug: "carcasa-frontal",
+    nombre: "Carcasa frontal",
+    descripcion:
+      "Carcasa protectora de la parte frontal del dron. Aloja los componentes montados ahí y se fija con 4 tornillos M2x10.",
+    subsistema: "estructura",
+    secciones: [],
+    parteDe: null,
+    nombresBlender: ["frontcase"],
+    ...datosDeFicha("MX80-014"),
+    glb: "models/mx80/piezas/MX80-014_v1.glb",
+    numeroBom: "MXD-MX80-EST-ENS-001-R00",
+    orden: 14,
   },
 ];

@@ -27,6 +27,7 @@ export interface Componente {
 export const SKU_ZONA: Partial<Record<ZonaVisor, string>> = {
   frame: "MX80-011",
   tanque: "MX80-012",
+  frente: "MX80-014",
 };
 
 /**

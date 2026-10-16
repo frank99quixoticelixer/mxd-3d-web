@@ -1277,6 +1277,26 @@
       "proceso_fabricacion": null,
       "descripcion_funcional": "Mitad B del cople trasero izquierdo del tren de aterrizaje.",
       "especificaciones_tecnicas": []
+    },
+    "MX80-014": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Extraida del GLB del dron completo (nodo frontcase); pendiente de capturar cotas y material."
+      },
+      "categoria": null,
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Carcasa protectora de la parte frontal del dron. Aloja los componentes montados ahi y se fija con 4 tornillos M2x10.",
+      "especificaciones_tecnicas": []
     }
   }
 }
