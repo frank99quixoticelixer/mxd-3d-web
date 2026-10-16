@@ -817,6 +817,466 @@
       "proceso_fabricacion": null,
       "descripcion_funcional": "Deposito de liquido fitosanitario del MX80. Aloja el sistema de bombeo y las conexiones al conjunto de boquillas.",
       "especificaciones_tecnicas": []
+    },
+    "MX80-013": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas."
+      },
+      "categoria": null,
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Tren de aterrizaje del MX80: dos patines, travesaños delantero y trasero, y los coples y agarres que los unen al cuerpo del dron.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-013-01": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas."
+      },
+      "categoria": null,
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Pata derecha del tren de aterrizaje: tubo doblado que apoya el dron en el suelo.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-013-02": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas."
+      },
+      "categoria": null,
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Pata izquierda del tren de aterrizaje: tubo doblado que apoya el dron en el suelo.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-013-03": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas."
+      },
+      "categoria": null,
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Agarre que sujeta un patín al travesaño. Se usa en dos posiciones diagonales del tren (delantera derecha y trasera izquierda).",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-013-04": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas."
+      },
+      "categoria": null,
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Agarre que sujeta un patín al travesaño. Se usa en dos posiciones diagonales del tren (delantera izquierda y trasera derecha).",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-013-05": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas."
+      },
+      "categoria": null,
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Cople de dos mitades que une el patín derecho al travesaño delantero.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-013-06": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas."
+      },
+      "categoria": null,
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Cople de dos mitades que une el patín izquierdo al travesaño delantero.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-013-07": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas."
+      },
+      "categoria": null,
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Cople de dos mitades que une el patín derecho al travesaño trasero.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-013-08": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas."
+      },
+      "categoria": null,
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Cople de dos mitades que une el patín izquierdo al travesaño trasero.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-013-09": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas."
+      },
+      "categoria": null,
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Tubo transversal delantero del tren de aterrizaje: conecta los coples de los dos patines por el frente.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-013-10": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas."
+      },
+      "categoria": null,
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Tubo transversal trasero del tren de aterrizaje: conecta los coples de los dos patines por atrás.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-013-11": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas."
+      },
+      "categoria": null,
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Tornillo que fija el patín a su agarre en el tren de aterrizaje.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-013-12": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas."
+      },
+      "categoria": null,
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Tornillo que fija el agarre del tren de aterrizaje al cuerpo del dron.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-013-13": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas."
+      },
+      "categoria": null,
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Tornillo que fija el travesaño a su cople en el tren de aterrizaje.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-013-14": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas."
+      },
+      "categoria": null,
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Tornillo que cierra las dos mitades de un cople del tren de aterrizaje.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-013-15": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas."
+      },
+      "categoria": null,
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Mitad A del cople delantero derecho del tren de aterrizaje.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-013-16": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas."
+      },
+      "categoria": null,
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Mitad B del cople delantero derecho del tren de aterrizaje.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-013-17": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas."
+      },
+      "categoria": null,
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Mitad A del cople delantero izquierdo del tren de aterrizaje.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-013-18": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas."
+      },
+      "categoria": null,
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Mitad B del cople delantero izquierdo del tren de aterrizaje.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-013-19": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas."
+      },
+      "categoria": null,
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Mitad A del cople trasero derecho del tren de aterrizaje.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-013-20": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas."
+      },
+      "categoria": null,
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Mitad B del cople trasero derecho del tren de aterrizaje.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-013-21": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas."
+      },
+      "categoria": null,
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Mitad A del cople trasero izquierdo del tren de aterrizaje.",
+      "especificaciones_tecnicas": []
+    },
+    "MX80-013-22": {
+      "especificaciones": {
+        "masa_g": null,
+        "largo_mm": null,
+        "ancho_mm": null,
+        "alto_mm": null,
+        "material": null,
+        "acabado": null,
+        "tolerancia_mm": null,
+        "par_apriete_nm": null,
+        "proveedor": null,
+        "parte_proveedor": null,
+        "fuente": [],
+        "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas."
+      },
+      "categoria": null,
+      "proceso_fabricacion": null,
+      "descripcion_funcional": "Mitad B del cople trasero izquierdo del tren de aterrizaje.",
+      "especificaciones_tecnicas": []
     }
   }
 }
