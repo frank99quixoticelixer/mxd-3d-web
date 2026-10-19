@@ -76,6 +76,24 @@ def motor_eevee():
     return "CYCLES"
 
 
+def nodo(arbol, tipo, _nombre=None):
+    """
+    El nodo de ese tipo en el arbol, o uno nuevo si no hay. Se busca por TIPO y
+    no por nombre: con Blender en espanol los nodos por defecto se llaman
+    "Fondo" o "BSDF Principiado", y buscar "Background" no los encontraba.
+    """
+    for existente in arbol.nodes:
+        if existente.bl_idname == tipo:
+            return existente
+    return arbol.nodes.new(tipo)
+
+
+def activar_salida(salida):
+    """Que el render use esta salida y no otra que hubiera en el arbol."""
+    if hasattr(salida, "is_active_output"):
+        salida.is_active_output = True
+
+
 def preparar_escena(escena):
     escena.render.engine = motor_eevee()
     escena.render.resolution_x = ANCHO
@@ -89,8 +107,13 @@ def preparar_escena(escena):
 
     # Mundo propio: gris oscuro de estudio, sin depender del .blend.
     mundo = bpy.data.worlds.new("mxd_estudio")
-    mundo.use_nodes = True
-    fondo = mundo.node_tree.nodes.get("Background")
+    if hasattr(mundo, "use_nodes"):
+        mundo.use_nodes = True
+    arbol = mundo.node_tree
+    fondo = nodo(arbol, "ShaderNodeBackground", "Background")
+    salida_mundo = nodo(arbol, "ShaderNodeOutputWorld", "World Output")
+    arbol.links.new(fondo.outputs[0], salida_mundo.inputs[0])
+    activar_salida(salida_mundo)
     fondo.inputs[0].default_value = (0.045, 0.045, 0.05, 1.0)
     fondo.inputs[1].default_value = 0.9
     escena.world = mundo
@@ -121,8 +144,13 @@ def preparar_escena(escena):
     escena.collection.objects.link(relleno)
 
     material_piso = bpy.data.materials.new("mxd_piso")
-    material_piso.use_nodes = True
-    bsdf = material_piso.node_tree.nodes.get("Principled BSDF")
+    if hasattr(material_piso, "use_nodes"):
+        material_piso.use_nodes = True
+    arbol_piso = material_piso.node_tree
+    bsdf = nodo(arbol_piso, "ShaderNodeBsdfPrincipled", "Principled BSDF")
+    salida_piso = nodo(arbol_piso, "ShaderNodeOutputMaterial", "Material Output")
+    arbol_piso.links.new(bsdf.outputs[0], salida_piso.inputs[0])
+    activar_salida(salida_piso)
     bsdf.inputs["Base Color"].default_value = (0.09, 0.09, 0.1, 1.0)
     bsdf.inputs["Roughness"].default_value = 0.55
     malla_piso = bpy.data.meshes.new("mxd_piso")

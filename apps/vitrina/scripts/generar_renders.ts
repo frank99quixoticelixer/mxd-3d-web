@@ -18,7 +18,16 @@
  * Los tornillos no se renderizan.
  */
 import { execFileSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import path from "node:path";
 
 import * as THREE from "three";
@@ -150,15 +159,22 @@ function main() {
   console.log(`[MXD] ${mapa.length} piezas a renderizar (${omitidosTornillo.length} tornillos omitidos)`);
   console.log(`[MXD] Blender: ${blender}`);
   console.log(`[MXD] Archivo: ${path.relative(RAIZ, entrada)}\n`);
+  // Sin el resultado anterior: si Blender falla, no se lee el de otra corrida.
+  const rutaResultado = path.join(SALIDA, "resultado.json");
+  rmSync(rutaResultado, { force: true });
+  // --python-exit-code: sin esto Blender termina con 0 aunque el script falle.
   execFileSync(
     blender,
     esGlb
-      ? ["-b", "--factory-startup", "-P", script, "--", rutaMapa, SALIDA, entrada]
-      : ["-b", entrada, "-P", script, "--", rutaMapa, SALIDA],
+      ? ["-b", "--factory-startup", "--python-exit-code", "1", "-P", script, "--", rutaMapa, SALIDA, entrada]
+      : ["-b", entrada, "--python-exit-code", "1", "-P", script, "--", rutaMapa, SALIDA],
     { stdio: ["ignore", "inherit", "inherit"] },
   );
+  if (!existsSync(rutaResultado)) {
+    throw new Error("Blender no termino el render (no hay resultado.json). Revisa el error de arriba.");
+  }
 
-  const resultado = JSON.parse(readFileSync(path.join(SALIDA, "resultado.json"), "utf8")) as {
+  const resultado = JSON.parse(readFileSync(rutaResultado, "utf8")) as {
     renderizadas: string[];
     sin_objetos: string[];
   };
