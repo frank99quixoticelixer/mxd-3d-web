@@ -18,7 +18,7 @@ const BASE_CDN = process.env.NEXT_PUBLIC_ASSETS_URL ?? "";
  * public/. Al actualizar el modelo, copia el nuevo _web.glb a
  * public/models/mx80/ y cambia el nombre aqui.
  */
-export const GLB_FRAME = "models/mx80/MX80_completo_v3_web.glb";
+export const GLB_FRAME = "models/mx80/MX80_completo_v4_web.glb";
 
 /**
  * Angulo maximo del control de plegado del chasis (grados), 0 = desplegado.

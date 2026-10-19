@@ -69,11 +69,14 @@ const PIEZAS_SUELTAS: readonly {
   // Marco (MX80-011)
   { re: /^agarrador_(del|tra)_/i, sku: "MX80-011-01", zona: "frame", nodo: "agarrador_del_der" },
   { re: /^retenedor_(del|tra)_/i, sku: "MX80-011-02", zona: "frame", nodo: "retenedor_del_der" },
-  { re: /^frame_tubo42/i, sku: "MX80-011-03", zona: "frame", nodo: "frame_tubo42_del" },
+  // El v3 traia "frame_tubo42"; el v4, "frame_tubo50". Confirmar la medida.
+  { re: /^frame_tubo(42|50)/i, sku: "MX80-011-03", zona: "frame", nodo: "frame_tubo50_del" },
   { re: /^frame_tubo69/i, sku: "MX80-011-04", zona: "frame", nodo: "frame_tubo69_der" },
   // Carcasa frontal (MX80-014). En el GLB v3 el cascaron se llama
   // ModeloAvantiv9 (6180 triangulos, el mismo de "frontcase" del v2).
   { re: /^ModeloAvantiv/i, sku: "MX80-014" },
+  // En el GLB v4 el cascaron es "DRONE_CLEAN_TOPOLOGY" (renombrarlo en Blender).
+  { re: /^DRONE_CLEAN_TOPOLOGY/i, sku: "MX80-014" },
   // Tanque (MX80-012)
   { re: /^tanque/i, sku: "MX80-012" },
   // Tren de aterrizaje (MX80-013), del catalogo de feature/catalogo-tren-aterrizaje
@@ -96,23 +99,26 @@ const PIEZAS_SUELTAS: readonly {
   { re: null, sku: "MX80-013-08", zona: "tren-aterrizaje", nodo: "cople_tra_izq_mitad_A" },
   { re: /^travesano_delantero/i, sku: "MX80-013-09", zona: "tren-aterrizaje", nodo: "travesano_delantero" },
   { re: /^travesano_trasero/i, sku: "MX80-013-10", zona: "tren-aterrizaje", nodo: "travesano_trasero" },
-  { re: /^M5x55_amarre_pata/i, sku: "MX80-013-11", zona: "tren-aterrizaje", nodo: "M5x55_amarre_pata" },
-  { re: /^M5x60_agarre_tren/i, sku: "MX80-013-12", zona: "tren-aterrizaje", nodo: "M5x60_agarre_tren" },
-  { re: /^M6x50_travesano/i, sku: "MX80-013-13", zona: "tren-aterrizaje", nodo: "M6x50_travesano" },
-  { re: /^M5x25_cople/i, sku: "MX80-013-14", zona: "tren-aterrizaje", nodo: "M5x25_cople" },
+  // Las medidas de los tornillos cambiaron del GLB v3 al v4; se aceptan las dos.
+  { re: /^M5x(55|51)_amarre_pata/i, sku: "MX80-013-11", zona: "tren-aterrizaje", nodo: "M5x51_amarre_pata" },
+  { re: /^M5x(60|65)_agarre_tren/i, sku: "MX80-013-12", zona: "tren-aterrizaje", nodo: "M5x65_agarre_tren" },
+  { re: /^M6x(50|42)_travesano/i, sku: "MX80-013-13", zona: "tren-aterrizaje", nodo: "M6x42_travesano" },
+  { re: /^M5x(25|50)_cople/i, sku: "MX80-013-14", zona: "tren-aterrizaje", nodo: "M5x50_cople" },
 ];
 
 /**
  * En el GLB el marco y el tren cuelgan del mismo grupo (`tren_aterrizaje`).
- * Lo que coincide con esto es marco; el resto, tren. Los tornillos van con la
- * pieza que sujetan: M4x10 a los agarradores y M6x10 a los retenedores.
+ * Lo que coincide con esto es marco; el resto, tren. Los tornillos y sus
+ * arandelas van con la pieza que sujetan: M4 a los agarradores y retenedores,
+ * M6x10 a los retenedores. Las arandelas y tuercas M5 y las gomas son del
+ * tren.
  *
  * Los coples y sus tornillos M5x25 son del tren (catalogo MX80-013): unen los
  * patines a los travesanos. Antes estaban aqui y el clic en un cople abria el
  * marco.
  */
 export const ES_MARCO =
-  /^(agarrador_|retenedor_|frame_tubo|M4x10_agarrador|M6x10_retenedor)/i;
+  /^(agarrador_|retenedor_|frame_tubo|M4x\d+_(agarrador|retenedor)|M6x10_retenedor|Arandela_M4|Arandela_M6)/i;
 
 /** Nombre del grupo que contiene marco y tren en el GLB v2. */
 export const NODO_MARCO_Y_TREN = "tren_aterrizaje";
@@ -123,7 +129,16 @@ export const NODO_MARCO_Y_TREN = "tren_aterrizaje";
  * en una sola entrada las piezas identicas (48 tornillos M4x10 son una, no 48).
  */
 export function nombreBase(nombre: string): string {
-  return nombre.replace(/\d{3}$/, "").replace(/_\d{2}$/, "");
+  // Se quitan sufijos hasta que no quede ninguno: "Arandela_M4_001001" pasa
+  // por "Arandela_M4_001" hasta "Arandela_M4". Nunca toca el "M4" del final
+  // porque no va precedido de guion bajo.
+  let base = nombre;
+  let antes;
+  do {
+    antes = base;
+    base = base.replace(/\d{3}$/, "").replace(/_\d{1,3}$/, "").replace(/_+$/, "");
+  } while (base !== antes);
+  return base;
 }
 
 export function skuDeNodo(nombre: string): string | null {
@@ -191,6 +206,14 @@ export const NOMBRE_COMPONENTE: Record<string, string> = {
   // Por la geometria (7580 triangulos) son los 4 tornillos M2x10 de la
   // carcasa fusionados en una malla. Confirmar y renombrar en Blender.
   Open_CASCADE_STEP_translator_79_1: "Tornillos de la carcasa",
+  goma_der_del: "Goma delantera derecha",
+  goma_der_tra: "Goma trasera derecha",
+  goma_izq_del: "Goma delantera izquierda",
+  goma_izq_tra: "Goma trasera izquierda",
+  Arandela_M4: "Arandelas M4",
+  Arandela_M5: "Arandelas M5",
+  Arandela_M6: "Arandelas M6",
+  Tuerca_M5: "Tuercas M5",
 };
 
 /** true si `obj` es `ancestro` o cuelga de el. */
@@ -289,7 +312,8 @@ export function nodosDeZonaEn(raiz: THREE.Object3D, zona: ZonaVisor): THREE.Obje
     case "tanque":
       return uno("tanque");
     case "frente":
-      return uno("frente_dron");
+      // "frente_dron" en el GLB v3, "carcasa_frontal" en el v4.
+      return [...uno("carcasa_frontal"), ...uno("frente_dron")];
     case "frame":
       return marcoYTren.filter((n) => ES_MARCO.test(n.name));
     case "tren-aterrizaje":

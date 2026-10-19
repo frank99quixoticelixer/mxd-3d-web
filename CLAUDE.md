@@ -253,9 +253,9 @@ Flujo para actualizar un modelo:
    0 danados.
 5. Si es el ensamble principal, cambia `GLB_FRAME` en
    `apps/vitrina/src/config/modelos3d.ts` y revisa que el GLB conserve los
-   nombres de nodo de los que depende el visor (GLB v3): `brazo`,
+   nombres de nodo de los que depende el visor (GLB v4): `brazo`,
    `brazo_2..4`, `giratorio`, `motor_giratorio`, `estatico`, `balanceador`,
-   `helices`, `propela_*`, `tanque`, `frente_dron` y `tren_aterrizaje`, que
+   `helices`, `propela_*`, `tanque`, `carcasa_frontal` y `tren_aterrizaje`, que
    contiene marco y tren juntos (se separan con `ES_MARCO`). Todo vive en
    `nodosDeZonaEn()` de `EscenaFrame.tsx` y en `features/viewer/componentes.ts`.
    Un nombre que cambie deja esa zona o ese componente sin poder tocarse.
