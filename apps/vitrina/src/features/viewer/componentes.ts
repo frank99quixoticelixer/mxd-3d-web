@@ -28,6 +28,7 @@ export const SKU_ZONA: Partial<Record<ZonaVisor, string>> = {
   frame: "MX80-011",
   tanque: "MX80-012",
   "tren-aterrizaje": "MX80-013",
+  frente: "MX80-014",
 };
 
 /**
@@ -68,6 +69,9 @@ const PIEZAS_SUELTAS: readonly {
   { re: /^retenedor_(del|tra)_/i, sku: "MX80-011-02", zona: "frame", nodo: "retenedor_del_der" },
   { re: /^frame_tubo42/i, sku: "MX80-011-03", zona: "frame", nodo: "frame_tubo42_del" },
   { re: /^frame_tubo69/i, sku: "MX80-011-04", zona: "frame", nodo: "frame_tubo69_der" },
+  // Carcasa frontal (MX80-014). En el GLB v3 el cascaron se llama
+  // ModeloAvantiv9 (6180 triangulos, el mismo de "frontcase" del v2).
+  { re: /^ModeloAvantiv/i, sku: "MX80-014" },
   // Tanque (MX80-012)
   { re: /^tanque/i, sku: "MX80-012" },
   // Tren de aterrizaje (MX80-013), del catalogo de feature/catalogo-tren-aterrizaje
@@ -182,8 +186,9 @@ export const NOMBRE_COMPONENTE: Record<string, string> = {
   // y no dicen que son; renombrarlas en Blender y quitar esto.
   camara_frontal_dummy: "Cámara frontal",
   camara_inferior_dummy: "Cámara inferior",
-  ModeloAvantiv9: "Cubierta frontal",
-  Open_CASCADE_STEP_translator_79_1: "Pieza del frente sin nombre",
+  // Por la geometria (7580 triangulos) son los 4 tornillos M2x10 de la
+  // carcasa fusionados en una malla. Confirmar y renombrar en Blender.
+  Open_CASCADE_STEP_translator_79_1: "Tornillos de la carcasa",
 };
 
 /** true si `obj` es `ancestro` o cuelga de el. */
