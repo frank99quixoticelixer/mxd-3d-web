@@ -1,3 +1,6 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
+
 import { PIEZAS_MX80 } from "@/data/mx80";
 import { aPiezaPublica } from "@/lib/publico";
 import {
@@ -25,9 +28,22 @@ import {
  * unica puerta al catalogo en toda la vitrina: una pagina nueva sale recortada
  * sin que nadie tenga que acordarse. El porque esta en lib/publico.ts.
  */
-const CATALOGO: Pieza[] = CatalogoEsquema.parse([...PIEZAS_MX80]).map(
-  aPiezaPublica,
-);
+/**
+ * El render de una pieza que no declara `imagen`: public/renders/<SKU>.jpg, si
+ * existe. Lo generan `npm run renders:generar` (ver blender/README.md), asi
+ * que una pieza nueva tiene imagen en cuanto se renderiza, sin tocar mx80.ts.
+ */
+function conRender(pieza: Pieza): Pieza {
+  if (pieza.imagen) return pieza;
+  const ruta = `/renders/${pieza.sku}.jpg`;
+  return existsSync(path.join(process.cwd(), "public", ruta))
+    ? { ...pieza, imagen: ruta }
+    : pieza;
+}
+
+const CATALOGO: Pieza[] = CatalogoEsquema.parse([...PIEZAS_MX80])
+  .map(aPiezaPublica)
+  .map(conRender);
 
 /**
  * Piezas de CATALOGO: las que se cotizan, se listan y ocupan una celda en la

@@ -262,7 +262,28 @@ function PiezaGirando({
     gltf.scene.updateMatrixWorld(true);
     const copia = new THREE.Group();
     const mallas = new Set<THREE.Object3D>();
-    for (const nodo of nodosDeSeleccion(gltf.scene, JSON.parse(claveSeleccion))) {
+    let nodos = nodosDeSeleccion(gltf.scene, JSON.parse(claveSeleccion));
+    // La misma pieza montada varias veces (los cuatro agarradores del marco)
+    // se muestra una vez. Son copias si todas miden lo mismo y estan
+    // separadas entre si; las mitades A y B de un cople miden igual pero estan
+    // pegadas, y siguen saliendo juntas. Mismo criterio que el render
+    // automatico (blender/render_piezas.py).
+    if (nodos.length > 1) {
+      const cajas = nodos.map((n) => new THREE.Box3().setFromObject(n));
+      const medidas = cajas.map((c) =>
+        c.getSize(new THREE.Vector3()).toArray().sort((a, b) => a - b),
+      );
+      const mismaMedida = medidas.every((m) =>
+        m.every((v, i) => Math.abs(v - medidas[0][i]) <= 0.05 * Math.max(medidas[0][i], 1e-9)),
+      );
+      const tamano = Math.max(...medidas[0]);
+      const centros = cajas.map((c) => c.getCenter(new THREE.Vector3()));
+      const separadas = centros.every((a, i) =>
+        centros.every((b, j) => j <= i || a.distanceTo(b) > tamano),
+      );
+      if (mismaMedida && separadas) nodos = nodos.slice(0, 1);
+    }
+    for (const nodo of nodos) {
       nodo.traverse((n) => {
         if ((n as THREE.Mesh).isMesh) mallas.add(n);
       });

@@ -209,6 +209,18 @@ renders y descargas (103 MB). Esos archivos **no se duplican en git**:
 Un asset nuevo para interna se pone en `apps/vitrina/public/` igual: el
 espejo es unidireccional y lo que quede solo en interna se pierde.
 
+## Renders de piezas (automaticos)
+
+`apps/vitrina/blender/`: se pone ahi el `.blend` del dron (no va a git) y
+`cd apps/vitrina && npm run renders:generar` renderiza cada pieza del catalogo,
+menos los tornillos, a `public/renders/<SKU>.jpg` (1600 x 800, estilo estudio).
+Usa las mismas reglas del visor para saber que objetos son cada pieza, y la
+ficha toma el render solo si la pieza no declara `imagen`. Detalle y opciones
+(`--solo=`, `--sin-copiar`) en `apps/vitrina/blender/README.md`.
+
+**Sobrescribe los renders existentes** de las piezas que genera. Para revisar
+antes, `--sin-copiar` los deja en `blender/salida/`.
+
 ## Como agregar o actualizar un GLB
 
 Los GLB del visor y de piezas van en `apps/vitrina/public/models/` y se
