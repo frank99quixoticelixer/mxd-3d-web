@@ -101,7 +101,6 @@ export const PIEZAS_MX80: Pieza[] = [
     subsistema: "propulsion",
     nombresBlender: [],
     ...datosDeFicha("MX80-001"),
-    glb: "models/mx80/piezas/MX80-001_v1.glb",
     numeroBom: "MXD-MX80-PRO-ENS-001-R00",
     orden: 1,
   },
@@ -123,7 +122,6 @@ export const PIEZAS_MX80: Pieza[] = [
     direccionExplosion: [0, 1, 0],
     factorExplosion: 0.44,
     ...datosDeFicha("MX80-001-01"),
-    glb: "models/mx80/piezas/MX80-001-01_v1.glb",
     imagen: "/renders/MX80-001-01.jpg",
     orden: 2,
   },
@@ -145,7 +143,6 @@ export const PIEZAS_MX80: Pieza[] = [
     direccionExplosion: [0, 1, 0],
     factorExplosion: 0.16,
     ...datosDeFicha("MX80-001-02"),
-    glb: "models/mx80/piezas/MX80-001-02_v1.glb",
     imagen: "/renders/MX80-001-02.jpg",
     orden: 3,
   },
@@ -177,13 +174,10 @@ export const PIEZAS_MX80: Pieza[] = [
     // Sube al tope de la pila del rotor.
     factorExplosion: 0.55,
     ...datosDeFicha("MX80-001-03"),
-    // Antes esta pieza no tenia glb propio (su ficha caia al ensamble
-    // completo aislado). Reusa el MISMO archivo que ya usan TuercaDetallada.tsx
-    // y DetalleTuercaEnPieza en EscenaPieza.tsx para inyectar el detalle
-    // dentro del placeholder del ensamble/del balanceador: ya trae los 4
-    // nodos (jacket + 2 spacers + tornillo) separados, no hacia falta armar
-    // un archivo nuevo.
-    glb: "models/mx80/piezas/MX80-003_v2.glb",
+    // En el GLB completo la tuerca es un placeholder simple; EscenaPieza lo
+    // sustituye por el modelo detallado (MX80-003_v2.glb), que trae los 4
+    // nodos (jacket + 2 spacers + tornillo). Las fichas de esas 4 subpiezas
+    // salen de ese mismo archivo (ver GLB_TUERCA_DETALLADA en componentes.ts).
     imagen: "/renders/MX80-001-03.jpg",
     numeroBom: "MXD-MX80-PRO-ENS-002-R00",
     orden: 1,
@@ -205,7 +199,6 @@ export const PIEZAS_MX80: Pieza[] = [
     cantidadPorSeccion: 2,
     nombresBlender: ["spacer_balanceador_1", "Wear-Resistant Plate A", "Wear Resistant Plate A"],
     ...datosDeFicha("MX80-001-04"),
-    glb: "models/mx80/piezas/MX80-001-04_v1.glb",
     imagen: "/renders/MX80-001-04.jpg",
     numeroBom: "MXD-MX80-PRO-PZA-002-R00",
     orden: 2,
@@ -222,7 +215,6 @@ export const PIEZAS_MX80: Pieza[] = [
     cantidadPorSeccion: 2,
     nombresBlender: ["spacer_balanceador_2", "Wear-Resistant Plate B", "Wear Resistant Plate B"],
     ...datosDeFicha("MX80-001-05"),
-    glb: "models/mx80/piezas/MX80-001-05_v1.glb",
     imagen: "/renders/MX80-001-05.jpg",
     numeroBom: "MXD-MX80-PRO-PZA-003-R00",
     orden: 3,
@@ -239,7 +231,6 @@ export const PIEZAS_MX80: Pieza[] = [
     cantidadPorSeccion: 2,
     nombresBlender: ["jacket_balanceador", "steel_sleeve", "Steel Sleeve"],
     ...datosDeFicha("MX80-001-06"),
-    glb: "models/mx80/piezas/MX80-001-06_v1.glb",
     imagen: "/renders/MX80-001-06.jpg",
     numeroBom: "MXD-MX80-PRO-PZA-004-R00",
     orden: 4,
@@ -256,7 +247,6 @@ export const PIEZAS_MX80: Pieza[] = [
     cantidadPorSeccion: 2,
     nombresBlender: ["tornillo_balanceador", "bolt", "Propeller Clamp Rotation Bolt"],
     ...datosDeFicha("MX80-001-07"),
-    glb: "models/mx80/piezas/MX80-001-07_v1.glb",
     imagen: "/renders/MX80-001-07.jpg",
     numeroBom: "MXD-MX80-PRO-PZA-007-R00",
     orden: 5,
@@ -289,7 +279,6 @@ export const PIEZAS_MX80: Pieza[] = [
     ...datosDeFicha("MX80-004"),
     // Muestra 1 hoja CW + 1 hoja CCW juntas: representa el PAR, no una helice
     // armada (para eso esta la ficha de cada subpieza).
-    glb: "models/mx80/piezas/MX80-004-par_v1.glb",
     sinDespiece: true,
     orden: 3,
   },
@@ -318,7 +307,6 @@ export const PIEZAS_MX80: Pieza[] = [
     ...datosDeFicha("MX80-004-01"),
     // Ya esta en el ensamble (Propela_CW_1_1/_2 en el brazo CW): mismo
     // archivo que antes usaba MX80-004, sin cambios, solo reasignado.
-    glb: "models/mx80/piezas/MX80-004_v1.glb",
     imagen: "/renders/MX80-004-01.jpg",
     sinDespiece: true,
     numeroBom: "MXD-MX80-PRO-PZA-005-R00",
@@ -333,9 +321,7 @@ export const PIEZAS_MX80: Pieza[] = [
     descripcion:
       "Pala de hélice CCW, de fibra de carbono. Monta en los rotores de sentido antihorario.",
     subsistema: "propulsion",
-    // Solo los brazos antihorarios. OJO: esta hoja NO esta en
-    // MX80_brazo_CW_web.glb (ese archivo es un brazo CW): nunca se resuelve
-    // en el ensamble principal, por eso trae su propio glb para la ficha.
+    // Solo los brazos antihorarios.
     secciones: ["brazo-ccw-1", "brazo-ccw-2"],
     cantidadPorSeccion: 2,
     nombresBlender: [
@@ -349,7 +335,6 @@ export const PIEZAS_MX80: Pieza[] = [
     direccionExplosion: [0, 1, 0],
     factorExplosion: 0.3,
     ...datosDeFicha("MX80-004-02"),
-    glb: "models/mx80/piezas/MX80-004-02_v1.glb",
     imagen: "/renders/MX80-004-02.jpg",
     sinDespiece: true,
     numeroBom: "MXD-MX80-PRO-PZA-006-R00",
@@ -379,7 +364,6 @@ export const PIEZAS_MX80: Pieza[] = [
     direccionExplosion: [0, -1, 0],
     factorExplosion: 0.21,
     ...datosDeFicha("MX80-005"),
-    glb: "models/mx80/piezas/MX80-005_v1.glb",
     // El maestro trae DOS numeros para esta pieza (-021 y -022, "Single Motor
     // Mount 1-3" / "2-4"): Eduardo cree que es un error del maestro, que aqui
     // es UNA sola pieza para las 4 posiciones. Se deja el primero hasta que
@@ -411,7 +395,6 @@ export const PIEZAS_MX80: Pieza[] = [
     // Sale hacia afuera del brazo para liberar al soporte.
     factorExplosion: 0.37,
     ...datosDeFicha("MX80-006"),
-    glb: "models/mx80/piezas/MX80-006_v1.glb",
     numeroBom: "MXD-MX80-PLA-PZA-001-R00",
     orden: 5,
   },
@@ -434,7 +417,6 @@ export const PIEZAS_MX80: Pieza[] = [
     subsistema: "propulsion",
     nombresBlender: ["Motor", "motor", "Motor_Brushless", "motor_only"],
     ...datosDeFicha("MX80-007"),
-    glb: "models/mx80/piezas/MX80-007_v1.glb",
     numeroBom: "MXD-MX80-PRO-SUB-001-R00",
     orden: 6,
   },
@@ -451,7 +433,6 @@ export const PIEZAS_MX80: Pieza[] = [
   ].map(([n, slug, nombre, blender], i): Pieza => ({
     ...BASE,
     sku: `MX80-007-${n}`,
-    glb: `models/mx80/piezas/MX80-007-${n}_v1.glb`,
     // Renders de la biblioteca: faltan -07, -08 y -09 (modulo de conexion).
     ...(Number(n) <= 6 ? { imagen: `/renders/MX80-007-${n}.jpg` } : {}),
     parteDe: "MX80-007",
@@ -482,7 +463,6 @@ export const PIEZAS_MX80: Pieza[] = [
     // Se aleja del motor a lo largo de su eje.
     factorExplosion: 0.25,
     ...datosDeFicha("MX80-008"),
-    glb: "models/mx80/piezas/MX80-008_v1.glb",
     orden: 8,
   },
 
@@ -500,13 +480,11 @@ export const PIEZAS_MX80: Pieza[] = [
     subsistema: "electronica",
     nombresBlender: [],
     ...datosDeFicha("MX80-009"),
-    glb: "models/mx80/piezas/MX80-009_v1.glb",
     orden: 9,
   },
   {
     ...BASE,
     sku: "MX80-009-01",
-    glb: "models/mx80/piezas/MX80-009-01_v1.glb",
     parteDe: "MX80-009",
     slug: "esc-300a",
     nombre: "ESC 300A",
@@ -531,7 +509,6 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-009-02",
-    glb: "models/mx80/piezas/MX80-009-02_v1.glb",
     parteDe: "MX80-009",
     slug: "base-esc",
     nombre: "Base del ESC",
@@ -580,8 +557,6 @@ export const PIEZAS_MX80: Pieza[] = [
       "tubo de 60 step",
       "tubo de 60 step.001",
     ],
-    // v2: el marco con su tornilleria, exportado de frame_MX80.glb.
-    glb: "models/mx80/piezas/MX80-011_v2.glb",
     sinDespiece: false,
     ...datosDeFicha("MX80-011"),
     orden: 11,
@@ -608,7 +583,6 @@ export const PIEZAS_MX80: Pieza[] = [
       "agarrador_tra_der",
       "agarrador_tra_izq",
     ],
-    glb: "models/mx80/piezas/MX80-011-01_v1.glb",
     imagen: "/renders/MX80-011-01.jpg",
     direccionExplosion: [1, 0, 0],
     factorExplosion: 0.6,
@@ -637,7 +611,6 @@ export const PIEZAS_MX80: Pieza[] = [
       "retenedor_del_izq",
       "retenedor_del_izq.001",
     ],
-    glb: "models/mx80/piezas/MX80-011-02_v1.glb",
     imagen: "/renders/MX80-011-02.jpg",
     direccionExplosion: [0, 1, 0],
     factorExplosion: 0.5,
@@ -660,8 +633,10 @@ export const PIEZAS_MX80: Pieza[] = [
       "tubo de 42 step.001",
       "frame_tubo42_del",
       "frame_tubo42_tra",
+      // GLB v4
+      "frame_tubo50_del",
+      "frame_tubo50_tra",
     ],
-    glb: "models/mx80/piezas/MX80-011-03_v1.glb",
     imagen: "/renders/MX80-011-03.jpg",
     direccionExplosion: [0, 0, 1],
     factorExplosion: 0.5,
@@ -685,7 +660,6 @@ export const PIEZAS_MX80: Pieza[] = [
       "frame_tubo69_der",
       "frame_tubo69_izq",
     ],
-    glb: "models/mx80/piezas/MX80-011-04_v1.glb",
     imagen: "/renders/MX80-011-04.jpg",
     direccionExplosion: [0, 0, -1],
     factorExplosion: 0.5,
@@ -709,7 +683,6 @@ export const PIEZAS_MX80: Pieza[] = [
     secciones: ["tanque"],
     cantidadPorSeccion: 1,
     nombresBlender: ["tanque_spline"],
-    glb: "models/mx80/piezas/MX80-012_v1.glb",
     sinDespiece: true,
     parteDe: null,
     ...datosDeFicha("MX80-012"),
@@ -726,10 +699,8 @@ export const PIEZAS_MX80: Pieza[] = [
   // dos mitades — igual que la tuerca del balanceador (MX80-001-03) es hija
   // del balanceador y a la vez padre de la camisa y los espaciadores.
   //
-  // Modeladas en Blender (ver NEW_MX80_model_blender), todavia sin GLB ni
-  // STL exportados: "glb: null" en todas, y el visor de pieza muestra "Esta
-  // pieza todavia no tiene modelo 3D propio" con el render de referencia en
-  // su lugar. El conjunto (MX80-013) no tiene imagen propia: no hay un
+  // Su modelo 3D sale del GLB completo del dron (grupo tren_aterrizaje), por
+  // nombresBlender. El conjunto (MX80-013) no tiene imagen propia: no hay un
   // render del tren completo armado, solo de cada pieza suelta.
   //
   // Agarre tipo A y tipo B son CADA UNO una sola pieza fisica usada en dos
@@ -758,13 +729,11 @@ export const PIEZAS_MX80: Pieza[] = [
     parteDe: null,
     nombresBlender: [],
     ...datosDeFicha("MX80-013"),
-    glb: "models/mx80/piezas/MX80-013_v1.glb",
     orden: 13,
   },
   {
     ...BASE,
     sku: "MX80-013-01",
-    imagen: "/renders/MX80-013.jpg",
     slug: "patin-derecho",
     nombre: "Patín derecho",
     descripcion:
@@ -774,13 +743,12 @@ export const PIEZAS_MX80: Pieza[] = [
     parteDe: "MX80-013",
     nombresBlender: ["patin_derecho"],
     ...datosDeFicha("MX80-013-01"),
-    glb: "models/mx80/piezas/MX80-013-01_v1.glb",
     orden: 1,
   },
   {
     ...BASE,
     sku: "MX80-013-02",
-    imagen: "/renders/MX80-014.jpg",
+    imagen: "/renders/MX80-013-02.jpg",
     slug: "patin-izquierdo",
     nombre: "Patín izquierdo",
     descripcion:
@@ -790,13 +758,11 @@ export const PIEZAS_MX80: Pieza[] = [
     parteDe: "MX80-013",
     nombresBlender: ["patin_izquierdo"],
     ...datosDeFicha("MX80-013-02"),
-    glb: "models/mx80/piezas/MX80-013-02_v1.glb",
     orden: 2,
   },
   {
     ...BASE,
     sku: "MX80-013-03",
-    imagen: "/renders/MX80-015.jpg",
     slug: "agarre-tipo-a",
     nombre: "Agarre tipo A",
     descripcion:
@@ -806,13 +772,11 @@ export const PIEZAS_MX80: Pieza[] = [
     parteDe: "MX80-013",
     nombresBlender: ["agarre_A_del_der", "agarre_A_tra_izq"],
     ...datosDeFicha("MX80-013-03"),
-    glb: "models/mx80/piezas/MX80-013-03_v1.glb",
     orden: 3,
   },
   {
     ...BASE,
     sku: "MX80-013-04",
-    imagen: "/renders/MX80-017.jpg",
     slug: "agarre-tipo-b",
     nombre: "Agarre tipo B",
     descripcion:
@@ -822,7 +786,6 @@ export const PIEZAS_MX80: Pieza[] = [
     parteDe: "MX80-013",
     nombresBlender: ["agarre_B_del_izq", "agarre_B_tra_der"],
     ...datosDeFicha("MX80-013-04"),
-    glb: "models/mx80/piezas/MX80-013-04_v1.glb",
     orden: 4,
   },
   {
@@ -837,7 +800,6 @@ export const PIEZAS_MX80: Pieza[] = [
     parteDe: "MX80-013",
     nombresBlender: ["cople_del_der_mitad_A", "cople_del_der_mitad_B"],
     ...datosDeFicha("MX80-013-05"),
-    glb: "models/mx80/piezas/MX80-013-05_v1.glb",
     orden: 5,
   },
   {
@@ -852,7 +814,6 @@ export const PIEZAS_MX80: Pieza[] = [
     parteDe: "MX80-013",
     nombresBlender: ["cople_del_izq_mitad_A", "cople_del_izq_mitad_B"],
     ...datosDeFicha("MX80-013-06"),
-    glb: "models/mx80/piezas/MX80-013-06_v1.glb",
     orden: 6,
   },
   {
@@ -867,7 +828,6 @@ export const PIEZAS_MX80: Pieza[] = [
     parteDe: "MX80-013",
     nombresBlender: ["cople_tra_der_mitad_A", "cople_tra_der_mitad_B"],
     ...datosDeFicha("MX80-013-07"),
-    glb: "models/mx80/piezas/MX80-013-07_v1.glb",
     orden: 7,
   },
   {
@@ -882,13 +842,11 @@ export const PIEZAS_MX80: Pieza[] = [
     parteDe: "MX80-013",
     nombresBlender: ["cople_tra_izq_mitad_A", "cople_tra_izq_mitad_B"],
     ...datosDeFicha("MX80-013-08"),
-    glb: "models/mx80/piezas/MX80-013-08_v1.glb",
     orden: 8,
   },
   {
     ...BASE,
     sku: "MX80-013-09",
-    imagen: "/renders/MX80-027.jpg",
     slug: "travesano-delantero",
     nombre: "Travesaño delantero",
     descripcion:
@@ -898,13 +856,11 @@ export const PIEZAS_MX80: Pieza[] = [
     parteDe: "MX80-013",
     nombresBlender: ["travesano_delantero"],
     ...datosDeFicha("MX80-013-09"),
-    glb: "models/mx80/piezas/MX80-013-09_v1.glb",
     orden: 9,
   },
   {
     ...BASE,
     sku: "MX80-013-10",
-    imagen: "/renders/MX80-028.jpg",
     slug: "travesano-trasero",
     nombre: "Travesaño trasero",
     descripcion:
@@ -914,7 +870,6 @@ export const PIEZAS_MX80: Pieza[] = [
     parteDe: "MX80-013",
     nombresBlender: ["travesano_trasero"],
     ...datosDeFicha("MX80-013-10"),
-    glb: "models/mx80/piezas/MX80-013-10_v1.glb",
     orden: 10,
   },
   {
@@ -928,9 +883,8 @@ export const PIEZAS_MX80: Pieza[] = [
     subsistema: "tren-aterrizaje",
     secciones: [],
     parteDe: "MX80-013",
-    nombresBlender: ["M5x55_amarre_pata"],
+    nombresBlender: ["M5x55_amarre_pata", "M5x51_amarre_pata"],
     ...datosDeFicha("MX80-013-11"),
-    glb: "models/mx80/piezas/MX80-013-11_v1.glb",
     orden: 11,
   },
   {
@@ -944,9 +898,8 @@ export const PIEZAS_MX80: Pieza[] = [
     subsistema: "tren-aterrizaje",
     secciones: [],
     parteDe: "MX80-013",
-    nombresBlender: ["M5x60_agarre_tren"],
+    nombresBlender: ["M5x60_agarre_tren", "M5x65_agarre_tren"],
     ...datosDeFicha("MX80-013-12"),
-    glb: "models/mx80/piezas/MX80-013-12_v1.glb",
     orden: 12,
   },
   {
@@ -960,9 +913,8 @@ export const PIEZAS_MX80: Pieza[] = [
     subsistema: "tren-aterrizaje",
     secciones: [],
     parteDe: "MX80-013",
-    nombresBlender: ["M6x50_travesano"],
+    nombresBlender: ["M6x50_travesano", "M6x42_travesano"],
     ...datosDeFicha("MX80-013-13"),
-    glb: "models/mx80/piezas/MX80-013-13_v1.glb",
     orden: 13,
   },
   {
@@ -976,15 +928,13 @@ export const PIEZAS_MX80: Pieza[] = [
     subsistema: "tren-aterrizaje",
     secciones: [],
     parteDe: "MX80-013",
-    nombresBlender: ["M5x25_cople"],
+    nombresBlender: ["M5x25_cople", "M5x50_cople"],
     ...datosDeFicha("MX80-013-14"),
-    glb: "models/mx80/piezas/MX80-013-14_v1.glb",
     orden: 14,
   },
   {
     ...BASE,
     sku: "MX80-013-15",
-    imagen: "/renders/MX80-019.jpg",
     slug: "cople-delantero-derecho-mitad-a",
     nombre: "Cople delantero derecho, mitad A",
     descripcion:
@@ -994,13 +944,11 @@ export const PIEZAS_MX80: Pieza[] = [
     parteDe: "MX80-013-05",
     nombresBlender: ["cople_del_der_mitad_A"],
     ...datosDeFicha("MX80-013-15"),
-    glb: "models/mx80/piezas/MX80-013-15_v1.glb",
     orden: 1,
   },
   {
     ...BASE,
     sku: "MX80-013-16",
-    imagen: "/renders/MX80-020.jpg",
     slug: "cople-delantero-derecho-mitad-b",
     nombre: "Cople delantero derecho, mitad B",
     descripcion:
@@ -1010,13 +958,11 @@ export const PIEZAS_MX80: Pieza[] = [
     parteDe: "MX80-013-05",
     nombresBlender: ["cople_del_der_mitad_B"],
     ...datosDeFicha("MX80-013-16"),
-    glb: "models/mx80/piezas/MX80-013-16_v1.glb",
     orden: 2,
   },
   {
     ...BASE,
     sku: "MX80-013-17",
-    imagen: "/renders/MX80-021.jpg",
     slug: "cople-delantero-izquierdo-mitad-a",
     nombre: "Cople delantero izquierdo, mitad A",
     descripcion:
@@ -1026,13 +972,11 @@ export const PIEZAS_MX80: Pieza[] = [
     parteDe: "MX80-013-06",
     nombresBlender: ["cople_del_izq_mitad_A"],
     ...datosDeFicha("MX80-013-17"),
-    glb: "models/mx80/piezas/MX80-013-17_v1.glb",
     orden: 1,
   },
   {
     ...BASE,
     sku: "MX80-013-18",
-    imagen: "/renders/MX80-022.jpg",
     slug: "cople-delantero-izquierdo-mitad-b",
     nombre: "Cople delantero izquierdo, mitad B",
     descripcion:
@@ -1042,13 +986,11 @@ export const PIEZAS_MX80: Pieza[] = [
     parteDe: "MX80-013-06",
     nombresBlender: ["cople_del_izq_mitad_B"],
     ...datosDeFicha("MX80-013-18"),
-    glb: "models/mx80/piezas/MX80-013-18_v1.glb",
     orden: 2,
   },
   {
     ...BASE,
     sku: "MX80-013-19",
-    imagen: "/renders/MX80-023.jpg",
     slug: "cople-trasero-derecho-mitad-a",
     nombre: "Cople trasero derecho, mitad A",
     descripcion:
@@ -1058,13 +1000,11 @@ export const PIEZAS_MX80: Pieza[] = [
     parteDe: "MX80-013-07",
     nombresBlender: ["cople_tra_der_mitad_A"],
     ...datosDeFicha("MX80-013-19"),
-    glb: "models/mx80/piezas/MX80-013-19_v1.glb",
     orden: 1,
   },
   {
     ...BASE,
     sku: "MX80-013-20",
-    imagen: "/renders/MX80-024.jpg",
     slug: "cople-trasero-derecho-mitad-b",
     nombre: "Cople trasero derecho, mitad B",
     descripcion:
@@ -1074,13 +1014,11 @@ export const PIEZAS_MX80: Pieza[] = [
     parteDe: "MX80-013-07",
     nombresBlender: ["cople_tra_der_mitad_B"],
     ...datosDeFicha("MX80-013-20"),
-    glb: "models/mx80/piezas/MX80-013-20_v1.glb",
     orden: 2,
   },
   {
     ...BASE,
     sku: "MX80-013-21",
-    imagen: "/renders/MX80-025.jpg",
     slug: "cople-trasero-izquierdo-mitad-a",
     nombre: "Cople trasero izquierdo, mitad A",
     descripcion:
@@ -1090,13 +1028,11 @@ export const PIEZAS_MX80: Pieza[] = [
     parteDe: "MX80-013-08",
     nombresBlender: ["cople_tra_izq_mitad_A"],
     ...datosDeFicha("MX80-013-21"),
-    glb: "models/mx80/piezas/MX80-013-21_v1.glb",
     orden: 1,
   },
   {
     ...BASE,
     sku: "MX80-013-22",
-    imagen: "/renders/MX80-026.jpg",
     slug: "cople-trasero-izquierdo-mitad-b",
     nombre: "Cople trasero izquierdo, mitad B",
     descripcion:
@@ -1106,7 +1042,42 @@ export const PIEZAS_MX80: Pieza[] = [
     parteDe: "MX80-013-08",
     nombresBlender: ["cople_tra_izq_mitad_B"],
     ...datosDeFicha("MX80-013-22"),
-    glb: "models/mx80/piezas/MX80-013-22_v1.glb",
     orden: 2,
+  },
+
+  // ===================================================================
+  // MX80-014  Carcasa frontal
+  //
+  // Nodo "frontcase" en el GLB del dron completo: ya es raiz de la escena
+  // (no cuelga de ningun grupo) y trae 4 tornillos M2x10 + el cascaron
+  // (nodo sin nombre dentro del grupo) como hijos — se extrajo el subarbol
+  // completo, no una pieza suelta.
+  //
+  // numeroBom asignado con confianza alta: el maestro de partes trae
+  // "MXD-MX80-EST-ENS-001-R00 — Front Housing Assembly", que es
+  // practicamente el mismo nombre que el nodo del GLB.
+  // ===================================================================
+  {
+    ...BASE,
+    sku: "MX80-014",
+    imagen: "/renders/MX80-014.jpg",
+    slug: "carcasa-frontal",
+    nombre: "Carcasa frontal",
+    descripcion:
+      "Carcasa protectora de la parte frontal del dron. Aloja los componentes montados ahí y se fija con 4 tornillos M2x10.",
+    subsistema: "estructura",
+    secciones: [],
+    parteDe: null,
+    // "frontcase" en el GLB v2; en el v3 el cascaron es "ModeloAvantiv9".
+    // La malla sin nombre son, por su geometria, los 4 tornillos M2x10.
+    nombresBlender: [
+      "frontcase",
+      "ModeloAvantiv9",
+      "DRONE_CLEAN_TOPOLOGY", // nombre del cascaron en el GLB v4
+      "Open_CASCADE_STEP_translator_79_1",
+    ],
+    ...datosDeFicha("MX80-014"),
+    numeroBom: "MXD-MX80-EST-ENS-001-R00",
+    orden: 14,
   },
 ];

@@ -10,16 +10,15 @@ const BASE_CDN = process.env.NEXT_PUBLIC_ASSETS_URL ?? "";
 
 /**
  * ===================================================================
- * EL GLB QUE CARGA LA PAGINA. Cambia esta linea y ya.
+ * EL GLB DEL DRON. Cambia esta linea y ya.
  * ===================================================================
- * Ruta relativa a public/: se sirve como archivo estatico sin pasar
- * por el API route. Al actualizar el modelo, copia el nuevo _web.glb
- * a public/models/mx80/ y cambia el nombre aqui.
+ * MX80 completo: 4 brazos plegables, marco, tanque, tren y frente. Es el
+ * UNICO modelo que muestra el sitio: la portada lo usa entero y la ficha de
+ * cada pieza saca de el sus nodos (ver componentes.ts). Ruta relativa a
+ * public/. Al actualizar el modelo, copia el nuevo _web.glb a
+ * public/models/mx80/ y cambia el nombre aqui.
  */
-export const GLB_ACTIVO = "models/mx80/MX80_brazo_CW_web.glb";
-
-/** MX80 completo: 4 brazos plegables, marco, tanque y tren de aterrizaje. */
-export const GLB_FRAME = "models/mx80/MX80_completo_v2_web.glb";
+export const GLB_FRAME = "models/mx80/MX80_completo_v4_web.glb";
 
 /**
  * Angulo maximo del control de plegado del chasis (grados), 0 = desplegado.
@@ -29,15 +28,6 @@ export const GLB_FRAME = "models/mx80/MX80_completo_v2_web.glb";
  * servidor. Este archivo es config plana, sin esos paquetes pesados.
  */
 export const ANGULO_MAX_PLEGADO_FRAME = 135;
-
-/** URL de un GLB servido desde contenido/piezas_MX80/. */
-export function urlGlbContenido(rutaRelativa: string): string {
-  const limpia = rutaRelativa.replace(/^\/+/, "");
-  if (ORIGEN === "cdn" && BASE_CDN) {
-    return `${BASE_CDN.replace(/\/+$/, "")}/${limpia}`;
-  }
-  return `/api/modelo/${limpia}`;
-}
 
 /**
  * Devuelve la URL publica de un archivo de modelo.
@@ -69,7 +59,7 @@ export const MODELOS: Record<ModeloDron, ConfigModelo> = {
   MX80: {
     id: "MX80",
     nombre: "MX80",
-    ensamble: GLB_ACTIVO,
+    ensamble: GLB_FRAME,
     carpetaPiezas: "models/mx80/piezas",
     // Cambia a true cuando el archivo de arriba exista.
     // Si lo dejas en false, el visor muestra un ensamble de demostracion
