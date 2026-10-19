@@ -734,7 +734,6 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-01",
-    imagen: "/renders/MX80-013.jpg",
     slug: "patin-derecho",
     nombre: "Patín derecho",
     descripcion:
@@ -764,7 +763,6 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-03",
-    imagen: "/renders/MX80-015.jpg",
     slug: "agarre-tipo-a",
     nombre: "Agarre tipo A",
     descripcion:
@@ -779,7 +777,6 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-04",
-    imagen: "/renders/MX80-017.jpg",
     slug: "agarre-tipo-b",
     nombre: "Agarre tipo B",
     descripcion:
@@ -850,7 +847,6 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-09",
-    imagen: "/renders/MX80-027.jpg",
     slug: "travesano-delantero",
     nombre: "Travesaño delantero",
     descripcion:
@@ -865,7 +861,6 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-10",
-    imagen: "/renders/MX80-028.jpg",
     slug: "travesano-trasero",
     nombre: "Travesaño trasero",
     descripcion:
@@ -940,7 +935,6 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-15",
-    imagen: "/renders/MX80-019.jpg",
     slug: "cople-delantero-derecho-mitad-a",
     nombre: "Cople delantero derecho, mitad A",
     descripcion:
@@ -955,7 +949,6 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-16",
-    imagen: "/renders/MX80-020.jpg",
     slug: "cople-delantero-derecho-mitad-b",
     nombre: "Cople delantero derecho, mitad B",
     descripcion:
@@ -970,7 +963,6 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-17",
-    imagen: "/renders/MX80-021.jpg",
     slug: "cople-delantero-izquierdo-mitad-a",
     nombre: "Cople delantero izquierdo, mitad A",
     descripcion:
@@ -985,7 +977,6 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-18",
-    imagen: "/renders/MX80-022.jpg",
     slug: "cople-delantero-izquierdo-mitad-b",
     nombre: "Cople delantero izquierdo, mitad B",
     descripcion:
@@ -1000,7 +991,6 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-19",
-    imagen: "/renders/MX80-023.jpg",
     slug: "cople-trasero-derecho-mitad-a",
     nombre: "Cople trasero derecho, mitad A",
     descripcion:
@@ -1015,7 +1005,6 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-20",
-    imagen: "/renders/MX80-024.jpg",
     slug: "cople-trasero-derecho-mitad-b",
     nombre: "Cople trasero derecho, mitad B",
     descripcion:
@@ -1030,7 +1019,6 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-21",
-    imagen: "/renders/MX80-025.jpg",
     slug: "cople-trasero-izquierdo-mitad-a",
     nombre: "Cople trasero izquierdo, mitad A",
     descripcion:
@@ -1045,7 +1033,6 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-22",
-    imagen: "/renders/MX80-026.jpg",
     slug: "cople-trasero-izquierdo-mitad-b",
     nombre: "Cople trasero izquierdo, mitad B",
     descripcion:
