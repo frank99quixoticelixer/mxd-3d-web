@@ -21,10 +21,9 @@ import {
 import { prepararMateriales, type MaterialGuardado } from "./resolverPiezas";
 import { DESPIECE_MAXIMO, useVisor, type ZonaVisor } from "./estado";
 import {
-  ES_MARCO,
-  NODO_MARCO_Y_TREN,
   componentesDelBrazo,
   esDescendiente,
+  nodosDeZonaEn,
   nombreBase,
   skuDeNodo,
 } from "./componentes";
@@ -44,39 +43,6 @@ import { LimiteError } from "./LimiteError";
  * Los agarradores y retenedores del marco son fijos: no se animan con el
  * plegado.
  */
-/**
- * Que nodos del GLB forman cada zona.
- *
- * Los brazos se reparten por el sentido de su helice: brazo y brazo_4 montan
- * Propela_CCW, brazo_2 y brazo_3 montan Propela_CW (ver SIGNO_GIRO). Un solo
- * brazo por zona: los cuatro son el mismo numero de parte montado cuatro
- * veces, asi que mostrar dos no aporta nada y estorba.
- *
- * En el GLB v2 el marco y el tren cuelgan del mismo grupo; se separan por
- * nombre con ES_MARCO (ver componentes.ts).
- */
-function nodosDeZonaEn(raiz: THREE.Object3D, zona: ZonaVisor): THREE.Object3D[] {
-  const uno = (nombre: string) => {
-    const nodo = raiz.getObjectByName(nombre);
-    return nodo ? [nodo] : [];
-  };
-  const marcoYTren = raiz.getObjectByName(NODO_MARCO_Y_TREN)?.children ?? [];
-  switch (zona) {
-    case "brazo-cw":
-      return uno("brazo_2");
-    case "brazo-ccw":
-      return uno("brazo");
-    case "tanque":
-      return uno("tanque");
-    case "frente":
-      return uno("frente_dron");
-    case "frame":
-      return marcoYTren.filter((n) => ES_MARCO.test(n.name));
-    case "tren-aterrizaje":
-      return marcoYTren.filter((n) => !ES_MARCO.test(n.name));
-  }
-}
-
 const NOMBRES_BRAZO = ["brazo", "brazo_2", "brazo_3", "brazo_4"] as const;
 
 const COLOR_HOVER = new THREE.Color(COLORES.verdeAcento);

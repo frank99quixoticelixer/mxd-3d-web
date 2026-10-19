@@ -19,6 +19,13 @@ import { normalizarNombre } from "@/lib/texto";
 export type SubpiezaVisor = Pick<Pieza, "sku" | "slug" | "nombre" | "nombresBlender">;
 
 import { ajustarDetalleAlPlaceholder } from "./ajusteTuerca";
+import { urlModelo } from "@/config/modelos3d";
+
+import {
+  GLB_TUERCA_DETALLADA,
+  nodosDeSeleccion,
+  type SeleccionPieza,
+} from "./componentes";
 import { useVisor } from "./estado";
 import { Escenario } from "./Escenario";
 import { LimiteError } from "./LimiteError";
@@ -57,7 +64,7 @@ const AMORTIGUACION_DESPIECE = 4.5;
  * usa en el explorador completo, adaptado aqui a un solo GLB en vez de
  * varias instancias de PiezaEnEscena.
  */
-const URL_TUERCA_DETALLADA = "/models/mx80/piezas/MX80-003_v2.glb";
+const URL_TUERCA_DETALLADA = urlModelo(GLB_TUERCA_DETALLADA);
 const PATRON_TUERCA_PLACEHOLDER = /^sujetador_balanceador/i;
 
 /**
@@ -207,6 +214,7 @@ function emparejarPartesConCatalogo(
 /** Muestra solo la pieza, centrada, girando sobre su eje vertical. */
 function PiezaGirando({
   url,
+  seleccion,
   subpiezas,
   alMedir,
   alDetectarPartes,
@@ -215,6 +223,8 @@ function PiezaGirando({
   girando,
 }: {
   url: string;
+  /** Que nodos del GLB son la pieza (ver componentes.ts). */
+  seleccion: SeleccionPieza;
   /**
    * Subpiezas de catalogo de esta pieza. Sus nodos de primer nivel en el GLB
    * se vuelven clicables y llevan a la ficha de la subpieza tocada.
@@ -240,8 +250,28 @@ function PiezaGirando({
   const giro = useRef<THREE.Group>(null);
   const factorActual = useRef(0);
 
+  // La seleccion llega del servidor como objeto; se compara por contenido
+  // para no rehacer la escena en cada render.
+  const claveSeleccion = JSON.stringify(seleccion);
+
   const { raiz, partes, nodosTuerca, radio, semialto } = useMemo(() => {
-    const copia = gltf.scene.clone(true);
+    // Solo las mallas de la pieza, sacadas del GLB completo. Cada una se
+    // clona sin hijos y con su transformacion del mundo ya aplicada: asi
+    // quedan en su posicion real del dron, sin arrastrar los grupos ni las
+    // escalas de los padres, y todas al mismo nivel para el despiece.
+    gltf.scene.updateMatrixWorld(true);
+    const copia = new THREE.Group();
+    const mallas = new Set<THREE.Object3D>();
+    for (const nodo of nodosDeSeleccion(gltf.scene, JSON.parse(claveSeleccion))) {
+      nodo.traverse((n) => {
+        if ((n as THREE.Mesh).isMesh) mallas.add(n);
+      });
+    }
+    for (const malla of mallas) {
+      const clon = malla.clone(false);
+      malla.matrixWorld.decompose(clon.position, clon.quaternion, clon.scale);
+      copia.add(clon);
+    }
     const caja = new THREE.Box3().setFromObject(copia);
     const centro = caja.getCenter(new THREE.Vector3());
     copia.position.sub(centro);
@@ -293,10 +323,12 @@ function PiezaGirando({
       raiz: contenedor,
       partes,
       nodosTuerca,
-      radio: tamano.length() / 2,
-      semialto: tamano.y / 2,
+      // Sin mallas (la seleccion no encontro nada) la caja queda vacia y el
+      // tamanio infinito; un radio fijo evita que la camara se pierda.
+      radio: copia.children.length > 0 ? tamano.length() / 2 : 1,
+      semialto: copia.children.length > 0 ? tamano.y / 2 : 0.5,
     };
-  }, [gltf]);
+  }, [gltf, claveSeleccion]);
 
   // Que parte de primer nivel corresponde a que subpieza del catalogo, para
   // resolver el clic. Separado del useMemo de arriba porque no depende del
@@ -481,6 +513,7 @@ function PiezaGirando({
 
 export function EscenaPieza({
   url,
+  seleccion,
   subpiezas = [],
   despiece = false,
   girando = true,
@@ -488,6 +521,7 @@ export function EscenaPieza({
   alPasarSobreSubpieza,
 }: {
   url: string;
+  seleccion: SeleccionPieza;
   /** Subpiezas de catalogo: activan el clic para ir a la ficha de cada una. */
   subpiezas?: SubpiezaVisor[];
   /** true = mostrar las sub-piezas separadas en vez del ensamble. */
@@ -520,6 +554,7 @@ export function EscenaPieza({
         <Suspense fallback={<Cargando />}>
           <PiezaGirando
             url={url}
+            seleccion={seleccion}
             subpiezas={subpiezas}
             alMedir={setMedidas}
             alDetectarPartes={alDetectarPartes}

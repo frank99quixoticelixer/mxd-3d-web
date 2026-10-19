@@ -170,12 +170,19 @@ Ritmo: checkpoint semanal con demo desplegada en Hostinger.
 
 | Tipo | Ruta en repo | Acceso en produccion |
 |------|-------------|----------------------|
-| GLB visor (brazo, frame) | `apps/vitrina/public/models/mx80/` | estatico `/models/mx80/...` |
-| GLB piezas individuales | `apps/vitrina/public/models/mx80/piezas/` | estatico `/models/mx80/piezas/...` |
+| GLB del dron completo | `apps/vitrina/public/models/mx80/` | estatico `/models/mx80/...` |
+| Tuerca detallada del balanceador | `apps/vitrina/public/models/mx80/piezas/MX80-003_v2.glb` | estatico; lo unico que el GLB completo no trae |
 | GLB/STL descargas | `apps/interna/descargas/<SKU>/` | estatico `/downloads/...`, **solo en interna** |
 | Manual de usuario PDF | `apps/vitrina/public/manuales/mx80/` | estatico `/manuales/mx80/...` (publico) |
 | PDFs fichas tecnicas | generados en el momento por `@react-pdf/renderer` | API `/api/ficha/...`, **solo en interna** |
 | Renders JPG | `apps/vitrina/public/renders/` | estatico `/renders/...` |
+
+**Un solo GLB para todo lo que se muestra** (ADR 0004). La portada usa el
+GLB completo y la ficha de cada pieza saca de el sus nodos (`seleccionDePieza`
+y `nodosDeSeleccion` en `features/viewer/componentes.ts`). No hay GLB por
+pieza. La unica excepcion es el interior de la tuerca del balanceador
+(`MX80-003_v2.glb`), que el GLB completo no trae. Una pieza nueva necesita
+sus `nombresBlender` en `data/mx80.ts`, no un archivo.
 
 Las descargas de modelos 3D (56 archivos, 65 MB) son **solo de interna**
 (ADR 0003). Viven en `apps/interna/descargas/`, en git, y el script de espejo
@@ -216,12 +223,13 @@ anula el filtro LFS para todos los GLB dentro de ella:
 
 Flujo para actualizar un modelo:
 
-1. Exporta el GLB desde Blender con Draco, nombre `{SKU}_v{n}.glb`.
-2. Copia el archivo a `apps/vitrina/public/models/mx80/piezas/` (o a `mx80/`
-   si es el ensamble principal).
+1. Exporta el GLB del dron completo desde Blender. Ya no se exportan GLB por
+   pieza (ADR 0004): la ficha de cada pieza sale de este mismo archivo.
+2. Optimizalo y copialo a `apps/vitrina/public/models/mx80/` con nombre
+   versionado (`MX80_completo_v{n}_web.glb`).
 3. Verifica que el filtro no aplica LFS:
    ```
-   git check-attr filter apps/vitrina/public/models/mx80/piezas/MX80-007_v2.glb
+   git check-attr filter apps/vitrina/public/models/mx80/MX80_completo_v4_web.glb
    # debe decir: filter: unspecified
    ```
 4. Si dice `filter: lfs`, NO hagas `git add`. Algo sobreescribio el
@@ -245,7 +253,7 @@ Flujo para actualizar un modelo:
    comprimir viven en Drive, no en `public/`.
 6. Stagea solo ese archivo:
    ```
-   git add apps/vitrina/public/models/mx80/piezas/MX80-007_v2.glb
+   git add apps/vitrina/public/models/mx80/MX80_completo_v4_web.glb
    ```
 7. Commit y push.
 
@@ -258,7 +266,7 @@ Siempre stagea por archivo o carpeta explicita:
 
 ```
 git add apps/vitrina/src/data/mx80.ts
-git add apps/vitrina/public/models/mx80/piezas/MX80-007_v2.glb
+git add apps/vitrina/public/models/mx80/MX80_completo_v4_web.glb
 git add apps/pedidos/src/app/page.tsx
 ```
 
@@ -383,8 +391,8 @@ porque terminan solos.
 - Slugs kebab-case sin acentos.
 - Sin emojis en UI ni en documentos.
 - Verificacion antes de afirmar: no se dice "listo" sin correr el comando.
-- Nombres de GLB: `{SKU}_v{n}.glb` para piezas, nombre descriptivo para
-  ensambles (`MX80_brazo_CW_web.glb`, `frame_MX80_v3_web.glb`).
+- Nombre del GLB: `MX80_completo_v{n}_web.glb`. Es el unico modelo del sitio
+  (mas la tuerca detallada `piezas/MX80-003_v2.glb`).
 - La version del GLB sube cuando reexportas desde Blender. El codigo apunta
   al nombre en `apps/vitrina/src/config/modelos3d.ts`; cambia solo ahi.
 

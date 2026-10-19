@@ -1,5 +1,7 @@
 import type * as THREE from "three";
 
+import { normalizarNombre as normalizar } from "@/lib/texto";
+
 import type { ZonaVisor } from "./estado";
 
 /**
@@ -260,4 +262,175 @@ export function componenteDeMalla(
     comps.find((c) => c.nodos.some((nodo) => esDescendiente(malla, nodo))) ??
     null
   );
+}
+
+/**
+ * Que nodos del GLB forman cada zona.
+ *
+ * Los brazos se reparten por el sentido de su helice: brazo y brazo_4 montan
+ * Propela_CCW, brazo_2 y brazo_3 montan Propela_CW (ver SIGNO_GIRO). Un solo
+ * brazo por zona: los cuatro son el mismo numero de parte montado cuatro
+ * veces, asi que mostrar dos no aporta nada y estorba.
+ *
+ * El marco y el tren cuelgan del mismo grupo; se separan por nombre con
+ * ES_MARCO.
+ */
+export function nodosDeZonaEn(raiz: THREE.Object3D, zona: ZonaVisor): THREE.Object3D[] {
+  const uno = (nombre: string) => {
+    const nodo = raiz.getObjectByName(nombre);
+    return nodo ? [nodo] : [];
+  };
+  const marcoYTren = raiz.getObjectByName(NODO_MARCO_Y_TREN)?.children ?? [];
+  switch (zona) {
+    case "brazo-cw":
+      return uno("brazo_2");
+    case "brazo-ccw":
+      return uno("brazo");
+    case "tanque":
+      return uno("tanque");
+    case "frente":
+      return uno("frente_dron");
+    case "frame":
+      return marcoYTren.filter((n) => ES_MARCO.test(n.name));
+    case "tren-aterrizaje":
+      return marcoYTren.filter((n) => !ES_MARCO.test(n.name));
+  }
+}
+
+/**
+ * Que mostrar de una pieza en el visor de su ficha.
+ *
+ * POR QUE: la ficha ya no carga un GLB por pieza; muestra los nodos de la
+ * pieza dentro del mismo GLB completo de la portada (una sola descarga, que
+ * el navegador ya tiene en cache si se llego desde el visor). Esto dice
+ * cuales nodos son.
+ *
+ * Se arma en el servidor con los datos del catalogo (seleccionDePieza) y se
+ * resuelve en el navegador contra el GLB cargado (nodosDeSeleccion).
+ */
+export interface SeleccionPieza {
+  /**
+   * GLB de donde salen los nodos, relativo a public/. null = el GLB completo.
+   * La unica excepcion es el interior de la tuerca del balanceador, que el GLB
+   * completo no trae (ver URL_TUERCA_DETALLADA en EscenaPieza.tsx).
+   */
+  fuente: string | null;
+  /** La pieza es una zona entera del visor (marco, tanque, tren, frente). */
+  zona: ZonaVisor | null;
+  /** La pieza es un componente del brazo ("motor", "helices"...). */
+  componente: string | null;
+  /** Nombres de nodo de la pieza (sus nombresBlender). */
+  nombres: string[];
+  /** Nombres de nodo de sus subpiezas: el respaldo de un conjunto. */
+  nombresSubpiezas: string[];
+}
+
+/** Modelo detallado de la tuerca del balanceador: lo unico que no trae el GLB completo. */
+export const GLB_TUERCA_DETALLADA = "models/mx80/piezas/MX80-003_v2.glb";
+const SKU_TUERCA = "MX80-001-03";
+
+/**
+ * Seleccion de una pieza. `ancestros` son los SKU de sus piezas padre y
+ * `nombresDescendientes` los nombresBlender de todas sus subpiezas: se usan
+ * cuando la pieza no tiene nombres propios (un conjunto como el tren).
+ */
+export function seleccionDePieza(
+  sku: string,
+  nombresBlender: string[],
+  ancestros: string[],
+  nombresDescendientes: string[],
+): SeleccionPieza {
+  const zona =
+    (Object.entries(SKU_ZONA).find(([, s]) => s === sku)?.[0] as ZonaVisor | undefined) ??
+    null;
+  const componente =
+    Object.entries(SKU_COMPONENTE_BRAZO).find(([, s]) => s === sku)?.[0] ?? null;
+  return {
+    fuente: ancestros.includes(SKU_TUERCA) ? GLB_TUERCA_DETALLADA : null,
+    zona,
+    componente,
+    nombres: nombresBlender,
+    nombresSubpiezas: nombresDescendientes,
+  };
+}
+
+/** true si hay algo que buscar: si no, la ficha no muestra visor. */
+export function seleccionTieneAlgo(s: SeleccionPieza): boolean {
+  return Boolean(
+    s.zona || s.componente || s.nombres.length > 0 || s.nombresSubpiezas.length > 0,
+  );
+}
+
+/** Nombre de nodo como lo deja three.js al cargar el GLB. */
+const sanear = (nombre: string) =>
+  nombre.replace(/\s/g, "_").replace(/[[\].:/]/g, "");
+
+/**
+ * Los nodos con alguno de esos nombres. Primero por nombre exacto: si se
+ * comparara normalizado de entrada, "spacer_balanceador_1" y "_2" serian el
+ * mismo y las dos fichas mostrarian el primero. Solo si nada coincide exacto
+ * se compara normalizado, que absorbe los sufijos de instancia (_1, _01005).
+ *
+ * Una pieza que el dron lleva varias veces (los motores de los cuatro brazos,
+ * 48 tornillos iguales) se muestra una vez: de las coincidencias se queda con
+ * las del primer conjunto en que aparece y, dentro de el, una por nombre.
+ */
+function nodosConNombres(raiz: THREE.Object3D, nombres: string[]): THREE.Object3D[] {
+  if (nombres.length === 0) return [];
+  const exactos = new Set(nombres.map(sanear));
+  const normalizados = new Set(nombres.map(normalizar));
+  const buscar = (coincide: (n: THREE.Object3D) => boolean) => {
+    const encontrados: THREE.Object3D[] = [];
+    raiz.traverse((n) => {
+      if (n !== raiz && n.name && coincide(n)) encontrados.push(n);
+    });
+    return encontrados;
+  };
+  let coincidencias = buscar((n) => exactos.has(n.name));
+  if (coincidencias.length === 0) {
+    coincidencias = buscar((n) => normalizados.has(normalizar(n.name)));
+  }
+  if (coincidencias.length === 0) return [];
+
+  const conjuntoDe = (n: THREE.Object3D) => {
+    let actual = n;
+    while (actual.parent && actual.parent !== raiz) actual = actual.parent;
+    return actual;
+  };
+  const conjunto = conjuntoDe(coincidencias[0]);
+  const vistos = new Set<string>();
+  return coincidencias.filter((n) => {
+    if (conjuntoDe(n) !== conjunto) return false;
+    const clave = normalizar(n.name);
+    if (vistos.has(clave) && !exactos.has(n.name)) return false;
+    vistos.add(clave);
+    return true;
+  });
+}
+
+/**
+ * Los nodos de la seleccion dentro de `raiz`, en este orden:
+ *   1. un componente del brazo (el motor son dos nodos, no un nombre)
+ *   2. los nombres de la propia pieza
+ *   3. la zona entera, para un conjunto cuyos nombres no estan en el GLB
+ *      (el marco del catalogo usa los nombres del GLB v1)
+ *   4. los nombres de sus subpiezas
+ * La carcasa frontal, por ejemplo, se resuelve en el paso 2: si ganara la
+ * zona, su ficha mostraria tambien las camaras del frente.
+ */
+export function nodosDeSeleccion(
+  raiz: THREE.Object3D,
+  s: SeleccionPieza,
+): THREE.Object3D[] {
+  if (s.componente) {
+    const brazo = raiz.getObjectByName("brazo");
+    const comp = brazo
+      ? componentesDelBrazo(brazo).find((c) => c.clave === s.componente)
+      : undefined;
+    if (comp) return comp.nodos;
+  }
+  const propios = nodosConNombres(raiz, s.nombres);
+  if (propios.length > 0) return propios;
+  if (s.zona) return nodosDeZonaEn(raiz, s.zona);
+  return nodosConNombres(raiz, s.nombresSubpiezas);
 }

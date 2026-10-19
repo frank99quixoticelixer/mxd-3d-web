@@ -3,7 +3,8 @@
 import dynamic from "next/dynamic";
 import { useState } from "react";
 
-import { urlModelo } from "@/config/modelos3d";
+import { GLB_FRAME, urlModelo } from "@/config/modelos3d";
+import type { SeleccionPieza } from "./componentes";
 import type { SubpiezaVisor } from "./EscenaPieza";
 
 const EscenaPieza = dynamic(
@@ -20,17 +21,17 @@ const EscenaPieza = dynamic(
 
 /** Visor de una sola pieza: aparece sola, girando. Arrastra para verla desde otro angulo. */
 export function VisorPieza({
-  glb,
-  url,
+  seleccion,
   subpiezas = [],
   nombre,
   className = "",
   sinDespiece = false,
 }: {
-  /** GLB relativo a public/. Se ignora si se pasa "url". */
-  glb?: string;
-  /** URL completa del GLB (p. ej. una subpieza servida por /api/descarga). */
-  url?: string;
+  /**
+   * Que nodos mostrar. Salen del GLB completo del dron (el mismo de la
+   * portada), no de un GLB por pieza: una sola descarga para todo el sitio.
+   */
+  seleccion: SeleccionPieza;
   /**
    * Subpiezas de catalogo: se pueden clickear en el visor para ir directo a
    * su ficha. Las resuelve quien llama, desde el servidor; este componente no
@@ -58,7 +59,8 @@ export function VisorPieza({
     >
       <div className="absolute inset-0 mxd-reticula opacity-60" />
       <EscenaPieza
-        url={url ?? urlModelo(glb ?? "")}
+        url={urlModelo(seleccion.fuente ?? GLB_FRAME)}
+        seleccion={seleccion}
         subpiezas={subpiezas}
         despiece={despiece}
         girando={girando}

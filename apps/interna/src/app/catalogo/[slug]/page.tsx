@@ -7,7 +7,11 @@ import { DescargasMalla } from "@/components/catalogo/DescargasMalla";
 import { BotonAtras } from "@/components/layout/BotonAtras";
 import { MODELO_PREDETERMINADO } from "@/config/modelos3d";
 import { MANUAL_MX80, MANUAL_POR_PIEZA } from "@/data/manual-mx80";
-import { ubicacionDeSku } from "@/features/viewer/componentes";
+import {
+  seleccionDePieza,
+  seleccionTieneAlgo,
+  ubicacionDeSku,
+} from "@/features/viewer/componentes";
 import { VisorPieza } from "@/features/viewer/VisorPieza";
 import {
   obtenerPiezaPorSlug,
@@ -147,6 +151,18 @@ export default async function PaginaPieza({
   const padre = ancestros[ancestros.length - 1];
   // Se resuelven aqui, en el servidor, y bajan por props al visor.
   const subpiezas = catalogo.filter((p) => p.parteDe === pieza.sku);
+  // Que nodos del GLB completo son esta pieza. Un conjunto sin nombres
+  // propios (el tren) se arma con los de todas sus subpiezas.
+  const nombresDescendientes = (sku: string): string[] =>
+    catalogo
+      .filter((p) => p.parteDe === sku)
+      .flatMap((p) => [...p.nombresBlender, ...nombresDescendientes(p.sku)]);
+  const seleccion = seleccionDePieza(
+    pieza.sku,
+    pieza.nombresBlender,
+    ancestros.map((a) => a.sku),
+    nombresDescendientes(pieza.sku),
+  );
   // A donde lleva "Ver en el dron": la pieza misma si el visor la tiene
   // ubicada, si no la mas cercana de sus ancestros (un tornillo del motor
   // abre el motor). Sin ninguna, la vista completa.
@@ -183,11 +199,10 @@ export default async function PaginaPieza({
       </nav>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[1.15fr_1fr]">
-        {/* Solo la pieza, girando. Sin GLB propio se muestra un aviso: el
-            ensamble completo vive en la portada. */}
-        {pieza.glb ? (
+        {/* Solo la pieza, girando, sacada del GLB completo del dron. */}
+        {seleccionTieneAlgo(seleccion) ? (
           <VisorPieza
-            glb={pieza.glb}
+            seleccion={seleccion}
             subpiezas={subpiezas.map(({ sku, slug, nombre, nombresBlender }) => ({
               sku,
               slug,
@@ -200,7 +215,7 @@ export default async function PaginaPieza({
           />
         ) : (
           <div className="flex h-[46vh] min-h-[360px] w-full items-center justify-center rounded-2xl border border-mxd-borde bg-mxd-hueso p-6 text-center text-sm text-mxd-gris lg:h-[62vh]">
-            Esta pieza todavía no tiene modelo 3D propio.
+            Esta pieza todavía no está en el modelo 3D del dron.
           </div>
         )}
 
