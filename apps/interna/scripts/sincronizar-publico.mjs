@@ -14,7 +14,7 @@
  * distinta, para que arrancar `npm run dev` no tarde medio minuto.
  */
 
-import { cp, mkdir, readdir, stat, utimes } from "node:fs/promises";
+import { cp, mkdir, readdir, rm, rmdir, stat, utimes } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -26,6 +26,39 @@ const CARPETAS = ["public", "contenido"];
 
 let copiados = 0;
 let omitidos = 0;
+let borrados = 0;
+
+/**
+ * Borra de `destino` lo que ya no esta en `origen`. Sin esto el espejo solo
+ * crecia: interna seguia sirviendo los GLB por pieza y los renders viejos que
+ * vitrina ya habia quitado. `conservar` son rutas relativas que no vienen de
+ * vitrina (las descargas, que salen de apps/interna/descargas).
+ */
+async function podar(origen, destino, conservar = []) {
+  for (const entrada of await readdir(destino, { withFileTypes: true })) {
+    if (conservar.includes(entrada.name)) continue;
+    const enOrigen = join(origen, entrada.name);
+    const enDestino = join(destino, entrada.name);
+    const infoOrigen = await datos(enOrigen);
+    if (entrada.isDirectory()) {
+      if (infoOrigen?.isDirectory()) {
+        await podar(enOrigen, enDestino);
+      } else {
+        await rm(enDestino, { recursive: true, force: true });
+        borrados += 1;
+      }
+      continue;
+    }
+    if (!infoOrigen) {
+      await rm(enDestino, { force: true });
+      borrados += 1;
+    }
+  }
+  // Una carpeta que quedo vacia tambien sobra.
+  if ((await readdir(destino)).length === 0 && !(await datos(origen))) {
+    await rmdir(destino).catch(() => {});
+  }
+}
 
 /** @param {string} ruta */
 async function datos(ruta) {
@@ -87,6 +120,7 @@ for (const carpeta of hayVitrina ? CARPETAS : []) {
     continue;
   }
   await espejar(origen, join(raizInterna, carpeta));
+  await podar(origen, join(raizInterna, carpeta), carpeta === "public" ? ["downloads"] : []);
 }
 
 // Las descargas GLB/STL de cada pieza son solo de interna: viven en
@@ -97,4 +131,6 @@ if ((await datos(descargas))?.isDirectory()) {
   await espejar(descargas, join(raizInterna, "public", "downloads"));
 }
 
-console.log(`[interna] assets sincronizados: ${copiados} copiados, ${omitidos} sin cambios.`);
+console.log(
+  `[interna] assets sincronizados: ${copiados} copiados, ${omitidos} sin cambios, ${borrados} borrados.`,
+);

@@ -202,7 +202,9 @@ renders y descargas (103 MB). Esos archivos **no se duplican en git**:
 - La fuente de verdad es siempre `apps/vitrina/public/`.
 - `apps/interna/scripts/sincronizar-publico.mjs` los espeja. Lo corren
   `predev` y `prebuild`, asi que `npm run dev` y `npm run build` en interna
-  ya los traen solos. La copia es incremental (compara tamanio y mtime).
+  ya los traen solos. La copia es incremental (compara tamanio y mtime) y
+  es un espejo real: borra de interna lo que vitrina ya no tiene, salvo
+  `public/downloads/`, que sale de `apps/interna/descargas/`.
 - El workflow de deploy corre el script antes de empaquetar, porque el zip
   que sube a Hostinger lleva solo `apps/interna` y alla no hay vitrina.
 
