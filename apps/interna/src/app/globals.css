@@ -26,10 +26,6 @@
 /* ---------------------------------------------------------------
    Base
    --------------------------------------------------------------- */
-html {
-  scroll-behavior: smooth;
-}
-
 body {
   background-color: #ffffff;
   color: var(--color-mxd-tinta);
@@ -136,9 +132,6 @@ canvas {
 @media (prefers-reduced-motion: reduce) {
   .mxd-aparecer {
     animation: none;
-  }
-  html {
-    scroll-behavior: auto;
   }
 }
 

@@ -19,6 +19,9 @@ import {
   urlModelo,
 } from "@/config/modelos3d";
 import { prepararMateriales, type MaterialGuardado } from "./resolverPiezas";
+// Importarlo (y no solo construirBVH) aplica el parche de raycast acelerado
+// de three-mesh-bvh por su efecto secundario: ver el comentario en bvh.ts.
+import { construirBVH } from "./bvh";
 import { DESPIECE_MAXIMO, useVisor, type ZonaVisor } from "./estado";
 import {
   componentesDelBrazo,
@@ -363,6 +366,11 @@ function ChasisPlegable({
   const { raiz, brazos, marco, tanque, tren, frente, radio, semialto } =
     useMemo(() => {
     const copia = gltf.scene.clone(true);
+    // Arbol de limites por malla: sin esto, resolver que pieza esta bajo el
+    // cursor prueba el rayo triangulo por triangulo en cada "pointermove" del
+    // navegador (no por cuadro), y eso es lo que se siente como lentitud al
+    // pasar el mouse o al arrastrar para girar — ver bvh.ts.
+    construirBVH(copia);
 
     const brazos: Brazo[] = NOMBRES_BRAZO.map((nombre) => {
       const objeto = copia.getObjectByName(nombre) as THREE.Object3D;
@@ -1215,6 +1223,13 @@ function ChasisPlegable({
     <primitive
       object={raiz}
       onPointerMove={(evento: ThreeEvent<PointerEvent>) => {
+        // Con un boton presionado el usuario esta arrastrando para girar,
+        // desplazar o hacer zoom (OrbitControls), no pasando el cursor para
+        // ver que hay: resolver y repintar el resaltado en cada uno de esos
+        // movimientos es trabajo de sobra que no se nota (el resaltado
+        // anterior se queda fijo, que es justo lo que se espera mientras se
+        // gira la camara).
+        if (evento.buttons !== 0) return;
         // R3F llama a este manejador una vez por cada malla atravesada por el
         // rayo, empezando por la mas cercana, que puede ser una pieza oculta
         // de otra zona. Se decide una sola vez con todas las intersecciones y
@@ -1225,6 +1240,10 @@ function ChasisPlegable({
       }}
       onPointerDown={(evento: ThreeEvent<PointerEvent>) => {
         inicioPulsado.current = { x: evento.clientX, y: evento.clientY };
+        // Empezar a arrastrar apaga el resaltado: si no, lo que estaba
+        // iluminado al presionar se queda pintado durante todo el giro,
+        // porque onPointerMove ya no lo actualiza mientras se arrastra.
+        resaltar(null);
       }}
       onPointerOut={() => resaltar(null)}
       onClick={(evento: ThreeEvent<MouseEvent>) => {
