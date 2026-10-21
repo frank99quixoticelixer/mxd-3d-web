@@ -359,10 +359,14 @@ zip de interna y las sirve `/api/descargas`; no hay que subir nada por FTP.
   con un 503 (npm instala react y next fuera de la carpeta de la app y el output
   standalone no los encuentra en runtime), y la razon de que los workflows
   empaqueten cada app aislada.
-- **Las fichas PDF fallan en produccion.** Cuando existian en vitrina,
-  `/api/ficha/completo` y `/api/ficha/pieza/[sku]` devolvian 500 en
-  mxddrone.com; en local devuelven 200. El problema es del entorno de Hostinger,
-  no del codigo. Sigue sin resolver, ahora en interna.
+- **Hostinger instala solo lo que el trazado de Next marca como usado.** Lo
+  que una libreria carga en tiempo de ejecucion queda fuera y falla solo en
+  produccion. Les paso a las fichas PDF (500 con "Cannot find module
+  .../pdfkit/js/standard-fonts/Helvetica.cjs"): se arreglo agregando esos
+  archivos en `outputFileTracingIncludes` de `apps/interna/next.config.mjs`.
+  Las claves de ese objeto son globs: `"/api/ficha/pieza/[sku]"` no coincide
+  con su ruta porque `[sku]` se lee como clase de caracteres; se usa
+  `"/api/ficha/**"`.
 - **`@react-pdf/renderer` sigue declarado en vitrina y ya nada lo usa.**
   Quitarlo regenera el `package-lock.json`, que es la entrada del build, asi
   que merece su propio commit.
