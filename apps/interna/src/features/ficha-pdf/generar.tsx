@@ -41,7 +41,34 @@ function subpiezasDe(piezas: Pieza[]): Map<string, Pieza[]> {
   return mapa;
 }
 
+/**
+ * Si algo falla al generar, responde 500 CON el mensaje del error en lugar de
+ * un 500 vacio. En Hostinger no hay acceso a los logs del servidor y las
+ * fichas fallaban sin dejar rastro. Interna esta detras de contrasena
+ * (proxy.ts): el detalle solo lo ve el equipo.
+ */
 export async function respuestaPdf(
+  alcance: Alcance,
+  origen: string,
+  nombreBase: string,
+): Promise<Response> {
+  try {
+    return await generarPdf(alcance, origen, nombreBase);
+  } catch (error) {
+    console.error("[ficha-pdf]", error);
+    const pila = error instanceof Error ? (error.stack ?? "").split("\n").slice(1, 8) : [];
+    const detalle =
+      error instanceof Error
+        ? [`${error.name}: ${error.message}`, ...pila].join("\n")
+        : String(error);
+    return new Response(`No se pudo generar la ficha PDF.\n\n${detalle}`, {
+      status: 500,
+      headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
+    });
+  }
+}
+
+async function generarPdf(
   alcance: Alcance,
   origen: string,
   nombreBase: string,
