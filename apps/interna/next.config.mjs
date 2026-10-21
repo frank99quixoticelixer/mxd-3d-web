@@ -19,6 +19,23 @@ const politicaContenido = [
   "frame-ancestors 'none'",
 ].join("; ");
 
+/**
+ * Archivos que las fichas PDF leen del disco en tiempo de ejecucion y que el
+ * trazado de Next no detecta solo.
+ *
+ * Hostinger no instala node_modules completo: copia lo que Next marca como
+ * usado. pdfkit carga sus fuentes estandar (Helvetica, Courier...) y su perfil
+ * de color con rutas armadas en tiempo de ejecucion, asi que quedaban fuera y
+ * las fichas fallaban con "Cannot find module .../standard-fonts/Helvetica.cjs"
+ * en produccion, aunque en local funcionaban.
+ */
+const ARCHIVOS_FICHA_PDF = [
+  "./public/brand/logo-mxd.png",
+  "./public/renders/**",
+  "./node_modules/pdfkit/js/standard-fonts/*.cjs",
+  "./node_modules/pdfkit/js/data/*",
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -41,10 +58,10 @@ const nextConfig = {
 
   outputFileTracingIncludes: {
     // Las descargas se leen del disco en cada peticion (ver su route.ts).
-    "/api/descargas/[sku]/[archivo]": ["./descargas/**"],
-    "/api/ficha/pieza/[sku]": ["./public/brand/logo-mxd.png", "./public/renders/**"],
-    "/api/ficha/seccion/[seccion]": ["./public/brand/logo-mxd.png", "./public/renders/**"],
-    "/api/ficha/completo": ["./public/brand/logo-mxd.png", "./public/renders/**"],
+    "/api/descargas/**": ["./descargas/**"],
+    // Las claves son globs (picomatch): "[sku]" se leeria como clase de
+    // caracteres y no coincidiria con la ruta, por eso va "**".
+    "/api/ficha/**": ARCHIVOS_FICHA_PDF,
   },
 
   async redirects() {
