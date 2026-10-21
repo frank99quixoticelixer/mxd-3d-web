@@ -108,12 +108,18 @@ jobs:
           echo "::error::Timeout esperando el build"
           exit 1
 
-      - name: Verificar que el sitio responde
+      # Interna esta detras de autenticacion basica (src/proxy.ts), asi que sin
+      # credenciales lo correcto es 401. Un 200 querria decir que el sitio quedo
+      # abierto a cualquiera; un 503, que faltan INTERNA_USUARIO e INTERNA_CLAVE
+      # en hPanel (el sitio queda cerrado a proposito hasta definirlas).
+      - name: Verificar que el sitio pide contrasena
         run: |
           sleep 5
           CODE=$(curl -sS -o /dev/null -w "%{http_code}" "https://$DOMAIN/")
-          echo "HTTP status: $CODE"
-          if [ "$CODE" != "200" ]; then
-            echo "::error::El sitio no responde 200 despues del deploy"
-            exit 1
-          fi
+          echo "HTTP status sin credenciales: $CODE"
+          case "$CODE" in
+            401) echo "Autenticacion activa." ;;
+            503) echo "::warning::Interna responde 503: faltan INTERNA_USUARIO e INTERNA_CLAVE en hPanel. El sitio queda cerrado hasta definirlas y reiniciar." ;;
+            200) echo "::error::Interna responde 200 sin contrasena: el sitio quedo abierto."; exit 1 ;;
+            *)   echo "::error::Respuesta inesperada ($CODE) despues del deploy"; exit 1 ;;
+          esac
