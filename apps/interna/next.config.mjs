@@ -32,7 +32,7 @@ const politicaContenido = [
 const ARCHIVOS_FICHA_PDF = [
   "./public/brand/logo-mxd.png",
   "./public/renders/**",
-  "./node_modules/pdfkit/js/standard-fonts/*.cjs",
+  "./node_modules/pdfkit/js/standard-fonts/**/*.cjs",
   "./node_modules/pdfkit/js/data/*",
 ];
 
