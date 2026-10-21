@@ -3,10 +3,12 @@ import INDICE from "@/data/descargas-mx80.json";
 /**
  * Descargas por pieza (GLB y STL).
  *
- * Los archivos viven en public/downloads/<SKU>/<SKU>.glb|.stl y se sirven
- * como estaticos directamente (sin API route). El indice JSON lo genera
- * brazo_completo/exportar_descargas.py junto con los archivos; sirve para
- * que la interfaz solo ofrezca botones de lo que existe.
+ * Los archivos viven en apps/interna/descargas/<SKU>/<SKU>.glb|.stl y se
+ * sirven por la ruta /api/descargas, que pasa por la contrasena de proxy.ts.
+ * No van en public/: en Hostinger esos archivos los entrega el servidor
+ * estatico sin pasar por la app y quedaban abiertos. El indice JSON lo genera
+ * brazo_completo/exportar_descargas.py junto con los archivos; sirve para que
+ * la interfaz solo ofrezca botones de lo que existe.
  *
  * Este modulo no toca el disco, asi que es seguro importarlo desde componentes
  * de cliente.
@@ -23,7 +25,7 @@ export function descargasDe(sku: string): Partial<Record<FormatoDescarga, number
 }
 
 export function urlDescarga(sku: string, formato: FormatoDescarga): string {
-  return `/downloads/${sku}/${sku}.${formato}`;
+  return `/api/descargas/${sku}/${sku}.${formato}`;
 }
 
 export function tamanoLegible(bytes: number): string {

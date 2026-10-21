@@ -32,7 +32,7 @@ let borrados = 0;
  * Borra de `destino` lo que ya no esta en `origen`. Sin esto el espejo solo
  * crecia: interna seguia sirviendo los GLB por pieza y los renders viejos que
  * vitrina ya habia quitado. `conservar` son rutas relativas que no vienen de
- * vitrina (las descargas, que salen de apps/interna/descargas).
+ * vitrina.
  */
 async function podar(origen, destino, conservar = []) {
   for (const entrada of await readdir(destino, { withFileTypes: true })) {
@@ -120,15 +120,10 @@ for (const carpeta of hayVitrina ? CARPETAS : []) {
     continue;
   }
   await espejar(origen, join(raizInterna, carpeta));
-  await podar(origen, join(raizInterna, carpeta), carpeta === "public" ? ["downloads"] : []);
-}
-
-// Las descargas GLB/STL de cada pieza son solo de interna: viven en
-// apps/interna/descargas (en git) y se publican aqui como /downloads. No estan
-// en vitrina porque todo lo de su public/ se puede pedir por URL.
-const descargas = join(raizInterna, "descargas");
-if ((await datos(descargas))?.isDirectory()) {
-  await espejar(descargas, join(raizInterna, "public", "downloads"));
+  // Sin excepciones: las descargas ya no van en public/ (las sirve
+  // /api/descargas desde apps/interna/descargas), asi que una carpeta
+  // public/downloads de antes tambien se borra.
+  await podar(origen, join(raizInterna, carpeta));
 }
 
 console.log(
