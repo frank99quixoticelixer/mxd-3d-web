@@ -27,9 +27,11 @@ puede pedir por URL.
 
 - Se quitaron `DescargasMalla`, `lib/descargas.ts` y el indice
   `data/descargas-mx80.json` de la vitrina.
-- Interna sigue ofreciendo las descargas, igual que antes.
-- El zip de interna excluye `descargas/` porque ya van copiadas en
-  `public/downloads/`.
+- Interna sigue ofreciendo las descargas.
+- Actualizacion 2026-10-20: tampoco pueden ir en `public/` de interna. En
+  Hostinger esos archivos no pasan por `proxy.ts` y se descargaban sin
+  contrasena. Ahora las entrega la ruta `/api/descargas/[sku]/[archivo]`
+  desde `apps/interna/descargas/`, y el zip de interna incluye esa carpeta.
 - Cuando exista pedidos, decidir si ofrece descargas y de que formato.
 
 ## Alternativas descartadas

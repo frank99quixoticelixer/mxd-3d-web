@@ -172,7 +172,7 @@ Ritmo: checkpoint semanal con demo desplegada en Hostinger.
 |------|-------------|----------------------|
 | GLB del dron completo | `apps/vitrina/public/models/mx80/` | estatico `/models/mx80/...` |
 | Tuerca detallada del balanceador | `apps/vitrina/public/models/mx80/piezas/MX80-003_v2.glb` | estatico; lo unico que el GLB completo no trae |
-| GLB/STL descargas | `apps/interna/descargas/<SKU>/` | estatico `/downloads/...`, **solo en interna** |
+| GLB/STL descargas | `apps/interna/descargas/<SKU>/` | ruta `/api/descargas/...`, **solo en interna, con contrasena** |
 | Manual de usuario PDF | `apps/vitrina/public/manuales/mx80/` | estatico `/manuales/mx80/...` (publico) |
 | PDFs fichas tecnicas | generados en el momento por `@react-pdf/renderer` | API `/api/ficha/...`, **solo en interna** |
 | Renders JPG | `apps/vitrina/public/renders/` | estatico `/renders/...` |
@@ -185,10 +185,12 @@ pieza. La unica excepcion es el interior de la tuerca del balanceador
 sus `nombresBlender` en `data/mx80.ts`, no un archivo.
 
 Las descargas de modelos 3D (56 archivos, 65 MB) son **solo de interna**
-(ADR 0003). Viven en `apps/interna/descargas/`, en git, y el script de espejo
-de interna las publica en su `public/downloads/`. No pueden volver a
-`apps/vitrina/public/`: todo lo que esta ahi se puede pedir por URL aunque no
-haya boton.
+(ADR 0003). Viven en `apps/interna/descargas/`, en git, y las entrega la ruta
+`/api/descargas/[sku]/[archivo]`, que pasa por la contrasena. No pueden ir en
+ningun `public/`: **en Hostinger los archivos de `public/` los entrega su
+servidor estatico sin pasar por la app, asi que `proxy.ts` no los protege.**
+Se comprobo en produccion: `/downloads/...` respondia 200 sin contrasena
+mientras las paginas respondian 503.
 
 Los datos del manual de usuario que muestra la vitrina estan en
 `apps/vitrina/src/data/manual-mx80.ts`, con la pagina de donde sale cada uno.
@@ -203,8 +205,7 @@ renders y descargas (103 MB). Esos archivos **no se duplican en git**:
 - `apps/interna/scripts/sincronizar-publico.mjs` los espeja. Lo corren
   `predev` y `prebuild`, asi que `npm run dev` y `npm run build` en interna
   ya los traen solos. La copia es incremental (compara tamanio y mtime) y
-  es un espejo real: borra de interna lo que vitrina ya no tiene, salvo
-  `public/downloads/`, que sale de `apps/interna/descargas/`.
+  es un espejo real: borra de interna lo que vitrina ya no tiene.
 - El workflow de deploy corre el script antes de empaquetar, porque el zip
   que sube a Hostinger lleva solo `apps/interna` y alla no hay vitrina.
 
@@ -306,7 +307,7 @@ Rama de trabajo: `dev` (o ramas por feature). Merge a `main` dispara el
 redeploy en Hostinger.
 
 Las descargas GLB/STL estan en git, en `apps/interna/descargas/`. Viajan en el
-zip de interna (ya copiadas a `public/downloads`) y no hay que subir nada por FTP.
+zip de interna y las sirve `/api/descargas`; no hay que subir nada por FTP.
 
 ## Estado y pendientes
 

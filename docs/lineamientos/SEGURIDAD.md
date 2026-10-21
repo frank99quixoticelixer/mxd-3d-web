@@ -46,6 +46,12 @@ y buscarlo igual (procedimiento en CLAUDE.md).
   carpeta permitida (sin `../`).
 - Nunca se sirven archivos de fabricacion (`.blend`, `.step`, `.stp`) desde
   ninguna app publica.
+- **`public/` es publico en todas las apps, incluida interna.** En Hostinger
+  esos archivos los entrega su servidor estatico sin pasar por la app, asi que
+  `proxy.ts` no los protege. Algo que deba ir detras de la contrasena se sirve
+  con una ruta de API que lo lee de una carpeta fuera de `public/` (ejemplo:
+  `/api/descargas` en interna). Se descubrio en produccion: las descargas de
+  interna respondian 200 sin contrasena.
 
 ## 3. Cabeceras
 

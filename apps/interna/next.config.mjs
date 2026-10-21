@@ -40,6 +40,8 @@ const nextConfig = {
     .filter(Boolean),
 
   outputFileTracingIncludes: {
+    // Las descargas se leen del disco en cada peticion (ver su route.ts).
+    "/api/descargas/[sku]/[archivo]": ["./descargas/**"],
     "/api/ficha/pieza/[sku]": ["./public/brand/logo-mxd.png", "./public/renders/**"],
     "/api/ficha/seccion/[seccion]": ["./public/brand/logo-mxd.png", "./public/renders/**"],
     "/api/ficha/completo": ["./public/brand/logo-mxd.png", "./public/renders/**"],
