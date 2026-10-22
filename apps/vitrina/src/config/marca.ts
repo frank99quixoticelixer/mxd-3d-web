@@ -58,6 +58,8 @@ export const COLORES = {
   grisTexto: "#5C6B66",
   /** Texto principal */
   tinta: "#0D1512",
+  /** Resalta el tanque en el visor: el verde de acento no contrasta sobre su color. */
+  rojoAlerta: "#EF4444",
 } as const;
 
 /**

@@ -6,6 +6,8 @@
    Si cambias un color aqui, cambialo tambien alla.
    --------------------------------------------------------------- */
 @theme {
+  --color-mxd-fondo: #ffffff;
+
   --color-mxd-verde: #0f8a4c;
   --color-mxd-verde-oscuro: #0a5f36;
   --color-mxd-verde-claro: #e9f5ee;
@@ -24,13 +26,58 @@
 }
 
 /* ---------------------------------------------------------------
+   Modo claro / oscuro / automatico.
+   data-theme="dark"  -> oscuro forzado (SelectorTema).
+   data-theme="light" -> claro forzado (SelectorTema).
+   sin atributo       -> "automatico", sigue prefers-color-scheme.
+   --------------------------------------------------------------- */
+:root {
+  color-scheme: light dark;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-mxd-fondo: #0b1210;
+  --color-mxd-hueso: #121a17;
+  --color-mxd-borde: #223029;
+  --color-mxd-gris: #8a9a94;
+  --color-mxd-tinta: #eef3f0;
+  --color-mxd-verde-claro: #123524;
+  --color-mxd-verde-acento: #34d399;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-mxd-fondo: #0b1210;
+    --color-mxd-hueso: #121a17;
+    --color-mxd-borde: #223029;
+    --color-mxd-gris: #8a9a94;
+    --color-mxd-tinta: #eef3f0;
+    --color-mxd-verde-claro: #123524;
+    --color-mxd-verde-acento: #34d399;
+  }
+}
+
+/* ---------------------------------------------------------------
    Base
    --------------------------------------------------------------- */
 body {
-  background-color: #ffffff;
+  background-color: var(--color-mxd-fondo);
   color: var(--color-mxd-tinta);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body {
+    transition: none;
+  }
 }
 
 /* Estado de foco visible y consistente (accesibilidad por teclado). */
@@ -67,9 +114,9 @@ canvas {
   background:
     radial-gradient(
       ellipse 120% 80% at 50% 25%,
-      #ffffff 0%,
+      var(--color-mxd-fondo) 0%,
       var(--color-mxd-hueso) 55%,
-      #eef2f0 100%
+      var(--color-mxd-borde) 100%
     );
 }
 

@@ -27,7 +27,7 @@ export function DescargasMalla({
       <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
         Archivos 3D
       </h2>
-      <ul className="mt-3 divide-y divide-mxd-borde rounded-xl border border-mxd-borde bg-white">
+      <ul className="mt-3 divide-y divide-mxd-borde rounded-xl border border-mxd-borde bg-mxd-fondo">
         {renglones.map((p) => {
           const descargas = descargasDe(p.sku);
           return (

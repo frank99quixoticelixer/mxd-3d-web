@@ -70,7 +70,7 @@ export default function PaginaCatalogo() {
                 {total > 0 ? (
                   <a
                     href={`/api/ficha/seccion/${seccion}`}
-                    className="flex h-full flex-col justify-between rounded-xl border border-mxd-borde bg-white px-4 py-3 transition-colors hover:border-mxd-verde"
+                    className="flex h-full flex-col justify-between rounded-xl border border-mxd-borde bg-mxd-fondo px-4 py-3 transition-colors hover:border-mxd-verde"
                   >
                     <span className="text-sm font-semibold text-mxd-tinta">
                       {ETIQUETAS_SECCION[seccion]}

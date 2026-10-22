@@ -49,6 +49,8 @@ import { LimiteError } from "./LimiteError";
 const NOMBRES_BRAZO = ["brazo", "brazo_2", "brazo_3", "brazo_4"] as const;
 
 const COLOR_HOVER = new THREE.Color(COLORES.verdeAcento);
+/** El tanque comparte tono con el verde de acento: ese hover no se nota encima. */
+const COLOR_HOVER_TANQUE = new THREE.Color(COLORES.rojoAlerta);
 /** Brazos y marco: piezas grandes y claras, con poco tinte basta. */
 const INTENSIDAD_HOVER = 0.7;
 /** Tanque, tren y frente son oscuros o blancos: necesitan mas tinte para notarse. */
@@ -82,6 +84,8 @@ interface Objetivo {
   /** Solo en la capa 1: la zona en la que entra el clic. */
   zona: ZonaVisor | null;
   intensidad: number;
+  /** Color del resaltado; por defecto COLOR_HOVER (ver resaltar). */
+  color?: THREE.Color;
 }
 
 /** Lo que el visor le avisa a la interfaz sobre el objetivo bajo el cursor. */
@@ -431,15 +435,28 @@ function ChasisPlegable({
    * cursor, aunque dos brazos lleven a la misma zona.
    */
   const conjuntos = useMemo(() => {
-    const lista: { clave: string; zona: ZonaVisor; nodos: THREE.Object3D[]; intensidad: number }[] =
-      brazos.map((b) => ({
+    const lista: {
+      clave: string;
+      zona: ZonaVisor;
+      nodos: THREE.Object3D[];
+      intensidad: number;
+      color?: THREE.Color;
+    }[] = brazos.map((b) => ({
         clave: b.nombre,
         zona: ZONA_DE_BRAZO[b.nombre as (typeof NOMBRES_BRAZO)[number]],
         nodos: [b.objeto],
         intensidad: INTENSIDAD_HOVER,
       }));
     if (marco) lista.push({ clave: "marco", zona: "frame", nodos: marco.objetos, intensidad: INTENSIDAD_HOVER });
-    if (tanque) lista.push({ clave: "tanque", zona: "tanque", nodos: tanque.objetos, intensidad: INTENSIDAD_HOVER_FUERTE });
+    if (tanque) {
+      lista.push({
+        clave: "tanque",
+        zona: "tanque",
+        nodos: tanque.objetos,
+        intensidad: INTENSIDAD_HOVER_FUERTE,
+        color: COLOR_HOVER_TANQUE,
+      });
+    }
     if (tren) lista.push({ clave: "tren", zona: "tren-aterrizaje", nodos: tren.objetos, intensidad: INTENSIDAD_HOVER_FUERTE });
     if (frente) lista.push({ clave: "frente", zona: "frente", nodos: frente.objetos, intensidad: INTENSIDAD_HOVER_FUERTE });
     return lista;
@@ -563,7 +580,7 @@ function ChasisPlegable({
       if (capa === 1) {
         const c = conjuntos.find((x) => x.nodos.some((n) => esDescendiente(malla, n)));
         return c
-          ? { clave: c.clave, nodos: c.nodos, sku: null, zona: c.zona, intensidad: c.intensidad }
+          ? { clave: c.clave, nodos: c.nodos, sku: null, zona: c.zona, intensidad: c.intensidad, color: c.color }
           : null;
       }
       if (capa === 2) {
@@ -603,7 +620,7 @@ function ChasisPlegable({
       }
       const materiales = siguiente ? materialesDe(siguiente.nodos) : [];
       for (const g of materiales) {
-        g.material.emissive.copy(COLOR_HOVER);
+        g.material.emissive.copy(siguiente!.color ?? COLOR_HOVER);
         g.material.emissiveMap = null;
         g.material.emissiveIntensity = siguiente!.intensidad;
         g.material.needsUpdate = true;
