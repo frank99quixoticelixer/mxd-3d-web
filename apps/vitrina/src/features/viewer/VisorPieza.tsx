@@ -71,7 +71,7 @@ export function VisorPieza({
         type="button"
         onClick={() => setGirando((v) => !v)}
         aria-pressed={girando}
-        className="absolute left-3 top-3 rounded-lg border border-mxd-borde bg-white/90 px-3 py-1.5 text-xs font-semibold text-mxd-tinta shadow-sm backdrop-blur transition-colors hover:border-mxd-verde hover:text-mxd-verde"
+        className="absolute left-3 top-3 rounded-lg border border-mxd-borde bg-mxd-fondo/90 px-3 py-1.5 text-xs font-semibold text-mxd-tinta shadow-sm backdrop-blur transition-colors hover:border-mxd-verde hover:text-mxd-verde"
       >
         {girando ? "Detener giro" : "Girar"}
       </button>
@@ -79,7 +79,7 @@ export function VisorPieza({
         <button
           type="button"
           onClick={() => setDespiece((v) => !v)}
-          className="absolute right-3 top-3 rounded-lg border border-mxd-borde bg-white/90 px-3 py-1.5 text-xs font-semibold text-mxd-tinta shadow-sm backdrop-blur transition-colors hover:border-mxd-verde hover:text-mxd-verde"
+          className="absolute right-3 top-3 rounded-lg border border-mxd-borde bg-mxd-fondo/90 px-3 py-1.5 text-xs font-semibold text-mxd-tinta shadow-sm backdrop-blur transition-colors hover:border-mxd-verde hover:text-mxd-verde"
         >
           {despiece ? "Ver ensamblada" : "Ver despiece"}
         </button>

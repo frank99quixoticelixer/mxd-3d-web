@@ -270,7 +270,7 @@ export default async function PaginaPieza({
             <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
               Especificaciones
             </h2>
-            <dl className="mt-3 rounded-xl border border-mxd-borde bg-white px-4">
+            <dl className="mt-3 rounded-xl border border-mxd-borde bg-mxd-fondo px-4">
               <FilaEspecificacion
                 etiqueta="Masa"
                 valor={valorOPendiente(pieza.especificaciones.masa_g, "g")}
@@ -324,7 +324,7 @@ export default async function PaginaPieza({
             <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
               Compras e inventario
             </h2>
-            <dl className="mt-3 rounded-xl border border-mxd-borde bg-white px-4">
+            <dl className="mt-3 rounded-xl border border-mxd-borde bg-mxd-fondo px-4">
               <FilaEspecificacion
                 etiqueta="Número de parte (BOM)"
                 valor={valorOPendiente(pieza.numeroBom)}
@@ -347,7 +347,7 @@ export default async function PaginaPieza({
               <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
                 Según el manual de usuario
               </h2>
-              <dl className="mt-3 rounded-xl border border-mxd-borde bg-white px-4">
+              <dl className="mt-3 rounded-xl border border-mxd-borde bg-mxd-fondo px-4">
                 {delManual.datos.map((d) => (
                   <FilaEspecificacion key={d.etiqueta} etiqueta={d.etiqueta} valor={d.valor} />
                 ))}
@@ -450,7 +450,7 @@ export default async function PaginaPieza({
               <li key={p.sku}>
                 <Link
                   href={`/catalogo/${p.slug}`}
-                  className="flex flex-col rounded-lg border border-mxd-borde bg-white px-4 py-3 transition-colors hover:border-mxd-verde"
+                  className="flex flex-col rounded-lg border border-mxd-borde bg-mxd-fondo px-4 py-3 transition-colors hover:border-mxd-verde"
                 >
                   <span className="font-mono text-[10px] tracking-widest text-mxd-verde">
                     {p.sku}
@@ -475,7 +475,7 @@ export default async function PaginaPieza({
               <li key={p.sku}>
                 <Link
                   href={`/catalogo/${p.slug}`}
-                  className="flex flex-col rounded-lg border border-mxd-borde bg-white px-4 py-3 transition-colors hover:border-mxd-verde"
+                  className="flex flex-col rounded-lg border border-mxd-borde bg-mxd-fondo px-4 py-3 transition-colors hover:border-mxd-verde"
                 >
                   <span className="font-mono text-[10px] tracking-widest text-mxd-verde">
                     {p.sku}

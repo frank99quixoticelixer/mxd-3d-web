@@ -257,7 +257,7 @@ export default async function PaginaPieza({
             <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
               En el dron
             </h2>
-            <dl className="mt-3 rounded-xl border border-mxd-borde bg-white px-4">
+            <dl className="mt-3 rounded-xl border border-mxd-borde bg-mxd-fondo px-4">
               <FilaEspecificacion
                 etiqueta="Se monta en"
                 valor={seccionesTexto(pieza)}
@@ -352,7 +352,7 @@ export default async function PaginaPieza({
               <li key={p.sku}>
                 <Link
                   href={`/catalogo/${p.slug}`}
-                  className="flex flex-col rounded-lg border border-mxd-borde bg-white px-4 py-3 transition-colors hover:border-mxd-verde"
+                  className="flex flex-col rounded-lg border border-mxd-borde bg-mxd-fondo px-4 py-3 transition-colors hover:border-mxd-verde"
                 >
                   <span className="font-mono text-[10px] tracking-widest text-mxd-verde">
                     {p.sku}
@@ -377,7 +377,7 @@ export default async function PaginaPieza({
               <li key={p.sku}>
                 <Link
                   href={`/catalogo/${p.slug}`}
-                  className="flex flex-col rounded-lg border border-mxd-borde bg-white px-4 py-3 transition-colors hover:border-mxd-verde"
+                  className="flex flex-col rounded-lg border border-mxd-borde bg-mxd-fondo px-4 py-3 transition-colors hover:border-mxd-verde"
                 >
                   <span className="font-mono text-[10px] tracking-widest text-mxd-verde">
                     {p.sku}

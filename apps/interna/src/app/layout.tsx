@@ -4,6 +4,7 @@ import "./globals.css";
 import { Encabezado } from "@/components/layout/Encabezado";
 import { PieDePagina } from "@/components/layout/PieDePagina";
 import { MARCA } from "@/config/marca";
+import { scriptTemaInline } from "@/lib/tema";
 
 const urlSitio = process.env.NEXT_PUBLIC_SITIO_URL ?? "http://localhost:3002";
 
@@ -44,7 +45,11 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es-MX" data-scroll-behavior="smooth">
-      <body className="flex min-h-screen flex-col bg-white">
+      <head>
+        {/* Aplica el tema guardado antes de hidratar, para que no parpadee. */}
+        <script dangerouslySetInnerHTML={{ __html: scriptTemaInline() }} />
+      </head>
+      <body className="flex min-h-screen flex-col bg-mxd-fondo">
         <Encabezado />
         <main className="flex-1">{children}</main>
         <PieDePagina />
