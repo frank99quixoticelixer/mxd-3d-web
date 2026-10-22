@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
 import { MARCA } from "@/config/marca";
@@ -48,7 +49,7 @@ export const metadata: Metadata = {
 const correoCotizacion = `mailto:${MARCA.contacto.correo}?subject=${encodeURIComponent(
   "Cotización MX80",
 )}&body=${encodeURIComponent(
-  "Hola, quiero información y cotización del MX80.\n\nNombre:\nCiudad:\nHectáreas a cubrir:\nTeléfono:\n",
+  "Hola, quiero información y cotización del MX80.\n\nNombre:\nCiudad:\nHectáreas que trabajo:\nTeléfono:\n",
 )}`;
 
 export default function PaginaInicio() {
@@ -108,6 +109,17 @@ export default function PaginaInicio() {
         <h2 className="text-center text-2xl font-bold tracking-tight text-mxd-tinta sm:text-3xl">
           Hecho para el campo
         </h2>
+
+        <div className="relative mt-8 aspect-[7/3] w-full overflow-hidden rounded-2xl bg-black">
+          <Image
+            src="/renders/mx80-banner-caracteristicas.png"
+            alt={`${MARCA.nombreLargo} MX80`}
+            fill
+            unoptimized
+            className="object-cover"
+          />
+        </div>
+
         <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {CARACTERISTICAS_MX80.map((c) => (
             <li
@@ -125,11 +137,11 @@ export default function PaginaInicio() {
       <section className="bg-mxd-hueso">
         <div className="mx-auto flex max-w-3xl flex-col items-center gap-5 px-4 py-16 text-center sm:px-6">
           <h2 className="text-2xl font-bold tracking-tight text-mxd-tinta sm:text-3xl">
-            Hablemos de tu terreno.
+            ¿Listo para tener tu MX80?
           </h2>
           <p className="max-w-xl text-sm leading-relaxed text-mxd-gris">
-            Cuéntanos cuántas hectáreas cubres y te armamos una cotización con
-            el MX80.
+            Cuéntanos tu operación y te armamos una cotización del equipo que
+            necesitas.
           </p>
           <a
             href={correoCotizacion}
