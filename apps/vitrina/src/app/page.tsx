@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 
 import { MARCA } from "@/config/marca";
@@ -109,17 +108,6 @@ export default function PaginaInicio() {
         <h2 className="text-center text-2xl font-bold tracking-tight text-mxd-tinta sm:text-3xl">
           Hecho para el campo
         </h2>
-
-        <div className="relative mt-8 aspect-[7/3] w-full overflow-hidden rounded-2xl bg-black">
-          <Image
-            src="/renders/mx80-banner-caracteristicas.png"
-            alt={`${MARCA.nombreLargo} MX80`}
-            fill
-            unoptimized
-            className="object-cover"
-          />
-        </div>
-
         <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {CARACTERISTICAS_MX80.map((c) => (
             <li
