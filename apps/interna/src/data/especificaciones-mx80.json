@@ -211,9 +211,9 @@
   "MX80-004-01": {
    "especificaciones": {
     "masa_g": null,
-    "largo_mm": 771.859,
-    "ancho_mm": 84.96,
-    "alto_mm": 36.842,
+    "largo_mm": 755.97,
+    "ancho_mm": 154.2,
+    "alto_mm": 42.7,
     "material": "Polímero reforzado con fibra de carbono (CFRP), preimpregnado de matriz epóxica",
     "acabado": "Superficie de molde con tejido de carbono visible; recubrimiento transparente con protección UV (propuesto)",
     "tolerancia_mm": null,
@@ -224,11 +224,10 @@
      "Usuario: fibra de carbono, proceso con molde",
      "Hoja del motor: hélice de referencia 63 × 24 y cargas de operación",
      "Propuesta técnica: proceso y requisitos de balanceo",
-     "Cotas: envolvente de brazo/propelas/Propela_CW.PLY (SOLIDWORKS, unidades declaradas en mm)",
-     "Medido en Blender: MX80_completo_new_4_real.blend"
+     "Medido en Blender: MX80_completo_v4_web.glb, nodo Propela_CW_1_1 (modelo de produccion; la medicion anterior usaba MX80_completo_new_4_real.blend, un archivo distinto al de produccion)"
     ],
-    "notas": "Cantidad registrada como 1 hoja de las 2 que arma la helice CW de este brazo (la otra es geometria escaneada por separado, ver render CW_2 en la biblioteca local; mismo numero de parte). Confirmar tamano 63 x 24 in contra la pieza real. Masa pendiente. Cota = UNA pala (771.9 mm); dos palas dan ~1543 mm mas el cubo, consistente con la helice de referencia 63 in.",
-    "longitud_mm": 771.859,
+    "notas": "Cantidad registrada como 1 hoja de las 2 que arma la helice CW de este brazo (la otra es geometria escaneada por separado, ver render CW_2 en la biblioteca local; mismo numero de parte). Confirmar tamano 63 x 24 in contra la pieza real. Masa pendiente. Cotas = envolvente completa del nodo (puede incluir la raiz/zona de montaje, mas ancha y gruesa que la pala en la punta): largo 756.0 mm, ancho (cuerda maxima) 154.2 mm, alto (espesor maximo) 42.7 mm.",
+    "longitud_mm": 755.97,
     "sentido_giro": "CW"
    },
    "categoria": "Propulsión - hélice",
@@ -246,9 +245,9 @@
   "MX80-004-02": {
    "especificaciones": {
     "masa_g": null,
-    "largo_mm": 772,
-    "ancho_mm": 85,
-    "alto_mm": 36.8,
+    "largo_mm": 767.57,
+    "ancho_mm": 130.04,
+    "alto_mm": 48.27,
     "material": "Polímero reforzado con fibra de carbono (CFRP), preimpregnado de matriz epóxica",
     "acabado": "Superficie de molde con tejido de carbono visible; recubrimiento transparente con protección UV (propuesto)",
     "tolerancia_mm": null,
@@ -259,16 +258,15 @@
      "Usuario: fibra de carbono, proceso con molde",
      "Hoja del motor: hélice de referencia 63 × 24 y cargas de operación",
      "Propuesta técnica: proceso y requisitos de balanceo",
-     "Cotas: envolvente de brazo/propelas/Propela_CW.PLY (SOLIDWORKS, unidades declaradas en mm)",
-     "Medido en Blender: MX80_completo_new_4_real.blend"
+     "Medido en Blender: MX80_completo_v4_web.glb, nodo Propela_CCW_2 (modelo de produccion; la medicion anterior usaba MX80_completo_new_4_real.blend, un archivo distinto al de produccion)"
     ],
-    "notas": "Geometria entregada como espejo de una sola hoja escaneada (las 2 copias en el GLB son identicas, rotadas 180 grados entre si: no hay 2 escaneos distintos como en la CW). Se asume mismo material y proceso que la hoja CW por ser la misma familia de pieza; MASA Y COTAS PENDIENTES de medicion propia, no se copian de la CW. Confirmar sentido de giro CCW y numero de parte con Eduardo.",
-    "longitud_mm": 772,
+    "notas": "Geometria entregada como espejo de una sola hoja escaneada (las 2 copias en el GLB son identicas, rotadas 180 grados entre si: no hay 2 escaneos distintos como en la CW). Se asume mismo material y proceso que la hoja CW por ser la misma familia de pieza; MASA PENDIENTE de medicion propia, no se copia de la CW. Confirmar sentido de giro CCW y numero de parte con Eduardo. Cotas = envolvente completa del nodo (puede incluir la raiz/zona de montaje, mas ancha y gruesa que la pala en la punta): largo 767.6 mm, ancho (cuerda maxima) 130.0 mm, alto (espesor maximo) 48.3 mm.",
+    "longitud_mm": 767.57,
     "sentido_giro": "CCW"
    },
    "categoria": "Propulsión - hélice",
    "proceso_fabricacion": "Moldeo por compresión en molde metálico cerrado con preimpregnado de fibra de carbono y curado térmico; recorte y acabado de bordes; balanceo estático y dinámico",
-   "descripcion_funcional": "Hoja de la helice del brazo CW (una de las 2 que arman la helice). Convierte el par del motor en empuje.",
+   "descripcion_funcional": "Hoja de la helice del brazo CCW (una de las 2 que arman la helice). Convierte el par del motor en empuje.",
    "especificaciones_tecnicas": [
     "Sentido de giro: CCW (antihorario; confirmar convencion de observacion)",
     "Mismo tamano y condiciones de operacion de referencia que la hoja CW, por confirmar",
@@ -688,7 +686,7 @@
      "Envolvente: reconstrucción CAD del escaneo del ESC",
      "Cotas: envolvente del escaneo del ESC (pendiente de verificar con calibrador)"
     ],
-    "notas": "Envolvente medida en el escaneo: 156.2 × 84.0 × 44.3 mm (pendiente de verificar con calibrador). Confirmar con la hoja de datos si 300 A es corriente continua o pico. Masa pendiente."
+    "notas": "Envolvente medida en el escaneo: 156.2 × 84.0 × 44.3 mm (pendiente de verificar con calibrador). La hoja de datos del motor (15623-45KV) no especifica que ESC usar; los valores de alimentacion de abajo (voltaje, corriente continua, corriente pico, frecuencia) son requisitos CALCULADOS a partir de las specs del motor, no datos tomados de una hoja del ESC. Falta la hoja de datos propia del ESC 300A para confirmar si 300 A es corriente continua o pico, y para la señal de mando/telemetria/protecciones. Masa pendiente."
    },
    "categoria": "Electrónica de potencia",
    "proceso_fabricacion": "Componente de proveedor",
@@ -803,19 +801,19 @@
   "MX80-011-03": {
    "especificaciones": {
     "masa_g": null,
-    "largo_mm": 388.6,
+    "largo_mm": 468.59,
     "ancho_mm": null,
     "alto_mm": null,
-    "material": "Fibra de carbono (propuesto)",
+    "material": "Aluminio (perfil extruido, aleacion por confirmar)",
     "acabado": null,
     "tolerancia_mm": null,
     "par_apriete_nm": null,
     "proveedor": null,
     "parte_proveedor": null,
     "fuente": [
-     "Medido en Blender: MX80_completo_new_4_real.blend"
+     "Medido en Blender: MX80_completo_v4_web.glb, nodo frame_tubo50_del (modelo de produccion; la medicion anterior usaba MX80_completo_new_4_real.blend y daba 388.6mm, 80mm menos que la longitud real)"
     ],
-    "notas": "2 unidades por dron.",
+    "notas": "2 unidades por dron. Material corregido: es un perfil de aluminio, no fibra de carbono (dato de antes del renombre de la pieza). Longitud corregida: 468.6mm (antes 388.6mm, medido del archivo de Blender equivocado). Seccion 40x60mm confirmada en el GLB de produccion.",
     "ancho_perfil_mm": 40,
     "alto_perfil_mm": 60
    },
@@ -827,19 +825,19 @@
   "MX80-011-04": {
    "especificaciones": {
     "masa_g": null,
-    "largo_mm": 658.6,
+    "largo_mm": 658.59,
     "ancho_mm": null,
     "alto_mm": null,
-    "material": "Fibra de carbono (propuesto)",
+    "material": "Aluminio (perfil extruido, aleacion por confirmar)",
     "acabado": null,
     "tolerancia_mm": null,
     "par_apriete_nm": null,
     "proveedor": null,
     "parte_proveedor": null,
     "fuente": [
-     "Medido en Blender: MX80_completo_new_4_real.blend"
+     "Medido en Blender: MX80_completo_v4_web.glb, nodo frame_tubo69_der (modelo de produccion; confirma el valor ya capturado del archivo anterior)"
     ],
-    "notas": "2 unidades por dron.",
+    "notas": "2 unidades por dron. Material corregido: es un perfil de aluminio, no fibra de carbono (dato de antes del renombre de la pieza). Longitud verificada contra el GLB de produccion: coincide (658.6mm).",
     "ancho_perfil_mm": 40,
     "alto_perfil_mm": 60
    },
@@ -851,9 +849,9 @@
   "MX80-012": {
    "especificaciones": {
     "masa_g": null,
-    "largo_mm": 626.6,
-    "ancho_mm": 467.5,
-    "alto_mm": 447.9,
+    "largo_mm": 519.3,
+    "ancho_mm": 497.7,
+    "alto_mm": 695.9,
     "material": null,
     "acabado": null,
     "tolerancia_mm": null,
@@ -861,10 +859,10 @@
     "proveedor": null,
     "parte_proveedor": null,
     "fuente": [
-     "Medido en Blender: MX80_completo_new_4_real.blend",
+     "Medido en Blender: MX80_completo_v4_web.glb (modelo de produccion; la medicion anterior usaba MX80_completo_new_4_real.blend, un archivo distinto al de produccion)",
      "Confirmado por el usuario (80 L)"
     ],
-    "notas": "Cuerpo del deposito. Bombas, valvulas y accesorios de aspercion pendientes de modelado. Volumen real: 80 L, confirmado por el usuario. El calculo de malla en Blender (bmesh.calc_volume) dio ~1.06 L, claramente erroneo -- el mesh del tanque no es manifold/cerrado, no usar ese metodo para este objeto.",
+    "notas": "Cuerpo del deposito. Bombas, valvulas y accesorios de aspercion pendientes de modelado. Volumen real: 80 L, confirmado por el usuario. Envolvente corregida: el objeto tiene una rotacion por quaternion que la medicion anterior no considero, dando cotas incorrectas. Eje frente/costado del tanque no confirmado (largo_mm y ancho_mm asignados por magnitud, no por orientacion verificada). El calculo de volumen por malla en Blender (bmesh.calc_volume) da ~1.4 L, claramente erroneo -- el mesh del tanque no es manifold/cerrado, no usar ese metodo para este objeto.",
     "volumen_ml": 80000
    },
    "categoria": "Sistema de aspercion",
@@ -1119,10 +1117,10 @@
     "proveedor": null,
     "parte_proveedor": null,
     "fuente": [
-     "Medido en Blender: MX80_completo_new_4_real.blend"
+     "Medido en Blender: MX80_completo_v4_web.glb, nodo M5x51_amarre_pata_01 (modelo de produccion; la medicion anterior usaba MX80_completo_new_4_real.blend y su nombre M5x55, que no coincide con el nombre real del GLB de produccion)"
     ],
-    "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas. Nombre Blender M5x55; bounding box da 60mm (probable que incluya cabeza).",
-    "longitud_mm": 60,
+    "notas": "Longitud nominal M5x51 segun el nombre real del nodo en produccion (antes se usaba M5x55, de otro archivo). Bounding box completo (incluye cabeza): 56.1mm.",
+    "longitud_mm": 51,
     "rosca": "M5"
    },
    "categoria": null,
@@ -1143,9 +1141,9 @@
     "proveedor": null,
     "parte_proveedor": null,
     "fuente": [
-     "Medido en Blender: MX80_completo_new_4_real.blend"
+     "Medido en Blender: MX80_completo_v4_web.glb, nodo M5x65_agarre_tren_01 (modelo de produccion; la medicion anterior usaba MX80_completo_new_4_real.blend y su nombre M5x60, que no coincide con el nombre real del GLB de produccion)"
     ],
-    "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas. Nombre Blender M5x60; bounding box da 65mm (probable que incluya cabeza).",
+    "notas": "Longitud nominal M5x65 segun el nombre real del nodo en produccion (antes se usaba M5x60, de otro archivo; el valor nominal no cambia: 65mm). Bounding box completo (incluye cabeza): 70.0mm.",
     "longitud_mm": 65,
     "rosca": "M5"
    },
@@ -1167,10 +1165,10 @@
     "proveedor": null,
     "parte_proveedor": null,
     "fuente": [
-     "Medido en Blender: MX80_completo_new_4_real.blend"
+     "Medido en Blender: MX80_completo_v4_web.glb, nodo M6x42_travesano_01 (modelo de produccion; la medicion anterior usaba MX80_completo_new_4_real.blend y su nombre M6x50, que no coincide con el nombre real del GLB de produccion)"
     ],
-    "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas. Nombre Blender M6x50; bounding box da 56mm (probable que incluya cabeza).",
-    "longitud_mm": 56,
+    "notas": "Longitud nominal M6x42 segun el nombre real del nodo en produccion (antes se usaba M6x50, de otro archivo -- diferencia real de 8mm, no solo de redondeo). Bounding box completo (incluye cabeza): 48.0mm.",
+    "longitud_mm": 42,
     "rosca": "M6"
    },
    "categoria": null,
@@ -1191,10 +1189,10 @@
     "proveedor": null,
     "parte_proveedor": null,
     "fuente": [
-     "Medido en Blender: MX80_completo_new_4_real.blend"
+     "Medido en Blender: MX80_completo_v4_web.glb, nodo M5x50_cople_01 (modelo de produccion; la medicion anterior usaba MX80_completo_new_4_real.blend y su nombre M5x25, que no coincide con el nombre real del GLB de produccion)"
     ],
-    "notas": "Pieza del tren de aterrizaje: modelada en Blender, pendiente de exportar GLB/STL para el visor 3D y de capturar cotas. Nombre Blender M5x25; bounding box da 30mm (probable que incluya cabeza).",
-    "longitud_mm": 30,
+    "notas": "Longitud nominal M5x50 segun el nombre real del nodo en produccion (antes se usaba M5x25, de otro archivo -- casi la mitad, diferencia real y no de redondeo). Bounding box completo (incluye cabeza): 49.3mm.",
+    "longitud_mm": 50,
     "rosca": "M5"
    },
    "categoria": null,
@@ -1485,10 +1483,10 @@
     "proveedor": null,
     "parte_proveedor": null,
     "fuente": [
-     "Medido en Blender: MX80_completo_new_4_real.blend"
+     "Medido en Blender: MX80_completo_v4_web.glb, nodo tornillo_sujeta_motor_1 (modelo de produccion; la medicion anterior usaba MX80_completo_new_4_real.blend, un archivo distinto al de produccion)"
     ],
-    "notas": "Nombre Blender tornillo_sujeta_motor, sin codigo de rosca identificable. Rosca pendiente de medir. 4 tornillos por soporte de motor.",
-    "longitud_mm": 27.9
+    "notas": "Nombre Blender tornillo_sujeta_motor, sin codigo de rosca identificable. Rosca pendiente de medir. 4 tornillos por soporte de motor. Diametro de cabeza/cuerpo en el bounding box: ~14 mm.",
+    "longitud_mm": 28.22
    },
    "categoria": "Estructura - sujecion",
    "proceso_fabricacion": null,
@@ -1605,6 +1603,30 @@
    "categoria": "Estructura - sujecion",
    "proceso_fabricacion": null,
    "descripcion_funcional": "Arandela de los tornillos M6x10 del retenedor de brazo.",
+   "especificaciones_tecnicas": []
+  },
+  "MX80-005-02": {
+   "especificaciones": {
+    "masa_g": null,
+    "largo_mm": null,
+    "ancho_mm": null,
+    "alto_mm": null,
+    "material": null,
+    "acabado": null,
+    "tolerancia_mm": null,
+    "par_apriete_nm": null,
+    "proveedor": null,
+    "parte_proveedor": null,
+    "fuente": [
+     "Medido en Blender: MX80_completo_v4_web.glb"
+    ],
+    "notas": "Nombre Blender tornillo_m2_sujeta_motor; longitud medida (bounding box, puede incluir cabeza). 6 tornillos por soporte de motor, ademas de los 4 tornillo_sujeta_motor (MX80-005-01).",
+    "rosca": "M2",
+    "longitud_mm": 15.75
+   },
+   "categoria": "Estructura - sujecion",
+   "proceso_fabricacion": null,
+   "descripcion_funcional": "Fija el soporte de motor al motor (6 tornillos M2, distintos de los 4 tornillo_sujeta_motor que fijan el soporte al tubo del brazo).",
    "especificaciones_tecnicas": []
   }
  }

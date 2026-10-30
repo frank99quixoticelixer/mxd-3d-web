@@ -413,14 +413,11 @@ export const PIEZAS_MX80: Pieza[] = [
     descripcion:
       "Pieza que une el motor al extremo del tubo de fibra de carbono y transmite al brazo el empuje y el par de reacción.",
     subsistema: "estructura",
-    nombresBlender: [
-      "Soporte_Motor",
-      "sujetador_motor",
-      "Motor_bracket",
-      // 6 tornillos M2 que fijan el soporte al motor: mismo objeto repetido,
-      // el emparejador ignora el sufijo _1.._6 de cada instancia.
-      "tornillo_m2_sujeta_motor",
-    ],
+    // "tornillo_m2_sujeta_motor" se saco de esta lista: ahora tiene su propio
+    // SKU (MX80-005-02). Mientras vivia aqui, el clic en el visor no
+    // resolvia a ninguna ficha (emparejarPartesConCatalogo solo busca entre
+    // las subpiezas, no en los nombresBlender de la pieza misma).
+    nombresBlender: ["Soporte_Motor", "sujetador_motor", "Motor_bracket"],
     direccionExplosion: [0, -1, 0],
     factorExplosion: 0.21,
     ...datosDeFicha("MX80-005"),
@@ -447,6 +444,21 @@ export const PIEZAS_MX80: Pieza[] = [
     ...datosDeFicha("MX80-005-01"),
     orden: 1,
   },
+  {
+    ...BASE,
+    sku: "MX80-005-02",
+    camposNoAplican: ["costo_equipo", "costo_material", "costo_masa_g", "costo_horas_produccion", "costo_pintura_mxn", "costo_mano_obra_mxn", "material", "acabado", "tolerancia_mm", "proceso_fabricacion", "largo_mm", "ancho_mm", "alto_mm", "numero_tornillos", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    parteDe: "MX80-005",
+    slug: "tornillo-m2-soporte-motor",
+    nombre: "Tornillo M2 del soporte de motor",
+    descripcion:
+      "Tornillo que fija el soporte de motor al motor (6 tornillos M2, distintos de los 4 tornillo_sujeta_motor).",
+    subsistema: "estructura",
+    cantidadPorSeccion: 6,
+    nombresBlender: ["tornillo_m2_sujeta_motor"],
+    ...datosDeFicha("MX80-005-02"),
+    orden: 2,
+  },
 
   // ===================================================================
   // MX80-006  Cubierta de motor
@@ -456,7 +468,7 @@ export const PIEZAS_MX80: Pieza[] = [
     sku: "MX80-006",
     // Se atornilla pero sin par critico documentado: le basta quedar bien
     // sujeta ("apriete manual"). Confirmado con el usuario.
-    camposNoAplican: ["par_apriete_nm", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     imagen: "/renders/MX80-006.jpg",
     slug: "cubierta-motor",
     nombre: "Cubierta de motor",
@@ -552,7 +564,7 @@ export const PIEZAS_MX80: Pieza[] = [
     sku: "MX80-008",
     // Tubo redondo: el diametro/grosor de pared van en diametro_tubo_mm /
     // grosor_pared_mm, no en ancho/alto (serian redundantes con el diametro).
-    camposNoAplican: ["ancho_mm", "alto_mm", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["par_apriete_nm", "numero_tornillos", "ancho_mm", "alto_mm", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     imagen: "/renders/MX80-008.jpg",
     slug: "tubo-fibra-carbono",
     nombre: "Tubo del brazo",
@@ -573,7 +585,7 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-009",
-    camposNoAplican: ["material", "acabado", "par_apriete_nm", "numero_tornillos", "costo_fabricado_inhouse", "costo_equipo", "costo_material", "costo_masa_g", "costo_horas_produccion", "costo_pintura_mxn", "costo_mano_obra_mxn", "rosca", "longitud_mm", "sentido_giro", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["material", "acabado", "par_apriete_nm", "numero_tornillos", "costo_fabricado_inhouse", "costo_equipo", "costo_material", "costo_masa_g", "costo_horas_produccion", "costo_pintura_mxn", "costo_mano_obra_mxn", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     imagen: "/renders/MX80-009.jpg",
     slug: "conjunto-esc-300a",
     nombre: "Conjunto ESC 300A",
@@ -614,7 +626,7 @@ export const PIEZAS_MX80: Pieza[] = [
     sku: "MX80-009-02",
     // Se atornilla pero sin par critico documentado: le basta quedar bien
     // sujeta ("apriete manual"). Confirmado con el usuario.
-    camposNoAplican: ["par_apriete_nm", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     parteDe: "MX80-009",
     slug: "base-esc",
     nombre: "Base del ESC",
@@ -731,7 +743,7 @@ export const PIEZAS_MX80: Pieza[] = [
     sku: "MX80-011-03",
     // Perfil rectangular, no tubo redondo: ancho/alto_perfil_mm reemplazan a
     // ancho_mm/alto_mm (que quedarian redundantes).
-    camposNoAplican: ["ancho_mm", "alto_mm", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["par_apriete_nm", "numero_tornillos", "ancho_mm", "alto_mm", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     parteDe: "MX80-011",
     // No es un tubo: es un perfil de aluminio rectangular. Renombrado a
     // peticion del usuario (antes decia "Tubo del marco").
@@ -742,14 +754,14 @@ export const PIEZAS_MX80: Pieza[] = [
     subsistema: "estructura",
     secciones: ["frame-general"],
     cantidadPorSeccion: 2,
+    // Solo una posicion (del) por version de GLB: con las dos (del+tra)
+    // listadas, la ficha aislada de esta pieza mostraba ambas juntas en vez
+    // de una sola (son el mismo perfil, montado dos veces en el frame).
     nombresBlender: [
       "tubo de 42 step",
-      "tubo de 42 step.001",
       "frame_tubo42_del",
-      "frame_tubo42_tra",
       // GLB v4
       "frame_tubo50_del",
-      "frame_tubo50_tra",
     ],
     imagen: "/renders/MX80-011-03.jpg",
     direccionExplosion: [0, 0, 1],
@@ -762,7 +774,7 @@ export const PIEZAS_MX80: Pieza[] = [
     sku: "MX80-011-04",
     // Perfil rectangular, no tubo redondo: ancho/alto_perfil_mm reemplazan a
     // ancho_mm/alto_mm (que quedarian redundantes).
-    camposNoAplican: ["ancho_mm", "alto_mm", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["par_apriete_nm", "numero_tornillos", "ancho_mm", "alto_mm", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     parteDe: "MX80-011",
     // No es un tubo: es un perfil de aluminio rectangular. Renombrado a
     // peticion del usuario (antes decia "Tubo del marco").
@@ -773,12 +785,10 @@ export const PIEZAS_MX80: Pieza[] = [
     subsistema: "estructura",
     secciones: ["frame-general"],
     cantidadPorSeccion: 2,
-    nombresBlender: [
-      "tubo de 60 step",
-      "tubo de 60 step.001",
-      "frame_tubo69_der",
-      "frame_tubo69_izq",
-    ],
+    // Solo una posicion (der) por version de GLB: con las dos (der+izq)
+    // listadas, la ficha aislada de esta pieza mostraba ambas juntas en vez
+    // de una sola (son el mismo perfil, montado dos veces en el frame).
+    nombresBlender: ["tubo de 60 step", "frame_tubo69_der"],
     imagen: "/renders/MX80-011-04.jpg",
     direccionExplosion: [0, 0, -1],
     factorExplosion: 0.5,
@@ -935,7 +945,7 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-01",
-    camposNoAplican: ["rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["par_apriete_nm", "numero_tornillos", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     slug: "patin-derecho",
     nombre: "Patín derecho",
     descripcion:
@@ -950,7 +960,7 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-02",
-    camposNoAplican: ["rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["par_apriete_nm", "numero_tornillos", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     imagen: "/renders/MX80-013-02.jpg",
     slug: "patin-izquierdo",
     nombre: "Patín izquierdo",
@@ -996,7 +1006,7 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-05",
-    camposNoAplican: ["rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["material", "acabado", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     slug: "cople-delantero-derecho",
     nombre: "Cople delantero derecho",
     descripcion:
@@ -1011,7 +1021,7 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-06",
-    camposNoAplican: ["rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["material", "acabado", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     slug: "cople-delantero-izquierdo",
     nombre: "Cople delantero izquierdo",
     descripcion:
@@ -1026,7 +1036,7 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-07",
-    camposNoAplican: ["rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["material", "acabado", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     slug: "cople-trasero-derecho",
     nombre: "Cople trasero derecho",
     descripcion:
@@ -1041,7 +1051,7 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-08",
-    camposNoAplican: ["rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["material", "acabado", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     slug: "cople-trasero-izquierdo",
     nombre: "Cople trasero izquierdo",
     descripcion:
@@ -1056,7 +1066,7 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-09",
-    camposNoAplican: ["ancho_mm", "alto_mm", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["par_apriete_nm", "numero_tornillos", "ancho_mm", "alto_mm", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     slug: "travesano-delantero",
     nombre: "Travesaño delantero",
     descripcion:
@@ -1071,7 +1081,7 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-10",
-    camposNoAplican: ["ancho_mm", "alto_mm", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["par_apriete_nm", "numero_tornillos", "ancho_mm", "alto_mm", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     slug: "travesano-trasero",
     nombre: "Travesaño trasero",
     descripcion:
@@ -1095,7 +1105,9 @@ export const PIEZAS_MX80: Pieza[] = [
     subsistema: "tren-aterrizaje",
     secciones: ["tren-de-aterrizaje"],
     parteDe: "MX80-013",
-    nombresBlender: ["M5x55_amarre_pata", "M5x51_amarre_pata"],
+    // Nombre real en el GLB de produccion: M5x51_amarre_pata (M5x55 era del
+    // archivo de Blender anterior, ya no vigente).
+    nombresBlender: ["M5x51_amarre_pata", "M5x55_amarre_pata"],
     ...datosDeFicha("MX80-013-11"),
     orden: 11,
   },
@@ -1111,7 +1123,9 @@ export const PIEZAS_MX80: Pieza[] = [
     subsistema: "tren-aterrizaje",
     secciones: ["tren-de-aterrizaje"],
     parteDe: "MX80-013",
-    nombresBlender: ["M5x60_agarre_tren", "M5x65_agarre_tren"],
+    // Nombre real en el GLB de produccion: M5x65_agarre_tren (M5x60 era del
+    // archivo de Blender anterior, ya no vigente).
+    nombresBlender: ["M5x65_agarre_tren", "M5x60_agarre_tren"],
     ...datosDeFicha("MX80-013-12"),
     orden: 12,
   },
@@ -1127,7 +1141,9 @@ export const PIEZAS_MX80: Pieza[] = [
     subsistema: "tren-aterrizaje",
     secciones: ["tren-de-aterrizaje"],
     parteDe: "MX80-013",
-    nombresBlender: ["M6x50_travesano", "M6x42_travesano"],
+    // Nombre real en el GLB de produccion: M6x42_travesano (M6x50 era del
+    // archivo de Blender anterior, ya no vigente).
+    nombresBlender: ["M6x42_travesano", "M6x50_travesano"],
     ...datosDeFicha("MX80-013-13"),
     orden: 13,
   },
@@ -1143,14 +1159,16 @@ export const PIEZAS_MX80: Pieza[] = [
     subsistema: "tren-aterrizaje",
     secciones: ["tren-de-aterrizaje"],
     parteDe: "MX80-013",
-    nombresBlender: ["M5x25_cople", "M5x50_cople"],
+    // Nombre real en el GLB de produccion: M5x50_cople (M5x25 era del
+    // archivo de Blender anterior, ya no vigente -- casi la mitad).
+    nombresBlender: ["M5x50_cople", "M5x25_cople"],
     ...datosDeFicha("MX80-013-14"),
     orden: 14,
   },
   {
     ...BASE,
     sku: "MX80-013-15",
-    camposNoAplican: ["rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["par_apriete_nm", "numero_tornillos", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     slug: "cople-delantero-derecho-mitad-a",
     nombre: "Cople delantero derecho, mitad A",
     descripcion:
@@ -1165,7 +1183,7 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-16",
-    camposNoAplican: ["rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["par_apriete_nm", "numero_tornillos", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     slug: "cople-delantero-derecho-mitad-b",
     nombre: "Cople delantero derecho, mitad B",
     descripcion:
@@ -1180,7 +1198,7 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-17",
-    camposNoAplican: ["rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["par_apriete_nm", "numero_tornillos", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     slug: "cople-delantero-izquierdo-mitad-a",
     nombre: "Cople delantero izquierdo, mitad A",
     descripcion:
@@ -1195,7 +1213,7 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-18",
-    camposNoAplican: ["rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["par_apriete_nm", "numero_tornillos", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     slug: "cople-delantero-izquierdo-mitad-b",
     nombre: "Cople delantero izquierdo, mitad B",
     descripcion:
@@ -1210,7 +1228,7 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-19",
-    camposNoAplican: ["rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["par_apriete_nm", "numero_tornillos", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     slug: "cople-trasero-derecho-mitad-a",
     nombre: "Cople trasero derecho, mitad A",
     descripcion:
@@ -1225,7 +1243,7 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-20",
-    camposNoAplican: ["rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["par_apriete_nm", "numero_tornillos", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     slug: "cople-trasero-derecho-mitad-b",
     nombre: "Cople trasero derecho, mitad B",
     descripcion:
@@ -1240,7 +1258,7 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-21",
-    camposNoAplican: ["rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["par_apriete_nm", "numero_tornillos", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     slug: "cople-trasero-izquierdo-mitad-a",
     nombre: "Cople trasero izquierdo, mitad A",
     descripcion:
@@ -1255,7 +1273,7 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013-22",
-    camposNoAplican: ["rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["par_apriete_nm", "numero_tornillos", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     slug: "cople-trasero-izquierdo-mitad-b",
     nombre: "Cople trasero izquierdo, mitad B",
     descripcion:

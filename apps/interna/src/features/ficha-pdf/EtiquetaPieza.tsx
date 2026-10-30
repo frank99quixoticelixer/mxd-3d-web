@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "@react-pdf/renderer";
+import { Image, StyleSheet, Text, View } from "@react-pdf/renderer";
 
 import {
   cantidadPorDron,
@@ -10,6 +10,8 @@ import {
 
 import { COLORES } from "@/config/marca";
 
+import type { ImagenPdf } from "./recursos";
+
 /**
  * Facsimil, en PDF, de la etiqueta fisica que se imprime para la pieza
  * (ver public/brand/etiqueta-editor.html y etiqueta-pieza.svg: mismo diseno,
@@ -18,6 +20,11 @@ import { COLORES } from "@/config/marca";
  * abre el PDF vea exactamente el rotulo que trae — o deberia traer — la
  * pieza fisica, incluido el numero de parte oficial del maestro (BOM) cuando
  * ya esta confirmado.
+ *
+ * El logo recibe el mismo PNG que ya carga generar.tsx para el encabezado de
+ * pagina (cargarLogo en recursos.ts): no se repite la carga, solo se reusa.
+ * Si no esta disponible, la etiqueta se genera igual, sin logo — igual que
+ * el encabezado cae al texto "MXD" cuando el PNG falta.
  *
  * Los campos MODULO y UBICACION usan lo unico que el catalogo ya sabe de
  * eso: el subsistema y las secciones donde se monta. No inventan una
@@ -90,6 +97,13 @@ const estilos = StyleSheet.create({
     borderBottomColor: COLORES.tinta,
     marginTop: 2,
   },
+  // Misma proporcion que el logo del encabezado de pagina (307 x 160, ver
+  // estilos.ts), mas grande porque aqui va solo, sin texto de marca al lado.
+  logo: {
+    height: 22,
+    width: 42,
+    marginBottom: 2,
+  },
 });
 
 function modulo(pieza: Pieza): string {
@@ -103,7 +117,13 @@ function ubicacion(pieza: Pieza): string {
     .join(", ");
 }
 
-export function EtiquetaPieza({ pieza }: { pieza: Pieza }) {
+export function EtiquetaPieza({
+  pieza,
+  logo,
+}: {
+  pieza: Pieza;
+  logo?: ImagenPdf | null;
+}) {
   const total = cantidadPorDron(pieza);
 
   return (
@@ -113,6 +133,7 @@ export function EtiquetaPieza({ pieza }: { pieza: Pieza }) {
         <Text style={estilos.barraTexto}>MXD</Text>
       </View>
       <View style={estilos.cuerpo}>
+        {logo ? <Image style={estilos.logo} src={logo} /> : null}
         <View>
           <Text style={estilos.etiquetaCampo}>NOMBRE DE LA PIEZA</Text>
           <Text style={estilos.valorCampo}>{pieza.nombre}</Text>

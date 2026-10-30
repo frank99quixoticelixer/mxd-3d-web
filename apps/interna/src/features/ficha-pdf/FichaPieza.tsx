@@ -1,5 +1,6 @@
 import { Image, Page, Text, View } from "@react-pdf/renderer";
 
+import { costoMaterial, costoProduccionTotal } from "@/lib/costos";
 import {
   cantidadPorDron,
   ETIQUETAS_SECCION,
@@ -84,6 +85,18 @@ function seccionesTexto(pieza: Pieza): string {
     .join(", ");
 }
 
+function monedaTexto(valor: number | null): string {
+  return valor === null
+    ? "Pendiente"
+    : valor.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
+}
+
+function fabricacionTexto(pieza: Pieza): string {
+  const { fabricadoInhouse } = pieza.costosProduccion;
+  if (fabricadoInhouse === null) return "Pendiente";
+  return fabricadoInhouse ? "In-house (MXD)" : "Maquilado afuera";
+}
+
 export function FichaPieza({
   pieza,
   imagen,
@@ -137,7 +150,7 @@ export function FichaPieza({
             no sustituye a las cotas de la tabla.
           </Text>
 
-          <EtiquetaPieza pieza={pieza} />
+          <EtiquetaPieza pieza={pieza} logo={logo} />
         </View>
 
         <View style={estilos.columnaDatos}>
@@ -187,6 +200,36 @@ export function FichaPieza({
         <FilaSpec
           etiqueta="Numero de parte del proveedor"
           valor={valorOPendiente(e.parte_proveedor)}
+        />
+      </Bloque>
+
+      <Bloque titulo="COSTOS DE PRODUCCION (INTERNO)">
+        <FilaSpec etiqueta="Fabricacion" valor={fabricacionTexto(pieza)} />
+        <FilaSpec etiqueta="Equipo" valor={valorOPendiente(pieza.costosProduccion.equipo)} />
+        <FilaSpec
+          etiqueta="Material de produccion"
+          valor={valorOPendiente(pieza.costosProduccion.material)}
+        />
+        <FilaSpec
+          etiqueta="Masa de produccion"
+          valor={valorOPendiente(pieza.costosProduccion.masaG, "g")}
+        />
+        <FilaSpec
+          etiqueta="Horas de produccion"
+          valor={valorOPendiente(pieza.costosProduccion.horasProduccion, "h")}
+        />
+        <FilaSpec etiqueta="Costo de material" valor={monedaTexto(costoMaterial(pieza))} />
+        <FilaSpec
+          etiqueta="Costo de pintura"
+          valor={monedaTexto(pieza.costosProduccion.costoPinturaMxn)}
+        />
+        <FilaSpec
+          etiqueta="Costo de mano de obra"
+          valor={monedaTexto(pieza.costosProduccion.costoManoObraMxn)}
+        />
+        <FilaSpec
+          etiqueta="Costo total de produccion"
+          valor={monedaTexto(costoProduccionTotal(pieza))}
         />
       </Bloque>
 

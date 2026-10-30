@@ -24,6 +24,24 @@ const raizVitrina = resolve(raizInterna, "..", "vitrina");
 /** Carpetas que se espejan. `contenido` es opcional: no existe en todos los equipos. */
 const CARPETAS = ["public", "contenido"];
 
+/**
+ * Renders de piezas que solo existen en el catalogo de interna (sujetadores
+ * que vitrina no muestra: tornillos, arandelas, goma del tren). No vienen de
+ * vitrina/public/renders, asi que sin esta excepcion `podar` los borraria en
+ * cada dev/build.
+ */
+const RENDERS_SOLO_INTERNA = [
+  "renders/MX80-001-08.jpg",
+  "renders/MX80-005-01.jpg",
+  "renders/MX80-005-02.jpg",
+  "renders/MX80-011-05.jpg",
+  "renders/MX80-011-06.jpg",
+  "renders/MX80-011-07.jpg",
+  "renders/MX80-011-08.jpg",
+  "renders/MX80-011-09.jpg",
+  "renders/MX80-013-23.jpg",
+];
+
 let copiados = 0;
 let omitidos = 0;
 let borrados = 0;
@@ -34,15 +52,16 @@ let borrados = 0;
  * vitrina ya habia quitado. `conservar` son rutas relativas que no vienen de
  * vitrina.
  */
-async function podar(origen, destino, conservar = []) {
+async function podar(origen, destino, conservar = [], rutaActual = "") {
   for (const entrada of await readdir(destino, { withFileTypes: true })) {
-    if (conservar.includes(entrada.name)) continue;
+    const ruta = rutaActual ? `${rutaActual}/${entrada.name}` : entrada.name;
+    if (conservar.includes(ruta)) continue;
     const enOrigen = join(origen, entrada.name);
     const enDestino = join(destino, entrada.name);
     const infoOrigen = await datos(enOrigen);
     if (entrada.isDirectory()) {
       if (infoOrigen?.isDirectory()) {
-        await podar(enOrigen, enDestino);
+        await podar(enOrigen, enDestino, conservar, ruta);
       } else {
         await rm(enDestino, { recursive: true, force: true });
         borrados += 1;
@@ -120,10 +139,10 @@ for (const carpeta of hayVitrina ? CARPETAS : []) {
     continue;
   }
   await espejar(origen, join(raizInterna, carpeta));
-  // Sin excepciones: las descargas ya no van en public/ (las sirve
+  // Sin mas excepciones: las descargas ya no van en public/ (las sirve
   // /api/descargas desde apps/interna/descargas), asi que una carpeta
   // public/downloads de antes tambien se borra.
-  await podar(origen, join(raizInterna, carpeta));
+  await podar(origen, join(raizInterna, carpeta), carpeta === "public" ? RENDERS_SOLO_INTERNA : []);
 }
 
 console.log(

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { DescargasMalla } from "@/components/catalogo/DescargasMalla";
+import { EtiquetaWeb } from "@/components/catalogo/EtiquetaWeb";
 import { FichaEditable } from "@/components/catalogo/FichaEditable";
 import { BotonAtras } from "@/components/layout/BotonAtras";
 import { MODELO_PREDETERMINADO } from "@/config/modelos3d";
@@ -184,25 +185,32 @@ export default async function PaginaPieza({
       </nav>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[1.15fr_1fr]">
-        {/* Solo la pieza, girando, sacada del GLB completo del dron. */}
-        {seleccionTieneAlgo(seleccion) ? (
-          <VisorPieza
-            seleccion={seleccion}
-            subpiezas={subpiezas.map(({ sku, slug, nombre, nombresBlender }) => ({
-              sku,
-              slug,
-              nombre,
-              nombresBlender,
-            }))}
-            nombre={pieza.nombre}
-            sinDespiece={pieza.sinDespiece}
-            className="h-[46vh] min-h-[360px] w-full lg:h-[62vh]"
-          />
-        ) : (
-          <div className="flex h-[46vh] min-h-[360px] w-full items-center justify-center rounded-2xl border border-mxd-borde bg-mxd-hueso p-6 text-center text-sm text-mxd-gris lg:h-[62vh]">
-            Esta pieza todavía no está en el modelo 3D del dron.
+        {/* Columna del visor: el modelo 3D y, debajo, la etiqueta fisica. */}
+        <div>
+          {seleccionTieneAlgo(seleccion) ? (
+            <VisorPieza
+              seleccion={seleccion}
+              subpiezas={subpiezas.map(({ sku, slug, nombre, nombresBlender }) => ({
+                sku,
+                slug,
+                nombre,
+                nombresBlender,
+              }))}
+              nombre={pieza.nombre}
+              sinDespiece={pieza.sinDespiece}
+              className="h-[46vh] min-h-[360px] w-full lg:h-[62vh]"
+            />
+          ) : (
+            <div className="flex h-[46vh] min-h-[360px] w-full items-center justify-center rounded-2xl border border-mxd-borde bg-mxd-hueso p-6 text-center text-sm text-mxd-gris lg:h-[62vh]">
+              Esta pieza todavía no está en el modelo 3D del dron.
+            </div>
+          )}
+
+          {/* Vista web de la etiqueta fisica, debajo del visor 3D. */}
+          <div className="mt-4">
+            <EtiquetaWeb pieza={pieza} />
           </div>
-        )}
+        </div>
 
         {/* Ficha tecnica */}
         <div>
