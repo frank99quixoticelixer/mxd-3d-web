@@ -69,6 +69,14 @@ const PIEZAS_SUELTAS: readonly {
   // Marco (MX80-011)
   { re: /^agarrador_(del|tra)_/i, sku: "MX80-011-01", zona: "frame", nodo: "agarrador_del_der" },
   { re: /^retenedor_(del|tra)_/i, sku: "MX80-011-02", zona: "frame", nodo: "retenedor_del_der" },
+  // Tornillos y arandelas del agarrador y del retenedor: antes caian en
+  // ES_MARCO (se agrupaban visualmente con el marco) pero no tenian SKU
+  // propio, asi que tocarlos no abria ninguna ficha.
+  { re: /^M4x7_agarrador/i, sku: "MX80-011-05", zona: "frame", nodo: "M4x7_agarrador" },
+  { re: /^Arandela_M4/i, sku: "MX80-011-07", zona: "frame", nodo: "Arandela_M4" },
+  { re: /^M6x10_retenedor/i, sku: "MX80-011-06", zona: "frame", nodo: "M6x10_retenedor" },
+  { re: /^M4x9_retenedor/i, sku: "MX80-011-08", zona: "frame", nodo: "M4x9_retenedor" },
+  { re: /^Arandela_M6/i, sku: "MX80-011-09", zona: "frame", nodo: "Arandela_M6" },
   // El v3 traia "frame_tubo42"; el v4, "frame_tubo50". Confirmar la medida.
   { re: /^frame_tubo(42|50)/i, sku: "MX80-011-03", zona: "frame", nodo: "frame_tubo50_del" },
   { re: /^frame_tubo69/i, sku: "MX80-011-04", zona: "frame", nodo: "frame_tubo69_der" },
@@ -99,6 +107,7 @@ const PIEZAS_SUELTAS: readonly {
   { re: null, sku: "MX80-013-08", zona: "tren-aterrizaje", nodo: "cople_tra_izq_mitad_A" },
   { re: /^travesano_delantero/i, sku: "MX80-013-09", zona: "tren-aterrizaje", nodo: "travesano_delantero" },
   { re: /^travesano_trasero/i, sku: "MX80-013-10", zona: "tren-aterrizaje", nodo: "travesano_trasero" },
+  { re: /^goma_(der|izq)_(del|tra)/i, sku: "MX80-013-23", zona: "tren-aterrizaje", nodo: "goma_der_del" },
   // Las medidas de los tornillos cambiaron del GLB v3 al v4; se aceptan las dos.
   { re: /^M5x(55|51)_amarre_pata/i, sku: "MX80-013-11", zona: "tren-aterrizaje", nodo: "M5x51_amarre_pata" },
   { re: /^M5x(60|65)_agarre_tren/i, sku: "MX80-013-12", zona: "tren-aterrizaje", nodo: "M5x65_agarre_tren" },
@@ -370,7 +379,11 @@ export function seleccionDePieza(
   const componente =
     Object.entries(SKU_COMPONENTE_BRAZO).find(([, s]) => s === sku)?.[0] ?? null;
   return {
-    fuente: ancestros.includes(SKU_TUERCA) ? GLB_TUERCA_DETALLADA : null,
+    // La tuerca misma tambien necesita el detalle, no solo sus subpiezas:
+    // `ancestros` no incluye a `sku` (ver cadenaAncestros en page.tsx), asi
+    // que sin este caso la ficha de MX80-001-03 cargaba el GLB completo (el
+    // placeholder de 2 nodos) y nunca mostraba boton de despiece.
+    fuente: sku === SKU_TUERCA || ancestros.includes(SKU_TUERCA) ? GLB_TUERCA_DETALLADA : null,
     zona,
     componente,
     nombres: nombresBlender,
@@ -398,8 +411,19 @@ const sanear = (nombre: string) =>
  * Una pieza que el dron lleva varias veces (los motores de los cuatro brazos,
  * 48 tornillos iguales) se muestra una vez: de las coincidencias se queda con
  * las del primer conjunto en que aparece y, dentro de el, una por nombre.
+ *
+ * `restringirAUnConjunto` apaga esa restriccion de "un solo conjunto": sirve
+ * para el caso de nombresSubpiezas (ver nodosDeSeleccion), donde los nombres
+ * NO son instancias repetidas de una misma pieza sino partes DISTINTAS de un
+ * ensamble (jacket + 2 spacers + tornillo de la tuerca del balanceador) que
+ * pueden vivir cada una en su propio nodo de nivel superior. Con la
+ * restriccion encendida ahi, solo sobrevivia la primera parte encontrada.
  */
-function nodosConNombres(raiz: THREE.Object3D, nombres: string[]): THREE.Object3D[] {
+function nodosConNombres(
+  raiz: THREE.Object3D,
+  nombres: string[],
+  restringirAUnConjunto = true,
+): THREE.Object3D[] {
   if (nombres.length === 0) return [];
   const exactos = new Set(nombres.map(sanear));
   const normalizados = new Set(nombres.map(normalizar));
@@ -421,10 +445,10 @@ function nodosConNombres(raiz: THREE.Object3D, nombres: string[]): THREE.Object3
     while (actual.parent && actual.parent !== raiz) actual = actual.parent;
     return actual;
   };
-  const conjunto = conjuntoDe(coincidencias[0]);
+  const conjunto = restringirAUnConjunto ? conjuntoDe(coincidencias[0]) : null;
   const vistos = new Set<string>();
   return coincidencias.filter((n) => {
-    if (conjuntoDe(n) !== conjunto) return false;
+    if (conjunto && conjuntoDe(n) !== conjunto) return false;
     const clave = normalizar(n.name);
     if (vistos.has(clave) && !exactos.has(n.name)) return false;
     vistos.add(clave);
@@ -456,5 +480,5 @@ export function nodosDeSeleccion(
   const propios = nodosConNombres(raiz, s.nombres);
   if (propios.length > 0) return propios;
   if (s.zona) return nodosDeZonaEn(raiz, s.zona);
-  return nodosConNombres(raiz, s.nombresSubpiezas);
+  return nodosConNombres(raiz, s.nombresSubpiezas, false);
 }

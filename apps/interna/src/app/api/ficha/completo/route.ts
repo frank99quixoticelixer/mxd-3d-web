@@ -1,6 +1,6 @@
 import { respuestaPdf } from "@/features/ficha-pdf/generar";
 import { MODELO_PREDETERMINADO } from "@/config/modelos3d";
-import { obtenerPiezas } from "@/lib/catalogo";
+import { conBomTodas, obtenerPiezas } from "@/lib/catalogo";
 
 export const runtime = "nodejs";
 
@@ -24,7 +24,7 @@ export async function GET(peticion: Request) {
   }
 
   return respuestaPdf(
-    { tipo: "completo", piezas },
+    { tipo: "completo", piezas: await conBomTodas(piezas) },
     new URL(peticion.url).origin,
     "MX80_catalogo-completo",
   );

@@ -37,6 +37,17 @@ export function Encabezado() {
 
         <div className="flex items-center gap-2 sm:gap-4">
           <NavegacionPrincipal />
+          {/* Descarga el BOM_MX80.xlsx tal como esta en el servidor en este
+              momento -- el mismo archivo que edita el formulario de cada
+              ficha. Va en el encabezado, no dentro de una pieza especifica,
+              porque es un archivo del catalogo entero. */}
+          <a
+            href="/api/bom/descargar"
+            className="rounded-lg border border-mxd-borde px-2 py-2 text-[13px] font-medium text-mxd-gris transition-colors hover:border-mxd-verde hover:text-mxd-verde-oscuro sm:px-3 sm:text-sm"
+          >
+            <span className="sm:hidden">BOM</span>
+            <span className="hidden sm:inline">Descargar BOM</span>
+          </a>
           <SelectorTema />
         </div>
       </div>

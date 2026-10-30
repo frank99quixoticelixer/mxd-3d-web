@@ -1,6 +1,6 @@
 import { respuestaPdf } from "@/features/ficha-pdf/generar";
 import { MODELO_PREDETERMINADO } from "@/config/modelos3d";
-import { obtenerPiezasPorSeccion } from "@/lib/catalogo";
+import { conBomTodas, obtenerPiezasPorSeccion } from "@/lib/catalogo";
 import { SeccionEsquema } from "@/lib/esquema";
 
 export const runtime = "nodejs";
@@ -37,7 +37,7 @@ export async function GET(
   }
 
   return respuestaPdf(
-    { tipo: "seccion", seccion, piezas },
+    { tipo: "seccion", seccion, piezas: await conBomTodas(piezas) },
     new URL(peticion.url).origin,
     `MX80_${seccion}`,
   );
