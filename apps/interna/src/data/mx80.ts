@@ -124,7 +124,7 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-001",
-    camposNoAplican: ["material", "acabado", "par_apriete_nm", "numero_tornillos", "costo_fabricado_inhouse", "costo_equipo", "costo_material", "costo_masa_g", "costo_horas_produccion", "costo_pintura_mxn", "costo_mano_obra_mxn", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["material", "acabado", "par_apriete_nm", "numero_tornillos", "costo_fabricado_inhouse", "costo_equipo", "costo_material", "costo_masa_g", "costo_horas_produccion", "costo_pintura_mxn", "costo_mano_obra_mxn", "costo_notas", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     imagen: "/renders/MX80-001.jpg",
     slug: "balanceador-helices",
     nombre: "Balanceador de hélices",
@@ -320,7 +320,7 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-004",
-    camposNoAplican: ["material", "acabado", "par_apriete_nm", "numero_tornillos", "costo_fabricado_inhouse", "costo_equipo", "costo_material", "costo_masa_g", "costo_horas_produccion", "costo_pintura_mxn", "costo_mano_obra_mxn", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["material", "acabado", "par_apriete_nm", "numero_tornillos", "costo_fabricado_inhouse", "costo_equipo", "costo_material", "costo_masa_g", "costo_horas_produccion", "costo_pintura_mxn", "costo_mano_obra_mxn", "costo_notas", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     imagen: "/renders/MX80-004.jpg",
     slug: "helices-fibra-carbono",
     nombre: "Par de hélices",
@@ -585,7 +585,7 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-009",
-    camposNoAplican: ["material", "acabado", "par_apriete_nm", "numero_tornillos", "costo_fabricado_inhouse", "costo_equipo", "costo_material", "costo_masa_g", "costo_horas_produccion", "costo_pintura_mxn", "costo_mano_obra_mxn", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["material", "acabado", "par_apriete_nm", "numero_tornillos", "costo_fabricado_inhouse", "costo_equipo", "costo_material", "costo_masa_g", "costo_horas_produccion", "costo_pintura_mxn", "costo_mano_obra_mxn", "costo_notas", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     imagen: "/renders/MX80-009.jpg",
     slug: "conjunto-esc-300a",
     nombre: "Conjunto ESC 300A",
@@ -653,7 +653,7 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-011",
-    camposNoAplican: ["material", "acabado", "par_apriete_nm", "numero_tornillos", "costo_fabricado_inhouse", "costo_equipo", "costo_material", "costo_masa_g", "costo_horas_produccion", "costo_pintura_mxn", "costo_mano_obra_mxn", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["material", "acabado", "par_apriete_nm", "numero_tornillos", "costo_fabricado_inhouse", "costo_equipo", "costo_material", "costo_masa_g", "costo_horas_produccion", "costo_pintura_mxn", "costo_mano_obra_mxn", "costo_notas", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     imagen: "/renders/MX80-011.jpg",
     slug: "marco",
     nombre: "Marco",
@@ -929,7 +929,7 @@ export const PIEZAS_MX80: Pieza[] = [
   {
     ...BASE,
     sku: "MX80-013",
-    camposNoAplican: ["material", "acabado", "par_apriete_nm", "numero_tornillos", "costo_fabricado_inhouse", "costo_equipo", "costo_material", "costo_masa_g", "costo_horas_produccion", "costo_pintura_mxn", "costo_mano_obra_mxn", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
+    camposNoAplican: ["material", "acabado", "par_apriete_nm", "numero_tornillos", "costo_fabricado_inhouse", "costo_equipo", "costo_material", "costo_masa_g", "costo_horas_produccion", "costo_pintura_mxn", "costo_mano_obra_mxn", "costo_notas", "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm", "ancho_perfil_mm", "alto_perfil_mm", "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal", "motor_torque_nominal_nm", "motor_torque_max_nm"],
     imagen: "/renders/MX80-013.jpg",
     slug: "tren-de-aterrizaje",
     nombre: "Tren de aterrizaje",

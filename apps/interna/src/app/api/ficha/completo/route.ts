@@ -8,11 +8,10 @@ export const runtime = "nodejs";
  * Catalogo tecnico completo del MX80.
  *   GET /api/ficha/completo
  *
- * ATENCION antes de publicar: este documento es el BOM entero con materiales y
- * cotas. Mientras la ruta sea abierta, cualquiera que tenga la URL se lleva el
- * despiece completo. Antes del deploy publico hay que decidir si esta descarga
- * y la de seccion quedan detras de autenticacion; la ficha individual puede
- * quedarse abierta sin el mismo riesgo.
+ * Este documento es el BOM entero con materiales y cotas. La proteccion no
+ * vive aqui: src/proxy.ts cierra TODA la app (paginas, API y estaticos)
+ * detras de autenticacion basica, matcher "/:path*", asi que esta ruta ya
+ * esta cubierta igual que cualquier otra.
  */
 export async function GET(peticion: Request) {
   const piezas = obtenerPiezas(MODELO_PREDETERMINADO);
