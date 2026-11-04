@@ -8,6 +8,7 @@ import {
   CAMPOS_COMPRAS,
   CAMPOS_COSTOS,
   CAMPOS_ESPECIFICACIONES,
+  CAMPOS_TRAZABILIDAD,
   monedaTexto,
   textoValor,
   valorInicial,
@@ -80,6 +81,26 @@ function FilaInput({ campo, valor }: { campo: CampoFicha; valor: string | number
       </div>
     );
   }
+  if (campo.tipo === "seleccionSiNo") {
+    const inicial = valor === true ? "si" : valor === false ? "no" : "";
+    return (
+      <div className="flex items-center justify-between gap-4 border-b border-mxd-borde py-2 last:border-0">
+        <label htmlFor={campo.clave} className="text-sm text-mxd-gris">
+          {campo.etiqueta}
+        </label>
+        <select
+          id={campo.clave}
+          name={campo.clave}
+          defaultValue={inicial}
+          className="rounded-md border border-mxd-borde bg-mxd-hueso px-2 py-1 text-sm text-mxd-tinta"
+        >
+          <option value="">Pendiente</option>
+          <option value="si">Sí</option>
+          <option value="no">No</option>
+        </select>
+      </div>
+    );
+  }
   return (
     <div className="flex items-center justify-between gap-4 border-b border-mxd-borde py-2 last:border-0">
       <label htmlFor={campo.clave} className="text-sm text-mxd-gris">
@@ -127,6 +148,9 @@ export function FichaEditable({
   );
   const camposComprasVisibles = CAMPOS_COMPRAS;
   const camposCostosVisibles = CAMPOS_COSTOS.filter(
+    (c) => !pieza.camposNoAplican.includes(c.clave),
+  );
+  const camposTrazabilidadVisibles = CAMPOS_TRAZABILIDAD.filter(
     (c) => !pieza.camposNoAplican.includes(c.clave),
   );
 
@@ -190,6 +214,17 @@ export function FichaEditable({
             )}
           </dl>
         </section>
+
+        <section className="mt-8">
+          <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
+            Trazabilidad
+          </h2>
+          <dl className="mt-3 rounded-xl border border-mxd-borde bg-mxd-fondo px-4">
+            {camposTrazabilidadVisibles.map((c) => (
+              <FilaValor key={c.clave} etiqueta={c.etiqueta} valor={textoValor(pieza, c)} />
+            ))}
+          </dl>
+        </section>
       </>
     );
   }
@@ -237,6 +272,17 @@ export function FichaEditable({
           El costo de material y el total se calculan solos a partir de la masa y el material de
           producción; no se escriben a mano.
         </p>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
+          Trazabilidad
+        </h2>
+        <div className="mt-3 rounded-xl border border-mxd-borde bg-mxd-fondo px-4">
+          {camposTrazabilidadVisibles.map((c) => (
+            <FilaInput key={c.clave} campo={c} valor={valorInicial(pieza, c.clave)} />
+          ))}
+        </div>
       </section>
 
       <div className="mt-4 flex gap-3">

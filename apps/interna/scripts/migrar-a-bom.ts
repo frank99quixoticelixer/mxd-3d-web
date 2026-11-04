@@ -53,6 +53,12 @@ async function main() {
       costo_pintura_mxn: pieza.costosProduccion.costoPinturaMxn,
       costo_mano_obra_mxn: pieza.costosProduccion.costoManoObraMxn,
       costo_notas: pieza.costosProduccion.notas,
+      trazabilidad_criticidad: pieza.trazabilidad.criticidad,
+      trazabilidad_control_calidad: pieza.trazabilidad.controlCalidad,
+      trazabilidad_intercambiable: pieza.trazabilidad.intercambiable,
+      trazabilidad_carpeta_pieza: pieza.trazabilidad.carpetaPieza,
+      trazabilidad_archivo_step: pieza.trazabilidad.archivoStep,
+      trazabilidad_archivo_stl: pieza.trazabilidad.archivoStl,
       ...pieza.especificaciones,
     };
     const valores = COLUMNAS_BOM.map((col) => {

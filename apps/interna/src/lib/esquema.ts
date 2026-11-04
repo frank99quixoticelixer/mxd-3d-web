@@ -224,6 +224,35 @@ export const CostosProduccionEsquema = z.object({
 });
 export type CostosProduccion = z.infer<typeof CostosProduccionEsquema>;
 
+/**
+ * Trazabilidad de manufactura, alineada a las columnas que no tienen
+ * equivalente en este esquema dentro del BOM maestro
+ * (mxd-3d/Maestro_Partes_MX80.xlsx, hoja "Maestro Partes MX80"). Las demas
+ * columnas del maestro SI tienen equivalente aqui con otro nombre y no se
+ * duplican: Nivel/Ensamble padre -> parteDe, Modelo GLB -> glb,
+ * Estado del modelado -> estado, Zona del dron -> secciones/subsistema,
+ * Rev. -> el sufijo "-R00" de numeroBom, Fotografia -> imagen.
+ *
+ * Va separado de `especificaciones` por el mismo motivo que
+ * CostosProduccionEsquema: no es informacion tecnica de la pieza, es
+ * seguimiento de control de calidad y manufactura.
+ */
+export const TrazabilidadEsquema = z.object({
+  /** "Alta"/"Media"/"Baja" en el maestro; aqui texto libre para no duplicar un enum ajeno. */
+  criticidad: z.string().nullable().default(null),
+  /** Que prueba o inspeccion aprueba la pieza (p. ej. "Prueba funcional de vuelo"). */
+  controlCalidad: z.string().nullable().default(null),
+  /** Si una pieza de otro proveedor o revision puede sustituirla sin rediseno. */
+  intercambiable: z.boolean().nullable().default(null),
+  /** Ruta de referencia a la carpeta de la pieza en el maestro (informativa, no se usa para servir archivos). */
+  carpetaPieza: z.string().nullable().default(null),
+  /** Si ya existe un archivo STEP de la pieza. */
+  archivoStep: z.boolean().nullable().default(null),
+  /** Si ya existe un archivo STL de la pieza. */
+  archivoStl: z.boolean().nullable().default(null),
+});
+export type Trazabilidad = z.infer<typeof TrazabilidadEsquema>;
+
 /** Estado de la pieza dentro del pipeline de digitalizacion. */
 export const EstadoPiezaEsquema = z.enum([
   "pendiente",
@@ -339,6 +368,9 @@ export const PiezaEsquema = z.object({
 
   /** Costeo de produccion. Ver comentario en CostosProduccionEsquema. */
   costosProduccion: CostosProduccionEsquema.default({}),
+
+  /** Trazabilidad de manufactura. Ver comentario en TrazabilidadEsquema. */
+  trazabilidad: TrazabilidadEsquema.default({}),
 
   /** Clasificacion de compra o de ingenieria ("Propulsion - helice"). */
   categoria: z.string().nullable().default(null),

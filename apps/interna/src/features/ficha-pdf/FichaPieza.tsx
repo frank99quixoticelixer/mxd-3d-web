@@ -4,6 +4,7 @@ import {
   CAMPOS_COMPRAS,
   CAMPOS_COSTOS,
   CAMPOS_ESPECIFICACIONES,
+  CAMPOS_TRAZABILIDAD,
   campoPorClave,
   monedaTexto,
   textoValor,
@@ -242,6 +243,14 @@ export function FichaPieza({
               />
             </>
           ) : null}
+        </Bloque>
+      ) : null}
+
+      {CAMPOS_TRAZABILIDAD.some((c) => !pieza.camposNoAplican.includes(c.clave)) ? (
+        <Bloque titulo="TRAZABILIDAD">
+          {CAMPOS_TRAZABILIDAD.map((campo) => (
+            <FilaCampo key={campo.clave} pieza={pieza} campo={campo} />
+          ))}
         </Bloque>
       ) : null}
 

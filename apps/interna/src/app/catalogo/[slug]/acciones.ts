@@ -30,6 +30,8 @@ export async function guardarEspecificaciones(formData: FormData): Promise<void>
       cambios[columna.clave] = crudo === "" ? [] : crudo.split(";").map((s) => s.trim()).filter(Boolean);
     } else if (columna.tipo === "listaCorta") {
       cambios[columna.clave] = crudo === "" ? [] : crudo.split(",").map((s) => s.trim()).filter(Boolean);
+    } else if (columna.tipo === "booleano") {
+      cambios[columna.clave] = crudo === "" ? null : crudo === "si";
     } else {
       cambios[columna.clave] = crudo === "" ? null : crudo;
     }

@@ -40,8 +40,8 @@ const COLUMNAS: { clave: string; encabezado: string; tipo: TipoColumna }[] = [
   { clave: "alto_mm", encabezado: "Alto (mm)", tipo: "numero" },
   { clave: "material", encabezado: "Material", tipo: "texto" },
   { clave: "acabado", encabezado: "Acabado", tipo: "texto" },
-  { clave: "tolerancia_mm", encabezado: "Tolerancia (mm)", tipo: "numero" },
-  { clave: "par_apriete_nm", encabezado: "Par de apriete (Nm)", tipo: "numero" },
+  { clave: "tolerancia_mm", encabezado: "Tolerancia general (mm)", tipo: "numero" },
+  { clave: "par_apriete_nm", encabezado: "Par de apriete (N·m)", tipo: "numero" },
   { clave: "numero_tornillos", encabezado: "No. de tornillos", tipo: "numero" },
   { clave: "rosca", encabezado: "Rosca", tipo: "texto" },
   { clave: "longitud_mm", encabezado: "Longitud (mm)", tipo: "numero" },
@@ -60,14 +60,14 @@ const COLUMNAS: { clave: string; encabezado: string; tipo: TipoColumna }[] = [
   { clave: "motor_torque_max_nm", encabezado: "Motor: torque maximo (Nm)", tipo: "numero" },
   { clave: "proveedor", encabezado: "Proveedor", tipo: "texto" },
   { clave: "parte_proveedor", encabezado: "No. de parte del proveedor", tipo: "texto" },
-  { clave: "numero_parte_mxd", encabezado: "No. de parte MXD (BOM)", tipo: "texto" },
+  { clave: "numero_parte_mxd", encabezado: "No. parte MXD", tipo: "texto" },
   { clave: "precio_mxn", encabezado: "Precio (MXN)", tipo: "numero" },
   { clave: "stock", encabezado: "Existencias", tipo: "numero" },
   { clave: "proceso_fabricacion", encabezado: "Proceso de fabricacion", tipo: "texto" },
   { clave: "descripcion_funcional", encabezado: "Descripcion funcional", tipo: "texto" },
-  { clave: "especificaciones_tecnicas", encabezado: "Especificaciones tecnicas", tipo: "lista" },
+  { clave: "especificaciones_tecnicas", encabezado: "Requisitos tecnicos", tipo: "lista" },
   { clave: "camposNoAplican", encabezado: "Campos que no aplican", tipo: "listaCorta" },
-  { clave: "fuente", encabezado: "Fuente del dato", tipo: "lista" },
+  { clave: "fuente", encabezado: "Origen del dato", tipo: "lista" },
   { clave: "notas", encabezado: "Notas", tipo: "texto" },
   // -- Costos de produccion. Claves con prefijo costo_ para no chocar con
   // "material" y "notas" de especificaciones (son conceptos distintos: uno es
@@ -81,7 +81,91 @@ const COLUMNAS: { clave: string; encabezado: string; tipo: TipoColumna }[] = [
   { clave: "costo_pintura_mxn", encabezado: "Costo de pintura (MXN)", tipo: "numero" },
   { clave: "costo_mano_obra_mxn", encabezado: "Costo de mano de obra (MXN)", tipo: "numero" },
   { clave: "costo_notas", encabezado: "Notas de costos", tipo: "texto" },
+  // -- Trazabilidad de manufactura. Claves con prefijo trazabilidad_, mismo
+  // criterio que costo_: columnas del BOM maestro sin equivalente en el resto
+  // de este esquema (ver comentario en TrazabilidadEsquema).
+  { clave: "trazabilidad_criticidad", encabezado: "Criticidad", tipo: "texto" },
+  { clave: "trazabilidad_control_calidad", encabezado: "Control de calidad", tipo: "texto" },
+  { clave: "trazabilidad_intercambiable", encabezado: "Interc.", tipo: "booleano" },
+  { clave: "trazabilidad_carpeta_pieza", encabezado: "Carpeta de la pieza", tipo: "texto" },
+  { clave: "trazabilidad_archivo_step", encabezado: "Archivo STEP", tipo: "booleano" },
+  { clave: "trazabilidad_archivo_stl", encabezado: "Archivo STL", tipo: "booleano" },
 ];
+
+/**
+ * Formato visual del Excel: mismo criterio que
+ * mxd-3d/Maestro_Partes_MX80.xlsx (encabezado azul marino con texto blanco
+ * centrado y en negritas, columnas anchas segun su contenido, encabezado
+ * inmovilizado). Ese archivo vive fuera de este repo y nunca se toca desde
+ * aqui -- esto solo copia su formato, no lo lee ni lo escribe.
+ */
+const ANCHO_AMPLIO = new Set<string>([
+  "nombre",
+  "descripcion_funcional",
+  "especificaciones_tecnicas",
+  "camposNoAplican",
+  "fuente",
+  "notas",
+  "costo_notas",
+  "trazabilidad_control_calidad",
+  "trazabilidad_carpeta_pieza",
+]);
+
+function anchoColumna(col: { clave: string; encabezado: string; tipo: TipoColumna }): number {
+  if (ANCHO_AMPLIO.has(col.clave)) return 45;
+  if (col.tipo === "numero" || col.tipo === "booleano") return Math.max(col.encabezado.length + 4, 14);
+  return Math.max(col.encabezado.length + 6, 22);
+}
+
+const RELLENO_ENCABEZADO: ExcelJS.Fill = {
+  type: "pattern",
+  pattern: "solid",
+  fgColor: { argb: "FF1F3864" },
+};
+const BORDE_ENCABEZADO: Partial<ExcelJS.Borders> = {
+  top: { style: "thin" },
+  left: { style: "thin" },
+  bottom: { style: "thin" },
+  right: { style: "thin" },
+};
+const BORDE_FILA_DATOS: Partial<ExcelJS.Borders> = {
+  top: { style: "thin", color: { argb: "FFD9D9D9" } },
+  left: { style: "thin", color: { argb: "FFD9D9D9" } },
+  bottom: { style: "thin", color: { argb: "FFD9D9D9" } },
+  right: { style: "thin", color: { argb: "FFD9D9D9" } },
+};
+
+/**
+ * Se reaplica cada vez que se abre el libro, no solo al crearlo, para que un
+ * archivo ya existente (como el que hoy tiene todo apretado) tambien quede
+ * al corriente la proxima vez que se guarde algo.
+ */
+function aplicarFormato(hoja: ExcelJS.Worksheet): void {
+  COLUMNAS.forEach((col, i) => {
+    hoja.getColumn(i + 1).width = anchoColumna(col);
+  });
+
+  const encabezado = hoja.getRow(1);
+  encabezado.height = 32;
+  encabezado.eachCell({ includeEmpty: true }, (celda) => {
+    celda.font = { name: "Calibri", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
+    celda.fill = RELLENO_ENCABEZADO;
+    celda.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    celda.border = BORDE_ENCABEZADO;
+  });
+
+  for (let i = 2; i <= hoja.rowCount; i++) {
+    const fila = hoja.getRow(i);
+    fila.height = 28;
+    fila.eachCell({ includeEmpty: true }, (celda) => {
+      celda.font = { name: "Calibri", size: 10 };
+      celda.alignment = { horizontal: "left", vertical: "middle" };
+      celda.border = BORDE_FILA_DATOS;
+    });
+  }
+
+  hoja.views = [{ state: "frozen", ySplit: 1 }];
+}
 
 /** Una fila del BOM ya tipada: especificaciones + compras/inventario + metadatos. */
 export type FilaBom = Pick<Especificaciones, Exclude<keyof Especificaciones, "fuente">> & {
@@ -104,6 +188,12 @@ export type FilaBom = Pick<Especificaciones, Exclude<keyof Especificaciones, "fu
   costo_pintura_mxn: number | null;
   costo_mano_obra_mxn: number | null;
   costo_notas: string | null;
+  trazabilidad_criticidad: string | null;
+  trazabilidad_control_calidad: string | null;
+  trazabilidad_intercambiable: boolean | null;
+  trazabilidad_carpeta_pieza: string | null;
+  trazabilidad_archivo_step: boolean | null;
+  trazabilidad_archivo_stl: boolean | null;
 };
 
 /** Campos editables desde la UI (todo menos sku/nombre, que no se tocan aqui). */
@@ -129,8 +219,8 @@ async function abrirOCrearLibro(): Promise<{ libro: ExcelJS.Workbook; hoja: Exce
   if (!existe || !hoja) {
     hoja = libro.addWorksheet(HOJA);
     hoja.addRow(COLUMNAS.map((c) => c.encabezado));
-    hoja.getRow(1).font = { bold: true };
   }
+  aplicarFormato(hoja);
   return { libro, hoja };
 }
 
@@ -192,6 +282,12 @@ function normalizarFila(obj: Record<string, unknown>): FilaBom {
     costo_pintura_mxn: (obj.costo_pintura_mxn as number | null) ?? null,
     costo_mano_obra_mxn: (obj.costo_mano_obra_mxn as number | null) ?? null,
     costo_notas: (obj.costo_notas as string | null) ?? null,
+    trazabilidad_criticidad: (obj.trazabilidad_criticidad as string | null) ?? null,
+    trazabilidad_control_calidad: (obj.trazabilidad_control_calidad as string | null) ?? null,
+    trazabilidad_intercambiable: (obj.trazabilidad_intercambiable as boolean | null) ?? null,
+    trazabilidad_carpeta_pieza: (obj.trazabilidad_carpeta_pieza as string | null) ?? null,
+    trazabilidad_archivo_step: (obj.trazabilidad_archivo_step as boolean | null) ?? null,
+    trazabilidad_archivo_stl: (obj.trazabilidad_archivo_stl as boolean | null) ?? null,
   } as FilaBom;
 }
 

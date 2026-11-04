@@ -106,6 +106,12 @@ function conBom(pieza: Pieza, fila: FilaBom | null): Pieza {
     costo_pintura_mxn,
     costo_mano_obra_mxn,
     costo_notas,
+    trazabilidad_criticidad,
+    trazabilidad_control_calidad,
+    trazabilidad_intercambiable,
+    trazabilidad_carpeta_pieza,
+    trazabilidad_archivo_step,
+    trazabilidad_archivo_stl,
     ...especificaciones
   } = fila;
   return {
@@ -129,6 +135,15 @@ function conBom(pieza: Pieza, fila: FilaBom | null): Pieza {
       costoPinturaMxn: costo_pintura_mxn,
       costoManoObraMxn: costo_mano_obra_mxn,
       notas: costo_notas,
+    },
+    trazabilidad: {
+      ...pieza.trazabilidad,
+      criticidad: trazabilidad_criticidad,
+      controlCalidad: trazabilidad_control_calidad,
+      intercambiable: trazabilidad_intercambiable,
+      carpetaPieza: trazabilidad_carpeta_pieza,
+      archivoStep: trazabilidad_archivo_step,
+      archivoStl: trazabilidad_archivo_stl,
     },
   };
 }

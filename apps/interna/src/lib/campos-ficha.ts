@@ -12,7 +12,7 @@ import type { Pieza } from "./esquema";
  * llegaron al PDF). Este archivo no tiene nada de cliente ni de servidor
  * (sin "use client", sin exceljs): lo importan los dos.
  */
-export type TipoCampo = "numero" | "texto" | "seleccionGiro" | "seleccionBooleano";
+export type TipoCampo = "numero" | "texto" | "seleccionGiro" | "seleccionBooleano" | "seleccionSiNo";
 export type CampoFicha = { clave: string; etiqueta: string; tipo: TipoCampo; unidad?: string };
 
 export const CAMPOS_ESPECIFICACIONES: CampoFicha[] = [
@@ -63,6 +63,20 @@ export const CAMPOS_COSTOS: CampoFicha[] = [
   { clave: "costo_notas", etiqueta: "Notas de costos", tipo: "texto" },
 ];
 
+/**
+ * Trazabilidad de manufactura: las columnas del BOM maestro
+ * (mxd-3d/Maestro_Partes_MX80.xlsx) que no tienen equivalente en otro campo
+ * de este catalogo. Ver comentario en TrazabilidadEsquema (lib/esquema.ts).
+ */
+export const CAMPOS_TRAZABILIDAD: CampoFicha[] = [
+  { clave: "trazabilidad_criticidad", etiqueta: "Criticidad", tipo: "texto" },
+  { clave: "trazabilidad_control_calidad", etiqueta: "Control de calidad", tipo: "texto" },
+  { clave: "trazabilidad_intercambiable", etiqueta: "Intercambiable", tipo: "seleccionSiNo" },
+  { clave: "trazabilidad_carpeta_pieza", etiqueta: "Carpeta de la pieza", tipo: "texto" },
+  { clave: "trazabilidad_archivo_step", etiqueta: "Archivo STEP", tipo: "seleccionSiNo" },
+  { clave: "trazabilidad_archivo_stl", etiqueta: "Archivo STL", tipo: "seleccionSiNo" },
+];
+
 export function campoPorClave(campos: CampoFicha[], clave: string): CampoFicha {
   const campo = campos.find((c) => c.clave === clave);
   if (!campo) throw new Error(`Campo de ficha desconocido: ${clave}`);
@@ -83,6 +97,12 @@ export function valorInicial(pieza: Pieza, clave: string): string | number | boo
   if (clave === "costo_pintura_mxn") return pieza.costosProduccion.costoPinturaMxn;
   if (clave === "costo_mano_obra_mxn") return pieza.costosProduccion.costoManoObraMxn;
   if (clave === "costo_notas") return pieza.costosProduccion.notas;
+  if (clave === "trazabilidad_criticidad") return pieza.trazabilidad.criticidad;
+  if (clave === "trazabilidad_control_calidad") return pieza.trazabilidad.controlCalidad;
+  if (clave === "trazabilidad_intercambiable") return pieza.trazabilidad.intercambiable;
+  if (clave === "trazabilidad_carpeta_pieza") return pieza.trazabilidad.carpetaPieza;
+  if (clave === "trazabilidad_archivo_step") return pieza.trazabilidad.archivoStep;
+  if (clave === "trazabilidad_archivo_stl") return pieza.trazabilidad.archivoStl;
   return (pieza.especificaciones as unknown as Record<string, string | number | null>)[clave] ?? null;
 }
 
@@ -102,6 +122,7 @@ export function textoValor(pieza: Pieza, campo: CampoFicha): string {
   }
   if (valor === null || valor === "") return "Pendiente";
   if (campo.tipo === "seleccionBooleano") return valor ? "In-house (MXD)" : "Maquilado afuera";
+  if (campo.tipo === "seleccionSiNo") return valor ? "Sí" : "No";
   if (campo.unidad === "MXN") return monedaTexto(valor as number);
   return campo.unidad ? `${valor} ${campo.unidad}` : String(valor);
 }

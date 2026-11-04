@@ -115,6 +115,16 @@ const BASE = {
     costoManoObraMxn: null,
     notas: null,
   },
+  // Trazabilidad pendiente por defecto; vive en el BOM Excel de interna, no
+  // aqui. Ver TrazabilidadEsquema en lib/esquema.ts.
+  trazabilidad: {
+    criticidad: null,
+    controlCalidad: null,
+    intercambiable: null,
+    carpetaPieza: null,
+    archivoStep: null,
+    archivoStl: null,
+  },
 } as const;
 
 export const PIEZAS_MX80: Pieza[] = [
