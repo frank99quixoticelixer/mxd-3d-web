@@ -4,6 +4,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { DescargasMalla } from "@/components/catalogo/DescargasMalla";
+import { EtiquetaWeb } from "@/components/catalogo/EtiquetaWeb";
+import { FichaEditable } from "@/components/catalogo/FichaEditable";
 import { BotonAtras } from "@/components/layout/BotonAtras";
 import { MODELO_PREDETERMINADO } from "@/config/modelos3d";
 import { MANUAL_MX80, MANUAL_POR_PIEZA } from "@/data/manual-mx80";
@@ -14,6 +16,7 @@ import {
 } from "@/features/viewer/componentes";
 import { VisorPieza } from "@/features/viewer/VisorPieza";
 import {
+  obtenerPiezaConBomPorSlug,
   obtenerPiezaPorSlug,
   obtenerTodas,
   obtenerSlugs,
@@ -27,7 +30,6 @@ import {
   type Pieza,
 } from "@/lib/esquema";
 import { conVersion } from "@/lib/imagenes";
-import { valorOPendiente } from "@/lib/texto";
 
 /** Genera una ruta estatica por pieza: carga instantanea y SEO correcto. */
 export function generateStaticParams() {
@@ -71,24 +73,6 @@ function FilaEspecificacion({
       </dd>
     </div>
   );
-}
-
-function dimensiones(pieza: Pieza): string {
-  const { largo_mm, ancho_mm, alto_mm } = pieza.especificaciones;
-  if (largo_mm && ancho_mm && alto_mm) {
-    return `${largo_mm} x ${ancho_mm} x ${alto_mm} mm`;
-  }
-  return "Pendiente";
-}
-
-function precioTexto(pieza: Pieza): string {
-  return pieza.precio_mxn === null
-    ? "Pendiente"
-    : pieza.precio_mxn.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
-}
-
-function existenciasTexto(pieza: Pieza): string {
-  return pieza.stock === null ? "Pendiente" : `${pieza.stock} pzas`;
 }
 
 /**
@@ -137,7 +121,9 @@ export default async function PaginaPieza({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const pieza = obtenerPiezaPorSlug(slug);
+  // Version "en vivo": lee el BOM_MX80.xlsx en cada visita para que una
+  // edicion reciente se vea de inmediato (ver comentario en lib/catalogo.ts).
+  const pieza = await obtenerPiezaConBomPorSlug(slug);
   if (!pieza) notFound();
 
   // El visor recibe tambien las subpiezas: son los objetos que trae el GLB.
@@ -199,25 +185,32 @@ export default async function PaginaPieza({
       </nav>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[1.15fr_1fr]">
-        {/* Solo la pieza, girando, sacada del GLB completo del dron. */}
-        {seleccionTieneAlgo(seleccion) ? (
-          <VisorPieza
-            seleccion={seleccion}
-            subpiezas={subpiezas.map(({ sku, slug, nombre, nombresBlender }) => ({
-              sku,
-              slug,
-              nombre,
-              nombresBlender,
-            }))}
-            nombre={pieza.nombre}
-            sinDespiece={pieza.sinDespiece}
-            className="h-[46vh] min-h-[360px] w-full lg:h-[62vh]"
-          />
-        ) : (
-          <div className="flex h-[46vh] min-h-[360px] w-full items-center justify-center rounded-2xl border border-mxd-borde bg-mxd-hueso p-6 text-center text-sm text-mxd-gris lg:h-[62vh]">
-            Esta pieza todavía no está en el modelo 3D del dron.
+        {/* Columna del visor: el modelo 3D y, debajo, la etiqueta fisica. */}
+        <div>
+          {seleccionTieneAlgo(seleccion) ? (
+            <VisorPieza
+              seleccion={seleccion}
+              subpiezas={subpiezas.map(({ sku, slug, nombre, nombresBlender }) => ({
+                sku,
+                slug,
+                nombre,
+                nombresBlender,
+              }))}
+              nombre={pieza.nombre}
+              sinDespiece={pieza.sinDespiece}
+              className="h-[46vh] min-h-[360px] w-full lg:h-[62vh]"
+            />
+          ) : (
+            <div className="flex h-[46vh] min-h-[360px] w-full items-center justify-center rounded-2xl border border-mxd-borde bg-mxd-hueso p-6 text-center text-sm text-mxd-gris lg:h-[62vh]">
+              Esta pieza todavía no está en el modelo 3D del dron.
+            </div>
+          )}
+
+          {/* Vista web de la etiqueta fisica, debajo del visor 3D. */}
+          <div className="mt-4">
+            <EtiquetaWeb pieza={pieza} />
           </div>
-        )}
+        </div>
 
         {/* Ficha tecnica */}
         <div>
@@ -266,88 +259,21 @@ export default async function PaginaPieza({
           {/* Interna ve la pieza completa: el catalogo de esta app no se
               recorta (ver lib/catalogo.ts). Todo lo que sigue esta detras de
               la contrasena de proxy.ts. */}
-          <section className="mt-8">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
-              Especificaciones
-            </h2>
-            <dl className="mt-3 rounded-xl border border-mxd-borde bg-white px-4">
-              <FilaEspecificacion
-                etiqueta="Masa"
-                valor={valorOPendiente(pieza.especificaciones.masa_g, "g")}
-              />
-              <FilaEspecificacion
-                etiqueta="Dimensiones (L x A x H)"
-                valor={dimensiones(pieza)}
-              />
-              <FilaEspecificacion
-                etiqueta="Tolerancia general"
-                valor={valorOPendiente(pieza.especificaciones.tolerancia_mm, "mm")}
-              />
-              <FilaEspecificacion
-                etiqueta="Par de apriete"
-                valor={valorOPendiente(pieza.especificaciones.par_apriete_nm, "N·m")}
-              />
-              <FilaEspecificacion
-                etiqueta="Material"
-                valor={valorOPendiente(pieza.especificaciones.material)}
-              />
-              <FilaEspecificacion
-                etiqueta="Acabado"
-                valor={valorOPendiente(pieza.especificaciones.acabado)}
-              />
-              <FilaEspecificacion
-                etiqueta="Proceso de fabricación"
-                valor={valorOPendiente(pieza.proceso_fabricacion)}
-              />
-              <FilaEspecificacion
-                etiqueta="Se monta en"
-                valor={seccionesTexto(pieza)}
-              />
-              <FilaEspecificacion
-                etiqueta="Cantidad por dron"
-                valor={cantidadTexto(pieza)}
-              />
-              <FilaEspecificacion
-                etiqueta="Notas"
-                valor={valorOPendiente(pieza.especificaciones.notas)}
-              />
-            </dl>
-            <p className="mt-2 text-[11px] leading-relaxed text-mxd-gris">
-              Los campos pendientes aún no han sido medidos ni verificados. No
-              se publican valores estimados. Los valores marcados como
-              propuestos son una recomendación técnica, no una especificación
-              aprobada.
-            </p>
-          </section>
-
-          <section className="mt-8">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
-              Compras e inventario
-            </h2>
-            <dl className="mt-3 rounded-xl border border-mxd-borde bg-white px-4">
-              <FilaEspecificacion
-                etiqueta="Número de parte (BOM)"
-                valor={valorOPendiente(pieza.numeroBom)}
-              />
-              <FilaEspecificacion
-                etiqueta="Proveedor"
-                valor={valorOPendiente(pieza.especificaciones.proveedor)}
-              />
-              <FilaEspecificacion
-                etiqueta="Parte del proveedor"
-                valor={valorOPendiente(pieza.especificaciones.parte_proveedor)}
-              />
-              <FilaEspecificacion etiqueta="Precio" valor={precioTexto(pieza)} />
-              <FilaEspecificacion etiqueta="Existencias" valor={existenciasTexto(pieza)} />
-            </dl>
-          </section>
+          <FichaEditable
+            pieza={pieza}
+            slug={slug}
+            filasFijas={[
+              { etiqueta: "Se monta en", valor: seccionesTexto(pieza) },
+              { etiqueta: "Cantidad por dron", valor: cantidadTexto(pieza) },
+            ]}
+          />
 
           {delManual && delManual.datos.length > 0 && (
             <section className="mt-8">
               <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
                 Según el manual de usuario
               </h2>
-              <dl className="mt-3 rounded-xl border border-mxd-borde bg-white px-4">
+              <dl className="mt-3 rounded-xl border border-mxd-borde bg-mxd-fondo px-4">
                 {delManual.datos.map((d) => (
                   <FilaEspecificacion key={d.etiqueta} etiqueta={d.etiqueta} valor={d.valor} />
                 ))}
@@ -450,7 +376,7 @@ export default async function PaginaPieza({
               <li key={p.sku}>
                 <Link
                   href={`/catalogo/${p.slug}`}
-                  className="flex flex-col rounded-lg border border-mxd-borde bg-white px-4 py-3 transition-colors hover:border-mxd-verde"
+                  className="flex flex-col rounded-lg border border-mxd-borde bg-mxd-fondo px-4 py-3 transition-colors hover:border-mxd-verde"
                 >
                   <span className="font-mono text-[10px] tracking-widest text-mxd-verde">
                     {p.sku}
@@ -475,7 +401,7 @@ export default async function PaginaPieza({
               <li key={p.sku}>
                 <Link
                   href={`/catalogo/${p.slug}`}
-                  className="flex flex-col rounded-lg border border-mxd-borde bg-white px-4 py-3 transition-colors hover:border-mxd-verde"
+                  className="flex flex-col rounded-lg border border-mxd-borde bg-mxd-fondo px-4 py-3 transition-colors hover:border-mxd-verde"
                 >
                   <span className="font-mono text-[10px] tracking-widest text-mxd-verde">
                     {p.sku}

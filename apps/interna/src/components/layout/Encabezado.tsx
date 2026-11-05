@@ -3,10 +3,16 @@ import Link from "next/link";
 
 import { MARCA } from "@/config/marca";
 import { NavegacionPrincipal } from "./NavegacionPrincipal";
+import { SelectorTema } from "./SelectorTema";
 
 export function Encabezado() {
   return (
-    <header className="sticky top-0 z-50 border-b border-mxd-borde bg-white/85 backdrop-blur">
+    // "sticky" + desenfoque es de lo mas caro para el navegador: tiene que
+    // recalcular el blur en cada cuadro de scroll, porque lo que hay DEBAJO
+    // del header cambia todo el tiempo. backdrop-blur-sm (mitad del radio
+    // de "backdrop-blur") corta buena parte de ese costo, y en una franja
+    // tan delgada como el header casi no se nota la diferencia.
+    <header className="sticky top-0 z-50 border-b border-mxd-borde bg-mxd-fondo/85 backdrop-blur-sm">
       {/* Ancho completo: el logo queda pegado al borde izquierdo de la pagina. */}
       <div className="flex h-20 w-full items-center justify-between gap-4 pl-2 pr-4 sm:h-24 sm:pl-4 sm:pr-6">
         <Link
@@ -29,7 +35,21 @@ export function Encabezado() {
           />
         </Link>
 
-        <NavegacionPrincipal />
+        <div className="flex items-center gap-2 sm:gap-4">
+          <NavegacionPrincipal />
+          {/* Descarga el BOM_MX80.xlsx tal como esta en el servidor en este
+              momento -- el mismo archivo que edita el formulario de cada
+              ficha. Va en el encabezado, no dentro de una pieza especifica,
+              porque es un archivo del catalogo entero. */}
+          <a
+            href="/api/bom/descargar"
+            className="rounded-lg border border-mxd-borde px-2 py-2 text-[13px] font-medium text-mxd-gris transition-colors hover:border-mxd-verde hover:text-mxd-verde-oscuro sm:px-3 sm:text-sm"
+          >
+            <span className="sm:hidden">BOM</span>
+            <span className="hidden sm:inline">Descargar BOM</span>
+          </a>
+          <SelectorTema />
+        </div>
       </div>
     </header>
   );

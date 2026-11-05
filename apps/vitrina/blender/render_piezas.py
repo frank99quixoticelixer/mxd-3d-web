@@ -36,6 +36,18 @@ DIRECCION_CAMARA = Vector((1.0, -1.25, 0.75)).normalized()
 # Fraccion del cuadro que puede ocupar la pieza (el resto es aire alrededor).
 OCUPACION = 0.78
 
+# Direccion de camara distinta para SKUs puntuales, cuando la generica de
+# arriba la muestra de canto o desde el lado que no es. MX80-014 (carcasa
+# frontal) queda desplazada casi puro en -X respecto al centro del dron (se
+# confirmo con los vertices reales del GLB: centro de la pieza en X=-0.42
+# contra X=-0.07 del dron completo), asi que su cara de afuera mira hacia
+# -X y no hacia donde mira la camara generica (+X,-Y). Si cambia el GLB y
+# esto deja de cuadrar, vuelve a calcularse igual: centro de la pieza menos
+# centro del dron completo, en espacio mundo.
+DIRECCIONES_CAMARA_POR_SKU = {
+    "MX80-014": Vector((-1.0, 0.05, 0.45)).normalized(),
+}
+
 
 def sanear(nombre):
     """El nombre como lo deja three.js al cargar el GLB (ver componentes.ts)."""
@@ -235,7 +247,7 @@ def puntos_mundo(objetos, maximo_por_objeto=20000):
     return puntos
 
 
-def encuadrar(camara, piso, puntos):
+def encuadrar(camara, piso, puntos, direccion_camara=DIRECCION_CAMARA):
     """
     Camara que mete la pieza justa en el cuadro. Se proyectan los vertices
     reales al sistema de la camara (que mira siempre desde la misma
@@ -245,20 +257,20 @@ def encuadrar(camara, piso, puntos):
     datos = camara.data
     tan_h = math.tan(math.atan(datos.sensor_width / (2 * datos.lens))) * OCUPACION
     tan_v = tan_h * ALTO / ANCHO
-    orientacion = (-DIRECCION_CAMARA).to_track_quat("-Z", "Y")
+    orientacion = (-direccion_camara).to_track_quat("-Z", "Y")
     derecha = orientacion @ Vector((1, 0, 0))
     arriba = orientacion @ Vector((0, 1, 0))
 
     # Centro de la pieza en la imagen (no el de su caja en 3D).
     xs = [p.dot(derecha) for p in puntos]
     ys = [p.dot(arriba) for p in puntos]
-    zs = [p.dot(DIRECCION_CAMARA) for p in puntos]
+    zs = [p.dot(direccion_camara) for p in puntos]
     centro = (
         derecha * ((min(xs) + max(xs)) / 2)
         + arriba * ((min(ys) + max(ys)) / 2)
-        + DIRECCION_CAMARA * ((min(zs) + max(zs)) / 2)
+        + direccion_camara * ((min(zs) + max(zs)) / 2)
     )
-    cx, cy, cz = centro.dot(derecha), centro.dot(arriba), centro.dot(DIRECCION_CAMARA)
+    cx, cy, cz = centro.dot(derecha), centro.dot(arriba), centro.dot(direccion_camara)
     distancia = 0.0
     for x, y, z in zip(xs, ys, zs):
         cerca = z - cz  # cuanto mas cerca de la camara esta el punto
@@ -270,7 +282,7 @@ def encuadrar(camara, piso, puntos):
 
     minimo_z = min(p.z for p in puntos)
     radio = max((max(xs) - min(xs)), (max(ys) - min(ys)), (max(zs) - min(zs)), 1e-4)
-    camara.location = centro + DIRECCION_CAMARA * distancia
+    camara.location = centro + direccion_camara * distancia
     camara.rotation_euler = orientacion.to_euler()
     datos.clip_start = max(distancia * 0.01, 1e-4)
     datos.clip_end = distancia * 20 + radio * 4
@@ -308,7 +320,8 @@ def main():
             if obj.type == "LIGHT" and obj not in propios:
                 continue
             obj.hide_render = obj not in visibles
-        encuadrar(camara, piso, puntos)
+        direccion = DIRECCIONES_CAMARA_POR_SKU.get(pieza["sku"], DIRECCION_CAMARA)
+        encuadrar(camara, piso, puntos, direccion)
         archivo = os.path.join(salida, f"{pieza['sku']}.jpg")
         escena.render.filepath = archivo
         bpy.ops.render.render(write_still=True)

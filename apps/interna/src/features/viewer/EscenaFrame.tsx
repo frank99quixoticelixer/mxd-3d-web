@@ -19,6 +19,9 @@ import {
   urlModelo,
 } from "@/config/modelos3d";
 import { prepararMateriales, type MaterialGuardado } from "./resolverPiezas";
+// Importarlo (y no solo construirBVH) aplica el parche de raycast acelerado
+// de three-mesh-bvh por su efecto secundario: ver el comentario en bvh.ts.
+import { construirBVH } from "./bvh";
 import { DESPIECE_MAXIMO, useVisor, type ZonaVisor } from "./estado";
 import {
   componentesDelBrazo,
@@ -46,6 +49,8 @@ import { LimiteError } from "./LimiteError";
 const NOMBRES_BRAZO = ["brazo", "brazo_2", "brazo_3", "brazo_4"] as const;
 
 const COLOR_HOVER = new THREE.Color(COLORES.verdeAcento);
+/** El tanque comparte tono con el verde de acento: ese hover no se nota encima. */
+const COLOR_HOVER_TANQUE = new THREE.Color(COLORES.rojoAlerta);
 /** Brazos y marco: piezas grandes y claras, con poco tinte basta. */
 const INTENSIDAD_HOVER = 0.7;
 /** Tanque, tren y frente son oscuros o blancos: necesitan mas tinte para notarse. */
@@ -79,6 +84,8 @@ interface Objetivo {
   /** Solo en la capa 1: la zona en la que entra el clic. */
   zona: ZonaVisor | null;
   intensidad: number;
+  /** Color del resaltado; por defecto COLOR_HOVER (ver resaltar). */
+  color?: THREE.Color;
 }
 
 /** Lo que el visor le avisa a la interfaz sobre el objetivo bajo el cursor. */
@@ -363,6 +370,11 @@ function ChasisPlegable({
   const { raiz, brazos, marco, tanque, tren, frente, radio, semialto } =
     useMemo(() => {
     const copia = gltf.scene.clone(true);
+    // Arbol de limites por malla: sin esto, resolver que pieza esta bajo el
+    // cursor prueba el rayo triangulo por triangulo en cada "pointermove" del
+    // navegador (no por cuadro), y eso es lo que se siente como lentitud al
+    // pasar el mouse o al arrastrar para girar — ver bvh.ts.
+    construirBVH(copia);
 
     const brazos: Brazo[] = NOMBRES_BRAZO.map((nombre) => {
       const objeto = copia.getObjectByName(nombre) as THREE.Object3D;
@@ -423,15 +435,28 @@ function ChasisPlegable({
    * cursor, aunque dos brazos lleven a la misma zona.
    */
   const conjuntos = useMemo(() => {
-    const lista: { clave: string; zona: ZonaVisor; nodos: THREE.Object3D[]; intensidad: number }[] =
-      brazos.map((b) => ({
+    const lista: {
+      clave: string;
+      zona: ZonaVisor;
+      nodos: THREE.Object3D[];
+      intensidad: number;
+      color?: THREE.Color;
+    }[] = brazos.map((b) => ({
         clave: b.nombre,
         zona: ZONA_DE_BRAZO[b.nombre as (typeof NOMBRES_BRAZO)[number]],
         nodos: [b.objeto],
         intensidad: INTENSIDAD_HOVER,
       }));
     if (marco) lista.push({ clave: "marco", zona: "frame", nodos: marco.objetos, intensidad: INTENSIDAD_HOVER });
-    if (tanque) lista.push({ clave: "tanque", zona: "tanque", nodos: tanque.objetos, intensidad: INTENSIDAD_HOVER_FUERTE });
+    if (tanque) {
+      lista.push({
+        clave: "tanque",
+        zona: "tanque",
+        nodos: tanque.objetos,
+        intensidad: INTENSIDAD_HOVER_FUERTE,
+        color: COLOR_HOVER_TANQUE,
+      });
+    }
     if (tren) lista.push({ clave: "tren", zona: "tren-aterrizaje", nodos: tren.objetos, intensidad: INTENSIDAD_HOVER_FUERTE });
     if (frente) lista.push({ clave: "frente", zona: "frente", nodos: frente.objetos, intensidad: INTENSIDAD_HOVER_FUERTE });
     return lista;
@@ -555,7 +580,7 @@ function ChasisPlegable({
       if (capa === 1) {
         const c = conjuntos.find((x) => x.nodos.some((n) => esDescendiente(malla, n)));
         return c
-          ? { clave: c.clave, nodos: c.nodos, sku: null, zona: c.zona, intensidad: c.intensidad }
+          ? { clave: c.clave, nodos: c.nodos, sku: null, zona: c.zona, intensidad: c.intensidad, color: c.color }
           : null;
       }
       if (capa === 2) {
@@ -595,7 +620,7 @@ function ChasisPlegable({
       }
       const materiales = siguiente ? materialesDe(siguiente.nodos) : [];
       for (const g of materiales) {
-        g.material.emissive.copy(COLOR_HOVER);
+        g.material.emissive.copy(siguiente!.color ?? COLOR_HOVER);
         g.material.emissiveMap = null;
         g.material.emissiveIntensity = siguiente!.intensidad;
         g.material.needsUpdate = true;
@@ -1215,6 +1240,13 @@ function ChasisPlegable({
     <primitive
       object={raiz}
       onPointerMove={(evento: ThreeEvent<PointerEvent>) => {
+        // Con un boton presionado el usuario esta arrastrando para girar,
+        // desplazar o hacer zoom (OrbitControls), no pasando el cursor para
+        // ver que hay: resolver y repintar el resaltado en cada uno de esos
+        // movimientos es trabajo de sobra que no se nota (el resaltado
+        // anterior se queda fijo, que es justo lo que se espera mientras se
+        // gira la camara).
+        if (evento.buttons !== 0) return;
         // R3F llama a este manejador una vez por cada malla atravesada por el
         // rayo, empezando por la mas cercana, que puede ser una pieza oculta
         // de otra zona. Se decide una sola vez con todas las intersecciones y
@@ -1225,6 +1257,10 @@ function ChasisPlegable({
       }}
       onPointerDown={(evento: ThreeEvent<PointerEvent>) => {
         inicioPulsado.current = { x: evento.clientX, y: evento.clientY };
+        // Empezar a arrastrar apaga el resaltado: si no, lo que estaba
+        // iluminado al presionar se queda pintado durante todo el giro,
+        // porque onPointerMove ya no lo actualiza mientras se arrastra.
+        resaltar(null);
       }}
       onPointerOut={() => resaltar(null)}
       onClick={(evento: ThreeEvent<MouseEvent>) => {

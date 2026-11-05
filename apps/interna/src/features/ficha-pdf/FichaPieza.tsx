@@ -1,6 +1,17 @@
 import { Image, Page, Text, View } from "@react-pdf/renderer";
 
 import {
+  CAMPOS_COMPRAS,
+  CAMPOS_COSTOS,
+  CAMPOS_ESPECIFICACIONES,
+  CAMPOS_TRAZABILIDAD,
+  campoPorClave,
+  monedaTexto,
+  textoValor,
+  type CampoFicha,
+} from "@/lib/campos-ficha";
+import { costoMaterial, costoProduccionTotal } from "@/lib/costos";
+import {
   cantidadPorDron,
   ETIQUETAS_SECCION,
   ETIQUETAS_SUBSISTEMA,
@@ -8,13 +19,38 @@ import {
   type Pieza,
   type Seccion,
 } from "@/lib/esquema";
-import { valorOPendiente } from "@/lib/texto";
 
 import { estilos } from "./estilos";
 import { EtiquetaPieza } from "./EtiquetaPieza";
 import { EncabezadoPagina, PiePagina } from "./PartesComunes";
 import type { ImagenPdf } from "./recursos";
 import { selloRevision } from "./revision";
+
+/** Claves de @/lib/campos-ficha que entran en cada bloque de la ficha. */
+const CLAVES_DIMENSIONES = [
+  "masa_g",
+  "largo_mm",
+  "ancho_mm",
+  "alto_mm",
+  "tolerancia_mm",
+  "rosca",
+  "longitud_mm",
+  "volumen_ml",
+  "diametro_tubo_mm",
+  "grosor_pared_mm",
+  "diametro_barreno_mm",
+  "ancho_perfil_mm",
+  "alto_perfil_mm",
+];
+const CLAVES_MONTAJE = ["numero_tornillos", "par_apriete_nm", "sentido_giro", "modulo_conectado"];
+const CLAVES_MOTOR = [
+  "motor_kv",
+  "motor_voltaje_nominal_v",
+  "motor_rpm_nominal",
+  "motor_torque_nominal_nm",
+  "motor_torque_max_nm",
+];
+const CLAVES_COMPRAS = ["numero_parte_mxd", "proveedor", "parte_proveedor", "precio_mxn", "stock"];
 
 /**
  * Ficha de una pieza.
@@ -69,12 +105,10 @@ function Vinetas({ puntos }: { puntos: string[] }) {
   );
 }
 
-function dimensiones(pieza: Pieza): string {
-  const { largo_mm, ancho_mm, alto_mm } = pieza.especificaciones;
-  if (largo_mm && ancho_mm && alto_mm) {
-    return `${largo_mm} x ${ancho_mm} x ${alto_mm} mm`;
-  }
-  return "Pendiente";
+/** Una fila de @/lib/campos-ficha, o nada si ese campo no aplica a esta pieza. */
+function FilaCampo({ pieza, campo }: { pieza: Pieza; campo: CampoFicha }) {
+  if (pieza.camposNoAplican.includes(campo.clave)) return null;
+  return <FilaSpec etiqueta={campo.etiqueta} valor={textoValor(pieza, campo)} />;
 }
 
 function seccionesTexto(pieza: Pieza): string {
@@ -137,21 +171,14 @@ export function FichaPieza({
             no sustituye a las cotas de la tabla.
           </Text>
 
-          <EtiquetaPieza pieza={pieza} />
+          <EtiquetaPieza pieza={pieza} logo={logo} />
         </View>
 
         <View style={estilos.columnaDatos}>
           <Text style={estilos.subtitulo}>DIMENSIONES Y MASA</Text>
-          <FilaSpec etiqueta="Masa" valor={valorOPendiente(e.masa_g, "g")} />
-          <FilaSpec etiqueta="Dimensiones (L x A x H)" valor={dimensiones(pieza)} />
-          <FilaSpec
-            etiqueta="Tolerancia general"
-            valor={valorOPendiente(e.tolerancia_mm, "mm")}
-          />
-          <FilaSpec
-            etiqueta="Par de apriete"
-            valor={valorOPendiente(e.par_apriete_nm, "N·m")}
-          />
+          {CLAVES_DIMENSIONES.map((clave) => (
+            <FilaCampo key={clave} pieza={pieza} campo={campoPorClave(CAMPOS_ESPECIFICACIONES, clave)} />
+          ))}
 
           <View style={estilos.bloque}>
             <Text style={estilos.subtitulo}>MONTAJE</Text>
@@ -166,6 +193,9 @@ export function FichaPieza({
               etiqueta="Cantidad por dron"
               valor={total > 0 ? String(total) : "Pendiente"}
             />
+            {CLAVES_MONTAJE.map((clave) => (
+              <FilaCampo key={clave} pieza={pieza} campo={campoPorClave(CAMPOS_ESPECIFICACIONES, clave)} />
+            ))}
           </View>
         </View>
       </View>
@@ -177,18 +207,52 @@ export function FichaPieza({
       </Bloque>
 
       <Bloque titulo="MATERIAL Y ACABADO">
-        <FilaSpec etiqueta="Material" valor={valorOPendiente(e.material)} />
-        <FilaSpec etiqueta="Acabado" valor={valorOPendiente(e.acabado)} />
-        <FilaSpec
-          etiqueta="Proceso de fabricacion"
-          valor={valorOPendiente(pieza.proceso_fabricacion)}
-        />
-        <FilaSpec etiqueta="Proveedor" valor={valorOPendiente(e.proveedor)} />
-        <FilaSpec
-          etiqueta="Numero de parte del proveedor"
-          valor={valorOPendiente(e.parte_proveedor)}
+        <FilaCampo pieza={pieza} campo={campoPorClave(CAMPOS_ESPECIFICACIONES, "material")} />
+        <FilaCampo pieza={pieza} campo={campoPorClave(CAMPOS_ESPECIFICACIONES, "acabado")} />
+        <FilaCampo
+          pieza={pieza}
+          campo={campoPorClave(CAMPOS_ESPECIFICACIONES, "proceso_fabricacion")}
         />
       </Bloque>
+
+      {CLAVES_MOTOR.some((c) => !pieza.camposNoAplican.includes(c)) ? (
+        <Bloque titulo="MOTOR">
+          {CLAVES_MOTOR.map((clave) => (
+            <FilaCampo key={clave} pieza={pieza} campo={campoPorClave(CAMPOS_ESPECIFICACIONES, clave)} />
+          ))}
+        </Bloque>
+      ) : null}
+
+      <Bloque titulo="COMPRAS E INVENTARIO">
+        {CLAVES_COMPRAS.map((clave) => (
+          <FilaCampo key={clave} pieza={pieza} campo={campoPorClave(CAMPOS_COMPRAS, clave)} />
+        ))}
+      </Bloque>
+
+      {CAMPOS_COSTOS.some((c) => !pieza.camposNoAplican.includes(c.clave)) ? (
+        <Bloque titulo="COSTOS DE PRODUCCION (INTERNO)">
+          {CAMPOS_COSTOS.map((campo) => (
+            <FilaCampo key={campo.clave} pieza={pieza} campo={campo} />
+          ))}
+          {!pieza.camposNoAplican.includes("costo_material") ? (
+            <>
+              <FilaSpec etiqueta="Costo de material (calculado)" valor={monedaTexto(costoMaterial(pieza))} />
+              <FilaSpec
+                etiqueta="Costo total de produccion"
+                valor={monedaTexto(costoProduccionTotal(pieza))}
+              />
+            </>
+          ) : null}
+        </Bloque>
+      ) : null}
+
+      {CAMPOS_TRAZABILIDAD.some((c) => !pieza.camposNoAplican.includes(c.clave)) ? (
+        <Bloque titulo="TRAZABILIDAD">
+          {CAMPOS_TRAZABILIDAD.map((campo) => (
+            <FilaCampo key={campo.clave} pieza={pieza} campo={campo} />
+          ))}
+        </Bloque>
+      ) : null}
 
       {pieza.especificaciones_tecnicas.length > 0 ? (
         <View style={estilos.bloque}>

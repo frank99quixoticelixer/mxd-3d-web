@@ -51,6 +51,7 @@ export const SeccionEsquema = z.enum([
   "brazo-ccw-1",
   "brazo-ccw-2",
   "frame-general",
+  "tren-de-aterrizaje",
   "tanque",
   "parte-frontal",
   "pilas",
@@ -63,6 +64,7 @@ export const ETIQUETAS_SECCION: Record<Seccion, string> = {
   "brazo-ccw-1": "Brazo CCW 1",
   "brazo-ccw-2": "Brazo CCW 2",
   "frame-general": "Frame general",
+  "tren-de-aterrizaje": "Tren de aterrizaje",
   tanque: "Tanque",
   "parte-frontal": "Parte frontal",
   pilas: "Pilas",
@@ -78,10 +80,15 @@ export const ORDEN_SECCIONES: readonly Seccion[] = [
   "brazo-ccw-1",
   "brazo-ccw-2",
   "frame-general",
+  "tren-de-aterrizaje",
   "tanque",
   "parte-frontal",
   "pilas",
 ];
+
+/** Sentido de giro de una hoja de helice. */
+export const SentidoGiroEsquema = z.enum(["CW", "CCW"]);
+export type SentidoGiro = z.infer<typeof SentidoGiroEsquema>;
 
 /**
  * Especificaciones tecnicas.
@@ -105,13 +112,64 @@ export const EspecificacionesEsquema = z.object({
 
   /** Tolerancia dimensional general, en milimetros. */
   tolerancia_mm: z.number().positive().nullable().default(null),
-  /** Par de apriete, en newton-metro. */
+  /** Par de apriete, en newton-metro. Ver nota de "apriete manual" mas abajo. */
   par_apriete_nm: z.number().positive().nullable().default(null),
+  /**
+   * Cuantos tornillos fijan la pieza. Es un campo aparte de par_apriete_nm
+   * porque muchas piezas atornilladas no tienen un par critico que
+   * documentar (les basta quedar bien sujetas): esas llevan numero_tornillos
+   * con par_apriete_nm en null. La interfaz y los documentos deben mostrar
+   * "Apriete manual" en ese caso, no "pendiente" — "pendiente" es solo para
+   * un dato que falta capturar, no para uno que no aplica.
+   */
+  numero_tornillos: z.number().int().nonnegative().nullable().default(null),
 
   /** Proveedor asignado, cuando la pieza no se fabrica en casa. */
   proveedor: z.string().nullable().default(null),
   /** Numero de parte del proveedor. */
   parte_proveedor: z.string().nullable().default(null),
+
+  // -- Campos especificos por tipo de pieza --------------------------------
+  // Todos conviven en una sola hoja (un renglon por SKU en el BOM Excel) en
+  // vez de un esquema distinto por categoria: la mayoria de las piezas no
+  // los usa, y eso es justo lo que describe `camposNoAplican` en PiezaEsquema
+  // (ver mas abajo). Mantenerlos aqui evita un segundo lugar donde buscar
+  // "que campos tiene esta pieza".
+
+  /** Rosca del sujetador (p. ej. "M3", "M4"). Solo tornillos y tuercas. */
+  rosca: z.string().nullable().default(null),
+  /** Longitud, en milimetros: tornillos, hojas de helice. Reemplaza largo/ancho/alto cuando aplica. */
+  longitud_mm: z.number().positive().nullable().default(null),
+  /** Sentido de giro de una hoja de helice. */
+  sentido_giro: SentidoGiroEsquema.nullable().default(null),
+
+  /** A que modulo/PCB se conecta (p. ej. "PowerModuleBoard", "FCU"). Solo electronica. */
+  modulo_conectado: z.string().nullable().default(null),
+
+  /** Volumen util, en mililitros. Solo el tanque de aspersion. */
+  volumen_ml: z.number().positive().nullable().default(null),
+
+  /** Diametro exterior del tubo, en milimetros. Tubos redondos (brazo, patines, travesanos). */
+  diametro_tubo_mm: z.number().positive().nullable().default(null),
+  /** Grosor de pared, en milimetros. Tubos redondos y perfiles rectangulares. */
+  grosor_pared_mm: z.number().positive().nullable().default(null),
+  /** Diametro de los barrenos de montaje, en milimetros. Tubos y perfiles. */
+  diametro_barreno_mm: z.number().positive().nullable().default(null),
+
+  /** Ancho y alto de seccion del perfil de aluminio rectangular del frame. */
+  ancho_perfil_mm: z.number().positive().nullable().default(null),
+  alto_perfil_mm: z.number().positive().nullable().default(null),
+
+  /** Constante KV del motor, en RPM por volt. Solo el ensamble del motor. */
+  motor_kv: z.number().positive().nullable().default(null),
+  /** Voltaje nominal de operacion, en volts. */
+  motor_voltaje_nominal_v: z.number().positive().nullable().default(null),
+  /** Velocidad nominal, en RPM. */
+  motor_rpm_nominal: z.number().positive().nullable().default(null),
+  /** Par nominal, en newton-metro. */
+  motor_torque_nominal_nm: z.number().positive().nullable().default(null),
+  /** Par maximo, en newton-metro. */
+  motor_torque_max_nm: z.number().positive().nullable().default(null),
 
   /**
    * De donde sale cada dato de esta ficha. Una cota medida con calibrador y
@@ -124,6 +182,76 @@ export const EspecificacionesEsquema = z.object({
   notas: z.string().nullable().default(null),
 });
 export type Especificaciones = z.infer<typeof EspecificacionesEsquema>;
+
+/**
+ * Costeo de produccion. Nace con la carcasa frontal (MX80-014), la primera
+ * pieza que se logro imprimir in-house en la Neptune 4 Pro Max; la idea es ir
+ * llenando esta hoja pieza por pieza a medida que se produce cada una.
+ *
+ * Va separado de `especificaciones` porque es informacion de negocio (cuanto
+ * cuesta hacerla), no tecnica (que es y como se mide), y porque
+ * `especificaciones` se sobreescribe completo con cada
+ * `npm run specs:importar` — mezclar costos ahi los borraria en el siguiente
+ * import. Por eso tambien el peso vive aqui (`masaG`) y no se reusa
+ * `especificaciones.masa_g`: ese es el peso de ingenieria que entra por el
+ * CSV del proveedor, este es el peso real que salio de la impresion.
+ *
+ * El costo de material NO se guarda como numero fijo: se calcula a partir de
+ * `masaG` y `material` (la clave hacia el precio por kilo) con las funciones
+ * de lib/costos.ts. Asi un cambio de precio del rollo o una correccion de
+ * peso recalcula solo, sin ir pieza por pieza.
+ *
+ * IMPORTANTE: mismo criterio que EspecificacionesEsquema. null = pendiente de
+ * pesar/cronometrar/cotizar, no se inventan valores.
+ */
+export const CostosProduccionEsquema = z.object({
+  /** Si se fabrica dentro de MXD (impresion/maquinado propio) o se manda a hacer afuera. */
+  fabricadoInhouse: z.boolean().nullable().default(null),
+  /** Maquina o proceso donde se produce, cuando es in-house (p. ej. "Neptune 4 Pro Max"). */
+  equipo: z.string().nullable().default(null),
+  /** Material de produccion, como clave hacia COSTO_MATERIAL_MXN_KG (p. ej. "PLA"). */
+  material: z.string().nullable().default(null),
+  /** Masa real consumida al producir UNA pieza, en gramos (pesada o calculada en la impresion). */
+  masaG: z.number().positive().nullable().default(null),
+  /** Horas de maquina para producir UNA pieza. */
+  horasProduccion: z.number().positive().nullable().default(null),
+  /** Costo de pintado o acabado post-proceso, por pieza, en MXN. */
+  costoPinturaMxn: z.number().nonnegative().nullable().default(null),
+  /** Costo de mano de obra aparte del material y la pintura, por pieza, en MXN. */
+  costoManoObraMxn: z.number().nonnegative().nullable().default(null),
+  /** Notas libres sobre el costeo (pendientes, supuestos, discrepancias). */
+  notas: z.string().nullable().default(null),
+});
+export type CostosProduccion = z.infer<typeof CostosProduccionEsquema>;
+
+/**
+ * Trazabilidad de manufactura, alineada a las columnas que no tienen
+ * equivalente en este esquema dentro del BOM maestro
+ * (mxd-3d/Maestro_Partes_MX80.xlsx, hoja "Maestro Partes MX80"). Las demas
+ * columnas del maestro SI tienen equivalente aqui con otro nombre y no se
+ * duplican: Nivel/Ensamble padre -> parteDe, Modelo GLB -> glb,
+ * Estado del modelado -> estado, Zona del dron -> secciones/subsistema,
+ * Rev. -> el sufijo "-R00" de numeroBom, Fotografia -> imagen.
+ *
+ * Va separado de `especificaciones` por el mismo motivo que
+ * CostosProduccionEsquema: no es informacion tecnica de la pieza, es
+ * seguimiento de control de calidad y manufactura.
+ */
+export const TrazabilidadEsquema = z.object({
+  /** "Alta"/"Media"/"Baja" en el maestro; aqui texto libre para no duplicar un enum ajeno. */
+  criticidad: z.string().nullable().default(null),
+  /** Que prueba o inspeccion aprueba la pieza (p. ej. "Prueba funcional de vuelo"). */
+  controlCalidad: z.string().nullable().default(null),
+  /** Si una pieza de otro proveedor o revision puede sustituirla sin rediseno. */
+  intercambiable: z.boolean().nullable().default(null),
+  /** Ruta de referencia a la carpeta de la pieza en el maestro (informativa, no se usa para servir archivos). */
+  carpetaPieza: z.string().nullable().default(null),
+  /** Si ya existe un archivo STEP de la pieza. */
+  archivoStep: z.boolean().nullable().default(null),
+  /** Si ya existe un archivo STL de la pieza. */
+  archivoStl: z.boolean().nullable().default(null),
+});
+export type Trazabilidad = z.infer<typeof TrazabilidadEsquema>;
 
 /** Estado de la pieza dentro del pipeline de digitalizacion. */
 export const EstadoPiezaEsquema = z.enum([
@@ -225,6 +353,24 @@ export const PiezaEsquema = z.object({
   stock: z.number().int().nonnegative().nullable().default(null),
 
   especificaciones: EspecificacionesEsquema,
+
+  /**
+   * Nombres de campos de `especificaciones` que NO le corresponden a esta
+   * pieza (p. ej. "par_apriete_nm" en el tanque, que va montado sin
+   * atornillar). La interfaz y los documentos deben mostrar "N/A" para estos
+   * campos, nunca "pendiente": "pendiente" implica que falta capturar un
+   * dato que SI existe, "N/A" dice que el dato no existe para esta pieza.
+   * No confundir con numero_tornillos=null + par_apriete_nm=null, que es el
+   * caso de "apriete manual" (ver comentario en EspecificacionesEsquema):
+   * ahi el tornillo si existe, solo no tiene un par critico que documentar.
+   */
+  camposNoAplican: z.array(z.string()).default([]),
+
+  /** Costeo de produccion. Ver comentario en CostosProduccionEsquema. */
+  costosProduccion: CostosProduccionEsquema.default({}),
+
+  /** Trazabilidad de manufactura. Ver comentario en TrazabilidadEsquema. */
+  trazabilidad: TrazabilidadEsquema.default({}),
 
   /** Clasificacion de compra o de ingenieria ("Propulsion - helice"). */
   categoria: z.string().nullable().default(null),

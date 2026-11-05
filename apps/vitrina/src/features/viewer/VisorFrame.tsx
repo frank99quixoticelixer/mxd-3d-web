@@ -57,7 +57,7 @@ function BarraLateral({
   return (
     <div
       className={`rounded-lg border px-2.5 py-1.5 lg:px-3 lg:py-2.5 ${
-        bloqueada ? "border-mxd-borde bg-mxd-hueso" : "border-mxd-borde bg-white"
+        bloqueada ? "border-mxd-borde bg-mxd-hueso" : "border-mxd-borde bg-mxd-fondo"
       }`}
     >
       <div className="flex items-baseline justify-between gap-2">
@@ -412,11 +412,11 @@ export function VisorFrame({
               type="button"
               onClick={atras}
               title="Volver a la vista anterior"
-              className="rounded-lg border border-mxd-borde bg-white/90 px-2.5 py-1.5 text-[11px] font-semibold text-mxd-tinta shadow-sm backdrop-blur transition-colors hover:border-mxd-verde hover:text-mxd-verde lg:text-xs"
+              className="rounded-lg border border-mxd-borde bg-mxd-fondo/90 px-2.5 py-1.5 text-[11px] font-semibold text-mxd-tinta shadow-sm backdrop-blur transition-colors hover:border-mxd-verde hover:text-mxd-verde lg:text-xs"
             >
               ← Atrás
             </button>
-            <span className="flex items-center gap-1 rounded-lg bg-white/80 px-2 py-1 text-[10px] font-medium text-mxd-gris backdrop-blur lg:text-[11px]">
+            <span className="flex items-center gap-1 rounded-lg bg-mxd-fondo/80 px-2 py-1 text-[10px] font-medium text-mxd-gris backdrop-blur lg:text-[11px]">
               <button type="button" onClick={() => irA(null, null)} className="hover:text-mxd-verde">
                 MX80
               </button>
@@ -445,7 +445,7 @@ export function VisorFrame({
         {/* Tarjeta de lo que se esta viendo, con la puerta a su ficha. El
             visor ensena donde va la pieza; la ficha dice que es. */}
         {fichaActual && (
-          <div className="absolute inset-x-2 bottom-8 z-10 flex items-center justify-between gap-3 rounded-xl border border-mxd-borde bg-white/95 px-3 py-2 shadow-sm backdrop-blur sm:inset-x-auto sm:left-3 sm:max-w-sm">
+          <div className="absolute inset-x-2 bottom-8 z-10 flex items-center justify-between gap-3 rounded-xl border border-mxd-borde bg-mxd-fondo/95 px-3 py-2 shadow-sm backdrop-blur sm:inset-x-auto sm:left-3 sm:max-w-sm">
             <div className="min-w-0">
               <p className="font-mono text-[10px] tracking-widest text-mxd-verde">
                 {fichaActual.sku}
@@ -470,7 +470,7 @@ export function VisorFrame({
             pantallaCompleta ? "Salir de pantalla completa" : "Pantalla completa"
           }
           aria-pressed={pantallaCompleta}
-          className="absolute right-2 top-2 z-10 rounded-lg border border-mxd-borde bg-white/90 px-2.5 py-1.5 text-[11px] font-semibold text-mxd-tinta shadow-sm backdrop-blur transition-colors hover:border-mxd-verde hover:text-mxd-verde lg:right-3 lg:top-3 lg:text-xs"
+          className="absolute right-2 top-2 z-10 rounded-lg border border-mxd-borde bg-mxd-fondo/90 px-2.5 py-1.5 text-[11px] font-semibold text-mxd-tinta shadow-sm backdrop-blur transition-colors hover:border-mxd-verde hover:text-mxd-verde lg:right-3 lg:top-3 lg:text-xs"
         >
           {pantallaCompleta ? "Salir" : "Expandir"}
         </button>
@@ -494,7 +494,7 @@ export function VisorFrame({
       </div>
 
       {/* Barra de mandos: abajo en movil, a la derecha en escritorio. */}
-      <aside className="max-h-[38dvh] shrink-0 overflow-y-auto border-t border-mxd-borde bg-white/95 p-2 backdrop-blur lg:max-h-none lg:w-56 lg:border-l lg:border-t-0 lg:p-3">
+      <aside className="max-h-[38dvh] shrink-0 overflow-y-auto border-t border-mxd-borde bg-mxd-fondo/95 p-2 backdrop-blur lg:max-h-none lg:w-56 lg:border-l lg:border-t-0 lg:p-3">
         <h2 className="mb-1.5 hidden text-[10px] font-bold uppercase tracking-widest text-mxd-gris lg:mb-2 lg:block">
           Controles
         </h2>
@@ -564,7 +564,7 @@ export function VisorFrame({
             type="button"
             title="Volver al estado inicial"
             onClick={reiniciarVista}
-            className="rounded-lg border border-mxd-borde bg-white px-2 py-1.5 text-[11px] font-semibold text-mxd-tinta transition-colors hover:border-mxd-verde hover:text-mxd-verde lg:px-3 lg:py-2 lg:text-xs"
+            className="rounded-lg border border-mxd-borde bg-mxd-fondo px-2 py-1.5 text-[11px] font-semibold text-mxd-tinta transition-colors hover:border-mxd-verde hover:text-mxd-verde lg:px-3 lg:py-2 lg:text-xs"
           >
             Reiniciar
           </button>

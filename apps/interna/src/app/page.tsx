@@ -57,10 +57,10 @@ export default function PaginaInicio() {
       </section>
 
       {/* ---------------- Cifras (del manual de usuario) ---------------- */}
-      <section className="border-y border-mxd-borde bg-white">
+      <section className="border-y border-mxd-borde bg-mxd-fondo">
         <dl className="mx-auto grid max-w-7xl grid-cols-2 gap-px bg-mxd-borde sm:grid-cols-3 lg:grid-cols-6">
           {CIFRAS_MX80.map((cifra) => (
-            <div key={cifra.etiqueta} className="bg-white px-4 py-6 sm:px-6">
+            <div key={cifra.etiqueta} className="bg-mxd-fondo px-4 py-6 sm:px-6">
               <dt className="text-[11px] font-bold uppercase tracking-widest text-mxd-gris">
                 {cifra.etiqueta}
               </dt>
@@ -85,7 +85,7 @@ export default function PaginaInicio() {
           {CARACTERISTICAS_MX80.map((c) => (
             <li
               key={c.titulo}
-              className="rounded-xl border border-mxd-borde bg-white p-5"
+              className="rounded-xl border border-mxd-borde bg-mxd-fondo p-5"
             >
               <h3 className="text-sm font-bold text-mxd-tinta">{c.titulo}</h3>
               <p className="mt-2 text-sm leading-relaxed text-mxd-gris">{c.texto}</p>
@@ -114,7 +114,7 @@ export default function PaginaInicio() {
             {ESPECIFICACIONES_MX80.map((g) => (
               <section
                 key={g.grupo}
-                className="rounded-xl border border-mxd-borde bg-white px-4"
+                className="rounded-xl border border-mxd-borde bg-mxd-fondo px-4"
               >
                 <h3 className="pt-4 text-[11px] font-bold uppercase tracking-widest text-mxd-gris">
                   {g.grupo}

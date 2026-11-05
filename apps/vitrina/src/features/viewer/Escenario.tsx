@@ -84,14 +84,28 @@ export function Escenario({ sombraY }: { sombraY?: number } = {}) {
         color="#eaf6ef"
       />
 
-      {/* Sombra de contacto: da la sensacion de que la pieza se apoya. */}
+      {/*
+        Sombra de contacto: da la sensacion de que la pieza se apoya.
+
+        ContactShadows renderiza la escena completa a un render target aparte
+        (mas un pase de blur, dos si smooth) EN CADA CUADRO, para siempre, por
+        defecto (su prop "frames" default es Infinity). Con un GLB de ~350
+        nodos eso es un segundo render completo de la escena 60 veces por
+        segundo sin que nada se mueva. No se limita "frames" a un numero fijo
+        porque el despliegue, el despiece y el giro del rotor si cambian la
+        silueta y necesitan que la sombra los siga en vivo — se corta el pase
+        de blur extra (smooth) y se baja la resolucion, que reduce el costo
+        sin arriesgar que la sombra se quede desactualizada a medio de una
+        animacion.
+      */}
       <ContactShadows
         position={[0, sombraY ?? -d * 1.02, 0]}
         opacity={0.38}
         scale={d * 7}
         blur={2.6}
         far={d * 3}
-        resolution={1024}
+        resolution={512}
+        smooth={false}
         color="#0d1512"
       />
     </>

@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 
 import { PIEZAS_MX80 } from "@/data/mx80";
+import { leerBom, leerPieza, type FilaBom } from "@/lib/bom";
 import {
   CatalogoEsquema,
   ORDEN_SECCIONES,
@@ -76,6 +77,104 @@ export function obtenerPiezaPorSlug(slug: string): Pieza | undefined {
 
 export function obtenerPiezaPorSku(sku: string): Pieza | undefined {
   return CATALOGO.find((p) => p.sku === sku);
+}
+
+/**
+ * Mezcla una fila del BOM (especificaciones + compras + inventario, editables
+ * en vivo) sobre una pieza estatica. `sku` y `nombre` de la fila se ignoran a
+ * proposito: esos siguen viviendo en mx80.ts, la fila del BOM es solo
+ * referencia para esos dos campos (ver comentario en lib/bom.ts).
+ */
+function conBom(pieza: Pieza, fila: FilaBom | null): Pieza {
+  if (!fila) return pieza;
+  const {
+    sku: _sku,
+    nombre: _nombre,
+    categoria,
+    proceso_fabricacion,
+    descripcion_funcional,
+    especificaciones_tecnicas,
+    camposNoAplican,
+    numero_parte_mxd,
+    precio_mxn,
+    stock,
+    costo_fabricado_inhouse,
+    costo_equipo,
+    costo_material,
+    costo_masa_g,
+    costo_horas_produccion,
+    costo_pintura_mxn,
+    costo_mano_obra_mxn,
+    costo_notas,
+    trazabilidad_criticidad,
+    trazabilidad_control_calidad,
+    trazabilidad_intercambiable,
+    trazabilidad_carpeta_pieza,
+    trazabilidad_archivo_step,
+    trazabilidad_archivo_stl,
+    ...especificaciones
+  } = fila;
+  return {
+    ...pieza,
+    categoria,
+    proceso_fabricacion,
+    descripcion_funcional,
+    especificaciones_tecnicas,
+    camposNoAplican,
+    numeroBom: numero_parte_mxd,
+    precio_mxn,
+    stock,
+    especificaciones: { ...pieza.especificaciones, ...especificaciones },
+    costosProduccion: {
+      ...pieza.costosProduccion,
+      fabricadoInhouse: costo_fabricado_inhouse,
+      equipo: costo_equipo,
+      material: costo_material,
+      masaG: costo_masa_g,
+      horasProduccion: costo_horas_produccion,
+      costoPinturaMxn: costo_pintura_mxn,
+      costoManoObraMxn: costo_mano_obra_mxn,
+      notas: costo_notas,
+    },
+    trazabilidad: {
+      ...pieza.trazabilidad,
+      criticidad: trazabilidad_criticidad,
+      controlCalidad: trazabilidad_control_calidad,
+      intercambiable: trazabilidad_intercambiable,
+      carpetaPieza: trazabilidad_carpeta_pieza,
+      archivoStep: trazabilidad_archivo_step,
+      archivoStl: trazabilidad_archivo_stl,
+    },
+  };
+}
+
+/**
+ * Version "en vivo" de obtenerPiezaPorSlug/Sku: lee el BOM_MX80.xlsx en cada
+ * llamada y la superpone a la pieza estatica. Usar solo donde de verdad hace
+ * falta el dato fresco (la ficha web editable y la ficha PDF) -- el resto del
+ * sitio (listados, navegacion, visor 3D) sigue con las funciones sincronas de
+ * arriba, que no tienen el costo de leer un archivo en cada peticion.
+ */
+export async function obtenerPiezaConBomPorSlug(slug: string): Promise<Pieza | undefined> {
+  const pieza = obtenerPiezaPorSlug(slug);
+  if (!pieza) return undefined;
+  return conBom(pieza, await leerPieza(pieza.sku));
+}
+
+export async function obtenerPiezaConBomPorSku(sku: string): Promise<Pieza | undefined> {
+  const pieza = obtenerPiezaPorSku(sku);
+  if (!pieza) return undefined;
+  return conBom(pieza, await leerPieza(sku));
+}
+
+/**
+ * Igual que obtenerPiezaConBomPorSku pero para varias piezas (fichas de
+ * seccion o del catalogo completo): una sola lectura del Excel para todas,
+ * no una por pieza.
+ */
+export async function conBomTodas(piezas: Pieza[]): Promise<Pieza[]> {
+  const bom = await leerBom();
+  return piezas.map((p) => conBom(p, bom.get(p.sku) ?? null));
 }
 
 /**

@@ -20,6 +20,10 @@ export type SubpiezaVisor = Pick<Pieza, "sku" | "slug" | "nombre" | "nombresBlen
 
 import { ajustarDetalleAlPlaceholder } from "./ajusteTuerca";
 import { urlModelo } from "@/config/modelos3d";
+// Importarlo aplica el parche de raycast acelerado de three-mesh-bvh por su
+// efecto secundario (ver bvh.ts): sin el, pasar el cursor sobre la pieza
+// prueba el rayo contra cada triangulo uno por uno.
+import { construirBVH } from "./bvh";
 
 import {
   GLB_TUERCA_DETALLADA,
@@ -293,6 +297,10 @@ function PiezaGirando({
       malla.matrixWorld.decompose(clon.position, clon.quaternion, clon.scale);
       copia.add(clon);
     }
+    // Arbol de limites por malla: la geometria se comparte por referencia con
+    // gltf.scene (clone(false) no la copia), asi que esto tambien acelera el
+    // raycast de cualquier otra ficha que use el mismo GLB combinado.
+    construirBVH(copia);
     const caja = new THREE.Box3().setFromObject(copia);
     const centro = caja.getCenter(new THREE.Vector3());
     copia.position.sub(centro);
@@ -497,6 +505,10 @@ function PiezaGirando({
       <primitive
         object={raiz}
         onPointerMove={(evento: ThreeEvent<PointerEvent>) => {
+          // Con un boton presionado se esta arrastrando para girar la pieza
+          // (OrbitControls), no pasando el cursor para ver que hay: resolver
+          // el resaltado en cada uno de esos movimientos es trabajo de sobra.
+          if (evento.buttons !== 0) return;
           // onPointerMove (no onPointerOver) porque el cursor puede pasar de
           // una malla a otra DENTRO de la misma parte (p. ej. la tuerca trae
           // 4 mallas): onPointerOver/Out dispararian un parpadeo del tinte

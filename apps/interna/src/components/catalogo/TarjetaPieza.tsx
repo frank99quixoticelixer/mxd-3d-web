@@ -51,7 +51,7 @@ export function TarjetaPieza({ pieza }: { pieza: Pieza }) {
   return (
     <Link
       href={`/catalogo/${pieza.slug}`}
-      className="group flex flex-col rounded-xl border border-mxd-borde bg-white p-4 transition-all hover:-translate-y-0.5 hover:border-mxd-verde hover:shadow-[0_8px_24px_-12px_rgba(15,138,76,0.35)]"
+      className="group flex flex-col rounded-xl border border-mxd-borde bg-mxd-fondo p-4 transition-all hover:-translate-y-0.5 hover:border-mxd-verde hover:shadow-[0_8px_24px_-12px_rgba(15,138,76,0.35)]"
     >
       {pieza.imagen ? (
         <div className="relative h-28 overflow-hidden rounded-lg bg-mxd-hueso">
