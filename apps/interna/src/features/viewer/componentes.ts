@@ -13,6 +13,8 @@ export interface FichaEnlace {
   sku: string;
   slug: string;
   nombre: string;
+  /** Versiones espejo de la pieza (CW / CCW...), sin numero de parte. */
+  variantes?: { clave: string; etiqueta: string; posicion: string }[];
 }
 
 /**
@@ -31,6 +33,7 @@ export const SKU_ZONA: Partial<Record<ZonaVisor, string>> = {
   tanque: "MX80-012",
   "tren-aterrizaje": "MX80-013",
   frente: "MX80-014",
+  radar: "MX80-020",
 };
 
 /**
@@ -45,7 +48,101 @@ const SKU_COMPONENTE_BRAZO: Record<string, string> = {
   soporte: "MX80-005",
   esc: "MX80-009",
   tubo: "MX80-008",
+  cables: "MX80-015",
+  aspersor: "MX80-016",
 };
+
+/**
+ * Piezas del catalogo DENTRO de un componente del brazo: el nivel que se abre
+ * al aislar el componente. Sin esto el aspersor era un bloque de 38 nodos sin
+ * forma de llegar al disco o a una manguera.
+ *
+ * La clave de una subpieza es "<componente>/<subpieza>" ("aspersor/disco"):
+ * cabe en la URL (?pieza=aspersor/disco) y se sabe a que componente volver.
+ * Las expresiones se prueban sobre los nodos del componente de arriba hacia
+ * abajo; el primer nodo que coincide se toma entero (con sus hijos), asi que
+ * el pivote del disco se lleva al disco y no se cuenta dos veces.
+ */
+const SUBPIEZAS_COMPONENTE: Record<
+  string,
+  readonly { clave: string; re: RegExp; sku: string }[]
+> = {
+  aspersor: [
+    { clave: "cuerpo-y", re: /^pieza_A_cuerpo_Y/i, sku: "MX80-016-01" },
+    { clave: "conector", re: /^pieza_B_conector/i, sku: "MX80-016-02" },
+    { clave: "pasador", re: /^pasador_D5/i, sku: "MX80-016-03" },
+    { clave: "tapas", re: /^tapa_(der|izq)/i, sku: "MX80-016-04" },
+    { clave: "motor-centrifuga", re: /^(der|izq)_motor/i, sku: "MX80-016-05" },
+    { clave: "disco", re: /^(pivote_)?(der|izq)_disco/i, sku: "MX80-016-06" },
+    { clave: "tornillos", re: /^(der|izq)_tornillo/i, sku: "MX80-016-07" },
+    { clave: "tuercas", re: /^(der|izq)_tuerca/i, sku: "MX80-016-08" },
+    { clave: "mangueras-cabezal", re: /^manguera_(der|izq)/i, sku: "MX80-016-09" },
+    { clave: "manguera-alimentacion", re: /^manguera_alimentacion/i, sku: "MX80-016-10" },
+    { clave: "seguros", re: /^seguro_manguera/i, sku: "MX80-016-11" },
+    { clave: "pigtail", re: /^cable_cabezal/i, sku: "MX80-016-12" },
+    { clave: "conectores", re: /^conector_(der|izq)/i, sku: "MX80-016-13" },
+    { clave: "arnes", re: /^arnes_com/i, sku: "MX80-016-14" },
+    { clave: "conector-gh4p", re: /^arnes_conector_GH4P/i, sku: "MX80-016-15" },
+    { clave: "malla", re: /^arnes_malla/i, sku: "MX80-016-16" },
+    { clave: "termocontractil", re: /^arnes_termo/i, sku: "MX80-016-17" },
+    { clave: "pasamuros", re: /^arnes_pasamuros/i, sku: "MX80-016-18" },
+    { clave: "abrazaderas", re: /^arnes_abrazadera/i, sku: "MX80-016-19" },
+  ],
+  cables: [
+    { clave: "potencia-positivo", re: /^cable_potencia_positivo/i, sku: "MX80-015-01" },
+    { clave: "potencia-negativo", re: /^cable_potencia_negativo/i, sku: "MX80-015-02" },
+    { clave: "manga-positivo", re: /^manga_cable_positivo/i, sku: "MX80-015-03" },
+    { clave: "manga-negativo", re: /^manga_cable_negativo/i, sku: "MX80-015-04" },
+    { clave: "funda", re: /^funda_cables_potencia/i, sku: "MX80-015-05" },
+    { clave: "fases", re: /^cables_fase_motor/i, sku: "MX80-015-06" },
+    { clave: "senal", re: /^cable_senal_ESC/i, sku: "MX80-015-07" },
+    { clave: "jr3p", re: /^conector_senal_JR3P/i, sku: "MX80-015-08" },
+  ],
+  esc: [
+    { clave: "esc-300a", re: /^ESC_300A/i, sku: "MX80-009-01" },
+    { clave: "base", re: /^base_ESC/i, sku: "MX80-009-02" },
+    { clave: "tapa-trasera", re: /^tapa_trasera_ESC/i, sku: "MX80-009-03" },
+    { clave: "tornillos-esc", re: /^tornillo_M4x12_ESC/i, sku: "MX80-009-04" },
+    { clave: "arandelas-esc", re: /^arandela_M4x12_ESC/i, sku: "MX80-009-05" },
+    { clave: "arandelas-presion-esc", re: /^arandela_presion_M4x12_ESC/i, sku: "MX80-009-06" },
+    { clave: "tornillos-abrazadera", re: /^tornillo_M4x18_abrazadera/i, sku: "MX80-009-07" },
+    { clave: "arandelas-abrazadera", re: /^arandela_M4x18_abrazadera/i, sku: "MX80-009-08" },
+    { clave: "arandelas-presion-abrazadera", re: /^arandela_presion_M4x18_abrazadera/i, sku: "MX80-009-09" },
+    { clave: "insertos", re: /^inserto_roscado_M4/i, sku: "MX80-009-10" },
+  ],
+};
+
+/** Separa "aspersor/disco" en su componente y su subpieza. */
+export function partirClave(pieza: string): { componente: string; subpieza: string | null } {
+  const i = pieza.indexOf("/");
+  return i < 0
+    ? { componente: pieza, subpieza: null }
+    : { componente: pieza.slice(0, i), subpieza: pieza.slice(i + 1) };
+}
+
+/**
+ * Las subpiezas de un componente del brazo, ya con sus nodos. Vacio si el
+ * componente no se abre en piezas (el tubo, la cubierta).
+ */
+export function subpiezasDe(comp: Componente): Componente[] {
+  const reglas = SUBPIEZAS_COMPONENTE[comp.clave];
+  if (!reglas) return [];
+  const porRegla = new Map<string, THREE.Object3D[]>();
+  const visitar = (n: THREE.Object3D) => {
+    const regla = reglas.find((r) => r.re.test(n.name));
+    if (regla) {
+      const lista = porRegla.get(regla.clave) ?? [];
+      lista.push(n);
+      porRegla.set(regla.clave, lista);
+      return;
+    }
+    for (const hijo of n.children) visitar(hijo);
+  };
+  for (const nodo of comp.nodos) visitar(nodo);
+  return reglas
+    .filter((r) => porRegla.has(r.clave))
+    .map((r) => ({ clave: `${comp.clave}/${r.clave}`, nodos: porRegla.get(r.clave)!, sku: r.sku }));
+}
 
 /**
  * Piezas sueltas del marco, el tanque y el tren: la expresion que reconoce sus
@@ -56,8 +153,12 @@ const SKU_COMPONENTE_BRAZO: Record<string, string> = {
  * El orden importa: la primera expresion que coincide gana, asi que las
  * mitades de cada cople van antes que el cople completo.
  *
- * Nombres del GLB v3. "frame_tubo69" es el tubo que el catalogo llama "tubo de
- * 60": confirmar la medida con quien modelo.
+ * Nombres del GLB v5 (MX80_completo_v5_web.glb). "frame_tubo69" es el tubo
+ * que el catalogo llama "tubo de 60": confirmar la medida con quien modelo.
+ *
+ * `nodo` es tambien la clave con la que la zona agrupa la pieza en la lista:
+ * todas las mallas de un mismo SKU (los cinco LED de la bateria, las cuatro
+ * gomas del tren) son una sola entrada, y un enlace ?pieza=<nodo> la abre.
  */
 const PIEZAS_SUELTAS: readonly {
   /** null: la pieza no es un nodo del GLB, solo se llega por enlace. */
@@ -83,10 +184,52 @@ const PIEZAS_SUELTAS: readonly {
   // Carcasa frontal (MX80-014). En el GLB v3 el cascaron se llama
   // ModeloAvantiv9 (6180 triangulos, el mismo de "frontcase" del v2).
   { re: /^ModeloAvantiv/i, sku: "MX80-014" },
-  // En el GLB v4 el cascaron es "DRONE_CLEAN_TOPOLOGY" (renombrarlo en Blender).
+  // En el GLB v4 el cascaron es "DRONE_CLEAN_TOPOLOGY"; en el v5, "carcasa_drone".
   { re: /^DRONE_CLEAN_TOPOLOGY/i, sku: "MX80-014" },
-  // Tanque (MX80-012)
+  { re: /^carcasa_drone/i, sku: "MX80-014", zona: "frente", nodo: "carcasa_drone" },
+  // Frente (GLB v5): sensores. Las camaras son modelos representativos.
+  { re: /^sensor_lidar/i, sku: "MX80-022", zona: "frente", nodo: "sensor_lidar" },
+  { re: /^camara_frontal/i, sku: "MX80-023", zona: "frente", nodo: "camara_frontal_dummy" },
+  { re: /^camara_inferior/i, sku: "MX80-024", zona: "frente", nodo: "camara_inferior_dummy" },
+  // Tanque (MX80-012) y su bomba (MX80-021, nueva en el GLB v5)
   { re: /^tanque/i, sku: "MX80-012" },
+  { re: /^bomba_recirculacion/i, sku: "MX80-021", zona: "tanque", nodo: "bomba_recirculacion" },
+  // Bateria (MX80-017): sus 28 mallas se agrupan en las 11 subpiezas.
+  { re: /^BAT_Carcasa/i, sku: "MX80-017-01", zona: "energia", nodo: "BAT_Carcasa" },
+  { re: /^BAT_(Asa|Barra_asa|Clip_asa)/i, sku: "MX80-017-02", zona: "energia", nodo: "BAT_Asa" },
+  { re: /^BAT_Conector/i, sku: "MX80-017-03", zona: "energia", nodo: "BAT_Conector" },
+  {
+    re: /^BAT_(Placa_indicadores|LED|Boton_encendido|Icono_encendido)/i,
+    sku: "MX80-017-04",
+    zona: "energia",
+    nodo: "BAT_Placa_indicadores",
+  },
+  { re: /^BAT_(Lamina|Franja)_frontal/i, sku: "MX80-017-05", zona: "energia", nodo: "BAT_Lamina_frontal" },
+  { re: /^BAT_Etiqueta/i, sku: "MX80-017-06", zona: "energia", nodo: "BAT_Etiqueta_der" },
+  { re: /^BAT_Seguro/i, sku: "MX80-017-07", zona: "energia", nodo: "BAT_Seguro_der" },
+  { re: /^BAT_Riel_lateral/i, sku: "MX80-017-08", zona: "energia", nodo: "BAT_Riel_lateral_der" },
+  { re: /^BAT_Pie/i, sku: "MX80-017-09", zona: "energia", nodo: "BAT_Pie_der" },
+  { re: /^BAT_Tope_frontal/i, sku: "MX80-017-10", zona: "energia", nodo: "BAT_Tope_frontal_der" },
+  { re: /^BAT_Tornillo/i, sku: "MX80-017-11", zona: "energia", nodo: "BAT_Tornillo_der" },
+  // Tarjeta de distribucion de potencia (MX80-018)
+  { re: /^PDB_carcasa_superior/i, sku: "MX80-018-01", zona: "energia", nodo: "PDB_carcasa_superior" },
+  { re: /^PDB_carcasa_inferior/i, sku: "MX80-018-02", zona: "energia", nodo: "PDB_carcasa_inferior" },
+  { re: /^PDB_aislante/i, sku: "MX80-018-03", zona: "energia", nodo: "PDB_aislante_superior" },
+  { re: /^PDB_PCB/i, sku: "MX80-018-04", zona: "energia", nodo: "PDB_PCB_principal" },
+  { re: /^PDB_AS150U/i, sku: "MX80-018-05", zona: "energia", nodo: "PDB_AS150U_ESC1" },
+  { re: /^PDB_ACE/i, sku: "MX80-018-06", zona: "energia", nodo: "PDB_ACE_59626" },
+  { re: /^PDB_Tornillo_M5x35/i, sku: "MX80-018-07", zona: "energia", nodo: "PDB_Tornillo_M5x35_inf_1" },
+  // Rieles de la bateria (MX80-019)
+  { re: /^RIEL_Riel_ranura/i, sku: "MX80-019-01", zona: "energia", nodo: "RIEL_Riel_ranura_der" },
+  { re: /^RIEL_Mensula/i, sku: "MX80-019-02", zona: "energia", nodo: "RIEL_Mensula_tubo69_der" },
+  // Radar y luces en el tubo de 30 mm (MX80-020)
+  { re: /^radar_/i, sku: "MX80-020-01", zona: "radar", nodo: "radar_cuerpo" },
+  { re: /^luz_frente_/i, sku: "MX80-020-02", zona: "radar", nodo: "luz_frente_carcasa" },
+  { re: /^luz_abajo_/i, sku: "MX80-020-03", zona: "radar", nodo: "luz_abajo_carcasa" },
+  { re: /^cuna/i, sku: "MX80-020-04", zona: "radar", nodo: "cuna" },
+  { re: /^copa_tapa/i, sku: "MX80-020-05", zona: "radar", nodo: "copa_tapa" },
+  { re: /^abrazadera_luz/i, sku: "MX80-020-06", zona: "radar", nodo: "abrazadera_luz_frente" },
+  { re: /^abrazadera_superior/i, sku: "MX80-020-07", zona: "radar", nodo: "abrazadera_superior" },
   // Tren de aterrizaje (MX80-013), del catalogo de feature/catalogo-tren-aterrizaje
   { re: /^patin_derecho/i, sku: "MX80-013-01", zona: "tren-aterrizaje", nodo: "patin_derecho" },
   { re: /^patin_izquierdo/i, sku: "MX80-013-02", zona: "tren-aterrizaje", nodo: "patin_izquierdo" },
@@ -113,6 +256,8 @@ const PIEZAS_SUELTAS: readonly {
   { re: /^M5x(60|65)_agarre_tren/i, sku: "MX80-013-12", zona: "tren-aterrizaje", nodo: "M5x65_agarre_tren" },
   { re: /^M6x(50|42)_travesano/i, sku: "MX80-013-13", zona: "tren-aterrizaje", nodo: "M6x42_travesano" },
   { re: /^M5x(25|50)_cople/i, sku: "MX80-013-14", zona: "tren-aterrizaje", nodo: "M5x50_cople" },
+  { re: /^Arandela_M5/i, sku: "MX80-013-24", zona: "tren-aterrizaje", nodo: "Arandela_M5" },
+  { re: /^Tuerca_M5/i, sku: "MX80-013-25", zona: "tren-aterrizaje", nodo: "Tuerca_M5" },
 ];
 
 /**
@@ -154,6 +299,15 @@ export function skuDeNodo(nombre: string): string | null {
   return PIEZAS_SUELTAS.find((p) => p.re?.test(nombre))?.sku ?? null;
 }
 
+/**
+ * Clave con la que se lista un nodo suelto de una zona: la de su pieza del
+ * catalogo si la tiene (asi las mallas de un mismo SKU son una entrada), o su
+ * nombre base si no.
+ */
+export function claveDeNodo(nombre: string): string {
+  return PIEZAS_SUELTAS.find((p) => p.re?.test(nombre))?.nodo ?? nombreBase(nombre);
+}
+
 const esBrazo = (zona: ZonaVisor | null) =>
   zona === "brazo-cw" || zona === "brazo-ccw";
 
@@ -162,7 +316,12 @@ const esBrazo = (zona: ZonaVisor | null) =>
  * componente en un brazo ("motor") o el nombre del nodo en las demas zonas.
  */
 export function skuDePieza(zona: ZonaVisor | null, pieza: string): string | null {
-  return esBrazo(zona) ? (SKU_COMPONENTE_BRAZO[pieza] ?? null) : skuDeNodo(pieza);
+  if (!esBrazo(zona)) return skuDeNodo(pieza);
+  const { componente, subpieza } = partirClave(pieza);
+  if (subpieza) {
+    return SUBPIEZAS_COMPONENTE[componente]?.find((r) => r.clave === subpieza)?.sku ?? null;
+  }
+  return SKU_COMPONENTE_BRAZO[pieza] ?? null;
 }
 
 
@@ -177,6 +336,10 @@ export function ubicacionDeSku(
 ): { zona: ZonaVisor; pieza: string | null } | null {
   for (const [clave, s] of Object.entries(SKU_COMPONENTE_BRAZO)) {
     if (s === sku) return { zona: "brazo-cw", pieza: clave };
+  }
+  for (const [componente, reglas] of Object.entries(SUBPIEZAS_COMPONENTE)) {
+    const regla = reglas.find((r) => r.sku === sku);
+    if (regla) return { zona: "brazo-cw", pieza: `${componente}/${regla.clave}` };
   }
   for (const [zona, s] of Object.entries(SKU_ZONA)) {
     if (s === sku) return { zona: zona as ZonaVisor, pieza: null };
@@ -208,6 +371,8 @@ export const NOMBRE_COMPONENTE: Record<string, string> = {
   esc: "Conjunto ESC",
   soporte: "Soporte del motor",
   tubo: "Tubo de fibra de carbono",
+  cables: "Cableado del brazo",
+  aspersor: "Aspersor centrífugo doble",
   // Piezas del frente del dron (GLB v3). Sus nombres vienen de la exportacion
   // y no dicen que son; renombrarlas en Blender y quitar esto.
   camara_frontal_dummy: "Cámara frontal",
@@ -224,6 +389,48 @@ export const NOMBRE_COMPONENTE: Record<string, string> = {
   Arandela_M6: "Arandelas M6",
   Tuerca_M5: "Tuercas M5",
 };
+
+/**
+ * Nodos del aspersor dentro de un brazo. Incluye los pivotes que la escena
+ * agrega para girar los discos (ver aspersion/discos.ts).
+ */
+const ES_ASPERSOR =
+  /^(pieza_A_cuerpo_Y|pieza_B_conector|pasador_D5|tapa_(der|izq)|(der|izq)_(disco|motor|tornillo|tuerca)|pivote_|manguera_|seguro_manguera|cable_cabezal|conector_(der|izq)|arnes_|aspersor_)/i;
+
+/** Un brazo del GLB y el sentido de giro de su helice. */
+export interface BrazoDelModelo {
+  objeto: THREE.Object3D;
+  sentido: "cw" | "ccw";
+}
+
+/**
+ * Los cuatro brazos, por estructura y no por una lista de nombres fija: en el
+ * GLB v5 se llaman brazo_CW_1, brazo_CCW_2, brazo_CW_3 y brazo_CCW_4, y el
+ * sentido sale del nombre (el v4 los llamaba brazo, brazo_2... y el sentido
+ * vivia en una tabla aparte que dejo de servir al cambiar las helices de lado).
+ */
+export function brazosDelModelo(raiz: THREE.Object3D): BrazoDelModelo[] {
+  return raiz.children
+    .filter((n) => /^brazo_C{1,2}W/i.test(n.name))
+    .map((objeto) => ({
+      objeto,
+      sentido: /^brazo_CCW/i.test(objeto.name) ? ("ccw" as const) : ("cw" as const),
+    }));
+}
+
+/**
+ * El brazo que representa a su zona: de los dos del mismo sentido, el que trae
+ * mas piezas. En el v5 es el que lleva aspersor (brazo_CW_3 y brazo_CCW_4).
+ * Los dos son el mismo numero de parte, asi que mostrar uno basta.
+ */
+function brazoRepresentativo(
+  raiz: THREE.Object3D,
+  sentido: "cw" | "ccw",
+): THREE.Object3D | null {
+  const candidatos = brazosDelModelo(raiz).filter((b) => b.sentido === sentido);
+  candidatos.sort((a, b) => b.objeto.children.length - a.objeto.children.length);
+  return candidatos[0]?.objeto ?? null;
+}
 
 /** true si `obj` es `ancestro` o cuelga de el. */
 export function esDescendiente(
@@ -270,6 +477,11 @@ export function componentesDelBrazo(brazo: THREE.Object3D): Componente[] {
     { clave: "esc", nodos: porNombre(hijos, /^esc/i) },
     { clave: "soporte", nodos: porNombre(hijos, /^sujeta_motor/i) },
     { clave: "tubo", nodos: porNombre(hijos, /^tubo_fibra/i) },
+    { clave: "cables", nodos: porNombre(hijos, /^cables/i) },
+    // El aspersor centrifugo (GLB v5) cuelga suelto del brazo: 26 nodos que
+    // juntos son un conjunto (MX80-016). Sin agruparlos, cada tornillo y cada
+    // manguera serian un componente aparte en la lista del brazo.
+    { clave: "aspersor", nodos: porNombre(hijos, ES_ASPERSOR) },
   ];
 
   // Cualquier otro hijo directo es su propio componente, para que todo el
@@ -299,10 +511,9 @@ export function componenteDeMalla(
 /**
  * Que nodos del GLB forman cada zona.
  *
- * Los brazos se reparten por el sentido de su helice: brazo y brazo_4 montan
- * Propela_CCW, brazo_2 y brazo_3 montan Propela_CW (ver SIGNO_GIRO). Un solo
- * brazo por zona: los cuatro son el mismo numero de parte montado cuatro
- * veces, asi que mostrar dos no aporta nada y estorba.
+ * Los brazos se reparten por el sentido de su helice (brazo_CW_* y
+ * brazo_CCW_*). Un solo brazo por zona, el que lleva aspersor: los del mismo
+ * sentido son el mismo numero de parte, asi que mostrar dos no aporta nada.
  *
  * El marco y el tren cuelgan del mismo grupo; se separan por nombre con
  * ES_MARCO.
@@ -315,14 +526,19 @@ export function nodosDeZonaEn(raiz: THREE.Object3D, zona: ZonaVisor): THREE.Obje
   const marcoYTren = raiz.getObjectByName(NODO_MARCO_Y_TREN)?.children ?? [];
   switch (zona) {
     case "brazo-cw":
-      return uno("brazo_2");
-    case "brazo-ccw":
-      return uno("brazo");
+    case "brazo-ccw": {
+      const brazo = brazoRepresentativo(raiz, zona === "brazo-cw" ? "cw" : "ccw");
+      return brazo ? [brazo] : [];
+    }
     case "tanque":
       return uno("tanque");
     case "frente":
-      // "frente_dron" en el GLB v3, "carcasa_frontal" en el v4.
-      return [...uno("carcasa_frontal"), ...uno("frente_dron")];
+      // "carcasa_frontal" en el GLB v4, "frente_drone" en el v5.
+      return [...uno("carcasa_frontal"), ...uno("frente_dron"), ...uno("frente_drone")];
+    case "energia":
+      return uno("MX80_frame_PDB_rieles_bateria");
+    case "radar":
+      return uno("radar_y_luces_en_tubo_30mm");
     case "frame":
       return marcoYTren.filter((n) => ES_MARCO.test(n.name));
     case "tren-aterrizaje":
@@ -471,11 +687,15 @@ export function nodosDeSeleccion(
   s: SeleccionPieza,
 ): THREE.Object3D[] {
   if (s.componente) {
-    const brazo = raiz.getObjectByName("brazo");
-    const comp = brazo
-      ? componentesDelBrazo(brazo).find((c) => c.clave === s.componente)
-      : undefined;
-    if (comp) return comp.nodos;
+    // El brazo que tenga ese componente: el aspersor solo esta en dos de los
+    // cuatro, asi que se prueba primero el que trae mas piezas.
+    const brazos = brazosDelModelo(raiz).sort(
+      (a, b) => b.objeto.children.length - a.objeto.children.length,
+    );
+    for (const { objeto } of brazos) {
+      const comp = componentesDelBrazo(objeto).find((c) => c.clave === s.componente);
+      if (comp) return comp.nodos;
+    }
   }
   const propios = nodosConNombres(raiz, s.nombres);
   if (propios.length > 0) return propios;

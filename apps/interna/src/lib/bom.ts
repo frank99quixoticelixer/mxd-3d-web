@@ -39,6 +39,7 @@ const COLUMNAS: { clave: string; encabezado: string; tipo: TipoColumna }[] = [
   { clave: "ancho_mm", encabezado: "Ancho (mm)", tipo: "numero" },
   { clave: "alto_mm", encabezado: "Alto (mm)", tipo: "numero" },
   { clave: "material", encabezado: "Material", tipo: "texto" },
+  { clave: "grupo_material", encabezado: "Tipo de material (filtro del visor)", tipo: "texto" },
   { clave: "acabado", encabezado: "Acabado", tipo: "texto" },
   { clave: "tolerancia_mm", encabezado: "Tolerancia general (mm)", tipo: "numero" },
   { clave: "par_apriete_nm", encabezado: "Par de apriete (N·m)", tipo: "numero" },

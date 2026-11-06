@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const ENLACES = [
   { href: "/", texto: "Inicio", textoCorto: "Inicio" },
   { href: "/catalogo", texto: "Catálogo", textoCorto: "Catálogo" },
+  { href: "/maestro", texto: "Maestro de partes", textoCorto: "Maestro" },
 ];
 
 /** true si la ruta actual pertenece a la seccion del enlace (incluye subpaginas como /catalogo/slug). */

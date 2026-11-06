@@ -604,7 +604,7 @@ export function EscenaPieza({
           enablePan={false}
           minDistance={radio * 1.5}
           maxDistance={radio * 9}
-          maxPolarAngle={Math.PI * 0.495}
+          maxPolarAngle={Math.PI * 0.95}
         />
       )}
     </Canvas>

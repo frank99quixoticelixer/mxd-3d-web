@@ -34,7 +34,7 @@ export interface Dato {
 
 /** Cifras del dron completo para la portada. Pag. 61-64. */
 export const CIFRAS_MX80: Dato[] = [
-  { etiqueta: "Tanque de aspersión", valor: "75 L" },
+  { etiqueta: "Tanque de aspersión", valor: "80 L" },
   { etiqueta: "Ancho de aspersión", valor: "6 a 10 m" },
   { etiqueta: "Empuje por motor", valor: "≈ 75 kg" },
   { etiqueta: "Hélices plegables", valor: "63 in" },
@@ -162,8 +162,9 @@ export const MANUAL_POR_PIEZA: Record<
   },
   "MX80-012": {
     datos: [
-      { etiqueta: "Capacidad nominal", valor: "75 L" },
-      { etiqueta: "Capacidad máxima", valor: "80 L" },
+      // El manual dice 75 L nominales y 80 L maximos; el tanque es de 80 L
+      // (confirmado por el equipo y por el maestro de partes, AGR-PZA-001).
+      { etiqueta: "Capacidad", valor: "80 L" },
       { etiqueta: "Bombas", valor: "2 peristálticas dosificadoras, 20 L/min cada una" },
       { etiqueta: "Boquillas", valor: "4 centrífugas, IP67" },
     ],

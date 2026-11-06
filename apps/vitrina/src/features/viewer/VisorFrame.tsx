@@ -8,6 +8,7 @@ import {
   NOMBRE_COMPONENTE,
   SKU_ZONA,
   nombreDeNodo,
+  partirClave,
   skuDePieza,
   ubicacionDeSku,
   type FichaEnlace,
@@ -23,6 +24,14 @@ import {
   useVisor,
 } from "./estado";
 import { LimiteError } from "./LimiteError";
+import { AVISO_ILUSTRATIVO } from "./aspersion/config";
+import { PanelAspersion } from "./aspersion/PanelAspersion";
+import {
+  DESCRIPCION_GRUPO,
+  ETIQUETAS_GRUPO,
+  GRUPOS,
+  type GrupoMaterial,
+} from "./materiales";
 
 const EscenaFrame = dynamic(
   () => import("./EscenaFrame").then((m) => m.EscenaFrame),
@@ -119,6 +128,7 @@ function BarraLateral({
  */
 export function VisorFrame({
   fichas,
+  gruposMaterial = {},
   className = "",
 }: {
   /**
@@ -126,6 +136,11 @@ export function VisorFrame({
    * el servidor: este componente no importa lib/catalogo.
    */
   fichas: FichaEnlace[];
+  /**
+   * Grupo de material escrito a mano en las fichas, por nombre de nodo
+   * normalizado. Lo arma la pagina en el servidor (lib/catalogo.ts).
+   */
+  gruposMaterial?: Readonly<Record<string, GrupoMaterial>>;
   className?: string;
 }) {
   const contenedor = useRef<HTMLDivElement>(null);
@@ -183,6 +198,9 @@ export function VisorFrame({
   const entrarEnPieza = useVisor((s) => s.entrarEnPieza);
   const volver = useVisor((s) => s.volver);
   const irA = useVisor((s) => s.irA);
+  const asperjando = useVisor((s) => s.aspersion.activa);
+  const filtroMaterial = useVisor((s) => s.filtroMaterial);
+  const setFiltroMaterial = useVisor((s) => s.setFiltroMaterial);
 
   const [hover, setHover] = useState<ObjetivoHover | null>(null);
   const [piezasZona, setPiezasZona] = useState<PiezaDeZona[]>([]);
@@ -209,8 +227,30 @@ export function VisorFrame({
         ? (SKU_ZONA[zona] ?? null)
         : null;
   const fichaActual = skuActual ? fichaPorSku.get(skuActual) : undefined;
+  // Dentro de un brazo se sabe cual version se esta viendo: la del sentido del
+  // brazo. Los brazos CW y CCW son espejo y sus piezas no se intercambian.
+  const versionActual =
+    fichaActual?.variantes && (zona === "brazo-cw" || zona === "brazo-ccw")
+      ? fichaActual.variantes.find((v) => v.clave === (zona === "brazo-cw" ? "cw" : "ccw"))
+      : undefined;
   const nombreActual =
     capa === 3 && pieza ? nombreDe({ clave: pieza, sku: skuActual }) : null;
+  // Dentro de una pieza de un componente ("aspersor/disco"), el componente es
+  // un tramo mas de la ruta, para poder volver a el.
+  const componenteActual =
+    capa === 3 && pieza && pieza.includes("/") ? partirClave(pieza).componente : null;
+  const nombreComponente = componenteActual
+    ? nombreDe({ clave: componenteActual, sku: skuDePieza(zona, componenteActual) })
+    : null;
+  // La lista de la capa 3 son las piezas del componente cuando este se abre.
+  const listandoSubpiezas = capa === 3 && piezasZona.some((p) => p.clave.includes("/"));
+  const componenteListado =
+    listandoSubpiezas && pieza
+      ? nombreDe({
+          clave: partirClave(pieza).componente,
+          sku: skuDePieza(zona, partirClave(pieza).componente),
+        })
+      : null;
   const nombreHover = hover
     ? hover.zona
       ? ETIQUETAS_ZONA[hover.zona]
@@ -328,7 +368,8 @@ export function VisorFrame({
   const MOTIVO_CAPA = "Solo disponible en la vista del dron completo";
   const MOTIVO_ATOMICO = "Bloqueado: el despiece atómico está activo";
   const encendidoBloqueado = !enCompleto || atomico || despliegue < 1 || despiezado;
-  const despliegueBloqueado = !enCompleto || atomico || encendido > BLOQUEA_DESPLIEGUE || despiezado;
+  const despliegueBloqueado =
+    !enCompleto || atomico || encendido > BLOQUEA_DESPLIEGUE || despiezado || asperjando;
   const motivoDespliegue = !enCompleto
     ? MOTIVO_CAPA
     : atomico
@@ -337,7 +378,9 @@ export function VisorFrame({
     ? `Bloqueado arriba del ${umbral}% de despiece`
     : encendido > BLOQUEA_DESPLIEGUE
       ? "Bloqueado: apaga los motores para mover los brazos"
-      : "Abre los cuatro brazos del dron";
+      : asperjando
+        ? "Bloqueado: apaga la aspersión para mover los brazos"
+        : "Abre los cuatro brazos del dron";
 
   // Piezas con el mismo nombre (los cuatro agarradores del marco) se numeran
   // para que la lista no repita etiquetas identicas.
@@ -398,6 +441,8 @@ export function VisorFrame({
             alAislar={entrarEnPieza}
             alPasarSobre={setHover}
             alListarPiezas={setPiezasZona}
+            filtroMaterial={filtroMaterial}
+            gruposMaterial={gruposMaterial}
           />
         </LimiteError>
 
@@ -432,6 +477,18 @@ export function VisorFrame({
                   )}
                 </>
               )}
+              {componenteActual && nombreComponente && (
+                <>
+                  <span aria-hidden>·</span>
+                  <button
+                    type="button"
+                    onClick={() => irA(zona, componenteActual)}
+                    className="hover:text-mxd-verde"
+                  >
+                    {nombreComponente}
+                  </button>
+                </>
+              )}
               {nombreActual && (
                 <>
                   <span aria-hidden>·</span>
@@ -453,6 +510,18 @@ export function VisorFrame({
               <p className="truncate text-sm font-semibold text-mxd-tinta">
                 {fichaActual.nombre}
               </p>
+              {versionActual ? (
+                <p className="text-[11px] font-medium text-mxd-verde-oscuro">
+                  {versionActual.etiqueta} · {versionActual.posicion}
+                </p>
+              ) : (
+                (fichaActual.variantes?.length ?? 0) > 0 && (
+                  <p className="text-[11px] font-medium text-mxd-verde-oscuro">
+                    {fichaActual.variantes!.map((v) => v.etiqueta.replace("Versión ", "")).join(" / ")}:
+                    versiones espejo
+                  </p>
+                )
+              )}
             </div>
             <Link
               href={`/catalogo/${fichaActual.slug}`}
@@ -461,6 +530,16 @@ export function VisorFrame({
               Ver ficha
             </Link>
           </div>
+        )}
+
+        {/* La aspersion es una ilustracion: mientras se ve, el aviso tambien. */}
+        {asperjando && capa === 1 && (
+          <p
+            role="status"
+            className="pointer-events-none absolute inset-x-2 top-12 z-10 mx-auto max-w-md rounded-lg bg-mxd-fondo/90 px-3 py-1.5 text-center text-[11px] font-semibold text-mxd-tinta shadow-sm backdrop-blur lg:top-3"
+          >
+            {AVISO_ILUSTRATIVO}
+          </p>
         )}
 
         <button
@@ -560,6 +639,8 @@ export function VisorFrame({
             }
           />
 
+          <PanelAspersion />
+
           <button
             type="button"
             title="Volver al estado inicial"
@@ -570,12 +651,48 @@ export function VisorFrame({
           </button>
         </div>
 
+        {/* Filtro por material: deja ver solo las piezas plasticas, las
+            metalicas, la electronica o lo demas. Ver materiales.ts. */}
+        <section className="mt-3 border-t border-mxd-borde pt-2 lg:mt-4 lg:pt-3">
+          <h2 className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-mxd-gris">
+            Ver por material
+          </h2>
+          <div className="flex flex-wrap gap-1">
+            {[null, ...GRUPOS].map((grupo) => {
+              const activo = filtroMaterial === grupo;
+              return (
+                <button
+                  key={grupo ?? "todo"}
+                  type="button"
+                  aria-pressed={activo}
+                  title={grupo ? DESCRIPCION_GRUPO[grupo] : "Ver todas las piezas"}
+                  onClick={() => setFiltroMaterial(grupo)}
+                  className={`rounded-md px-2 py-1 text-[11px] font-semibold transition-colors ${
+                    activo
+                      ? "bg-mxd-verde text-white"
+                      : "border border-mxd-borde text-mxd-tinta hover:border-mxd-verde hover:text-mxd-verde"
+                  }`}
+                >
+                  {grupo ? ETIQUETAS_GRUPO[grupo] : "Todo"}
+                </button>
+              );
+            })}
+          </div>
+          {filtroMaterial && (
+            <p className="mt-1.5 text-[10px] leading-snug text-mxd-gris">
+              {DESCRIPCION_GRUPO[filtroMaterial]}
+            </p>
+          )}
+        </section>
+
         {/* Lo mismo que se puede tocar en el lienzo, como lista: se recorre
             con teclado y con lector de pantalla, y en el celular evita tener
             que atinarle a una pieza chica con el dedo. */}
         <section className="mt-3 border-t border-mxd-borde pt-2 lg:mt-4 lg:pt-3">
           <h2 className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-mxd-gris">
-            {capa === 1 ? "Zonas del dron" : `Piezas · ${zona ? ETIQUETAS_ZONA[zona] : ""}`}
+            {capa === 1
+              ? "Zonas del dron"
+              : `Piezas · ${componenteListado ?? (zona ? ETIQUETAS_ZONA[zona] : "")}`}
           </h2>
           <ul className="flex flex-col gap-0.5">
             {capa === 1

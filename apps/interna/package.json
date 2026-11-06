@@ -13,6 +13,8 @@
     "typecheck": "tsc --noEmit",
     "assets:sincronizar": "node scripts/sincronizar-publico.mjs",
     "bom:migrar": "tsx scripts/migrar-a-bom.ts",
+    "bom:agregar": "tsx scripts/migrar-a-bom.ts --agregar-faltantes",
+    "maestro:importar": "tsx scripts/importar-maestro.ts",
     "verificar": "npm run typecheck && npm run lint && npm run build"
   },
   "dependencies": {
