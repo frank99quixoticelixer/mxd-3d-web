@@ -120,6 +120,7 @@ function BarraLateral({
 export function VisorFrame({
   fichas,
   className = "",
+  activo = true,
 }: {
   /**
    * Piezas del catalogo a las que puede llevar el visor. Las arma la pagina en
@@ -127,9 +128,18 @@ export function VisorFrame({
    */
   fichas: FichaEnlace[];
   className?: string;
+  /**
+   * false pausa el ciclo de render de three.js sin desmontar el visor (ver
+   * EscenaFrame.tsx). Se usa cuando este visor queda oculto detras de otra
+   * vista (p. ej. un accesorio en SeccionAccesorios.tsx): desmontarlo y
+   * volver a montarlo repetiria el clonado del GLB de 12 MB y la
+   * reconstruccion del arbol de colision en cada cambio de pestana.
+   */
+  activo?: boolean;
 }) {
   const contenedor = useRef<HTMLDivElement>(null);
   const [pantallaCompleta, setPantallaCompleta] = useState(false);
+  const [girando, setGirando] = useState(false);
 
   /**
    * Pantalla completa.
@@ -394,6 +404,8 @@ export function VisorFrame({
             zona={zona}
             pieza={pieza}
             senalada={senalada}
+            activo={activo}
+            girando={girando}
             alEntrarZona={entrarEnZona}
             alAislar={entrarEnPieza}
             alPasarSobre={setHover}
@@ -463,17 +475,28 @@ export function VisorFrame({
           </div>
         )}
 
-        <button
-          type="button"
-          onClick={alternarPantallaCompleta}
-          title={
-            pantallaCompleta ? "Salir de pantalla completa" : "Pantalla completa"
-          }
-          aria-pressed={pantallaCompleta}
-          className="absolute right-2 top-2 z-10 rounded-lg border border-mxd-borde bg-mxd-fondo/90 px-2.5 py-1.5 text-[11px] font-semibold text-mxd-tinta shadow-sm backdrop-blur transition-colors hover:border-mxd-verde hover:text-mxd-verde lg:right-3 lg:top-3 lg:text-xs"
-        >
-          {pantallaCompleta ? "Salir" : "Expandir"}
-        </button>
+        <div className="absolute right-2 top-2 z-10 flex items-center gap-1.5 lg:right-3 lg:top-3">
+          <button
+            type="button"
+            onClick={() => setGirando((v) => !v)}
+            title={girando ? "Detener giro" : "Girar automáticamente"}
+            aria-pressed={girando}
+            className="rounded-lg border border-mxd-borde bg-mxd-fondo/90 px-2.5 py-1.5 text-[11px] font-semibold text-mxd-tinta shadow-sm backdrop-blur transition-colors hover:border-mxd-verde hover:text-mxd-verde lg:text-xs"
+          >
+            {girando ? "Detener giro" : "Girar"}
+          </button>
+          <button
+            type="button"
+            onClick={alternarPantallaCompleta}
+            title={
+              pantallaCompleta ? "Salir de pantalla completa" : "Pantalla completa"
+            }
+            aria-pressed={pantallaCompleta}
+            className="rounded-lg border border-mxd-borde bg-mxd-fondo/90 px-2.5 py-1.5 text-[11px] font-semibold text-mxd-tinta shadow-sm backdrop-blur transition-colors hover:border-mxd-verde hover:text-mxd-verde lg:text-xs"
+          >
+            {pantallaCompleta ? "Salir" : "Expandir"}
+          </button>
+        </div>
 
         <p className="pointer-events-none absolute inset-x-0 bottom-3 text-center text-[10px] text-mxd-gris">
           {nombreHover ? (

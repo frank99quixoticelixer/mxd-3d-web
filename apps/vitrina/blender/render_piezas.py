@@ -334,4 +334,5 @@ def main():
         json.dump(resultado, f, ensure_ascii=False, indent=2)
 
 
-main()
+if __name__ == "__main__":
+    main()
