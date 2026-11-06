@@ -1082,7 +1082,10 @@ const PIEZAS_ANTERIORES: Pieza[] = [
     descripcion:
       "Carcasa protectora de la parte frontal del dron. Aloja los componentes montados ahí y se fija con 4 tornillos M2x10.",
     subsistema: "estructura",
-    secciones: [],
+    // "Lado o posicion: Frontal" en el maestro de partes (fila de
+    // MXD-MX80-EST-ENS-001-R00) — la unica seccion del dron a la que
+    // corresponde es "parte-frontal". Una seccion = cantidad 1 por dron.
+    secciones: ["parte-frontal"],
     parteDe: null,
     // "frontcase" en el GLB v2; en el v3 el cascaron es "ModeloAvantiv9".
     // La malla sin nombre son, por su geometria, los 4 tornillos M2x10.

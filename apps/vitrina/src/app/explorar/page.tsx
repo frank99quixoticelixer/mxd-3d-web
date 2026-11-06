@@ -2,15 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { TarjetaPieza } from "@/components/catalogo/TarjetaPieza";
+import { SeccionAccesorios } from "@/features/accesorios/SeccionAccesorios";
 import { MODELO_PREDETERMINADO } from "@/config/modelos3d";
+import { ACCESORIOS_MX80 } from "@/data/accesorios";
 import {
   CARACTERISTICAS_MX80,
   CIFRAS_MX80,
   ESPECIFICACIONES_MX80,
   MANUAL_MX80,
 } from "@/data/manual-mx80";
-import { VisorFrame } from "@/features/viewer/VisorFrame";
-import { obtenerPiezas, obtenerTodas, gruposMaterialDelVisor } from "@/lib/catalogo";
+import { gruposMaterialDelVisor, obtenerPiezas, obtenerTodas } from "@/lib/catalogo";
 
 export const metadata: Metadata = {
   title: "Explora el MX80 en 3D",
@@ -53,10 +54,10 @@ export default function PaginaExplorar() {
         </div>
 
         <div className="mt-8">
-          <VisorFrame
+          <SeccionAccesorios
             fichas={fichas}
+            accesorios={ACCESORIOS_MX80}
             gruposMaterial={gruposMaterialDelVisor()}
-            className="h-[78dvh] min-h-[460px] w-full sm:h-[72dvh] lg:h-[62vh]"
           />
         </div>
 

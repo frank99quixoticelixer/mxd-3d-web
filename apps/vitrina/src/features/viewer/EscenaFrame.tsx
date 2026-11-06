@@ -697,6 +697,8 @@ function ChasisPlegable({
     [materialesDe, alPasarSobre],
   );
 
+
+  // Al cambiar lo de
   // Al cambiar de capa, de zona o de pieza se apaga el resaltado: el objeto
   // que estaba bajo el cursor puede haber desaparecido y quedarse verde.
   // Tambien enciende la pieza senalada desde la lista de fuera del lienzo.
@@ -1507,6 +1509,8 @@ export function EscenaFrame({
   zona,
   pieza,
   senalada,
+  activo = true,
+  girando = false,
   alEntrarZona,
   alAislar,
   alPasarSobre,
@@ -1522,6 +1526,15 @@ export function EscenaFrame({
   zona: ZonaVisor | null;
   pieza: string | null;
   senalada: string | null;
+  /**
+   * false pausa el render loop (frameloop="never") sin desmontar el Canvas:
+   * el contexto WebGL y la escena ya clonada se quedan vivos, listos para
+   * reanudar de inmediato cuando vuelva a true. Lo usa VisorFrame.tsx cuando
+   * este visor queda oculto detras de otra vista.
+   */
+  activo?: boolean;
+  /** Gira la camara sola alrededor del modelo (OrbitControls.autoRotate). */
+  girando?: boolean;
   alEntrarZona: (zona: ZonaVisor) => void;
   alAislar: (pieza: string) => void;
   alPasarSobre: (objetivo: ObjetivoHover | null) => void;
@@ -1537,6 +1550,7 @@ export function EscenaFrame({
     <Canvas
       shadows
       dpr={[1, 2]}
+      frameloop={activo ? "always" : "never"}
       gl={{ antialias: true, alpha: true }}
       camera={{ fov: 35, position: [1.4, 1.1, 1.8], near: 0.01, far: 300 }}
       onCreated={({ gl }) => {
@@ -1590,6 +1604,8 @@ export function EscenaFrame({
           enableDamping
           enablePan
           screenSpacePanning
+          autoRotate={girando}
+          autoRotateSpeed={2.8}
           minDistance={(radioVisible ?? radio) * 0.5}
           maxDistance={radio * 14}
           maxPolarAngle={Math.PI * 0.95}
