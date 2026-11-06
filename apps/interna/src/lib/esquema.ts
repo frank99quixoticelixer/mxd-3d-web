@@ -107,6 +107,12 @@ export const EspecificacionesEsquema = z.object({
   alto_mm: z.number().positive().nullable().default(null),
   /** Material principal, tal como lo declara el proveedor. */
   material: z.string().nullable().default(null),
+  /**
+   * Tipo de material para el filtro del visor ("Ver por material"). Lo que se
+   * escriba aqui manda sobre las reglas automaticas de
+   * features/viewer/materiales.ts, para esta pieza y lo que cuelga de ella.
+   */
+  grupo_material: z.enum(["plastico", "metal", "electronica", "otros"]).nullable().default(null),
   /** Acabado o tratamiento superficial. */
   acabado: z.string().nullable().default(null),
 
@@ -269,6 +275,21 @@ export const ETIQUETAS_ESTADO: Record<EstadoPieza, string> = {
   publicada: "Publicada",
 };
 
+/**
+ * Una version espejo de una pieza (ver `variantes` en PiezaEsquema).
+ */
+export const VarianteEsquema = z.object({
+  /** "cw", "ccw", "izq", "der", "m12"... */
+  clave: z.string(),
+  /** Como se nombra en la interfaz: "Versión CW". */
+  etiqueta: z.string(),
+  /** Donde va: "Brazos M1 y M3". */
+  posicion: z.string(),
+  /** Numero de parte del maestro para esta version. Solo lo llena interna. */
+  numeroBom: z.string().nullable().default(null),
+});
+export type Variante = z.infer<typeof VarianteEsquema>;
+
 export const PiezaEsquema = z.object({
   /**
    * SKU: identificador unico y estable. Es la llave que une el modelo 3D, la
@@ -418,6 +439,36 @@ export const PiezaEsquema = z.object({
    * los dos ni derivar uno del otro.
    */
   numeroBom: z.string().nullable().default(null),
+
+  /**
+   * Versiones espejo de la pieza. Los brazos CW y CCW son espejo uno del otro
+   * (y el lado izquierdo y derecho del marco): el soporte de motor de un brazo
+   * CW se inclina hacia un lado y el del CCW hacia el otro. Son piezas
+   * distintas que NO se intercambian, aunque el catalogo las muestre en una
+   * sola ficha. Vacio = la misma pieza sirve en todas las posiciones.
+   */
+  variantes: z.array(VarianteEsquema).default([]),
+
+  /**
+   * La pieza no se compra suelta: se surte dentro de su conjunto (las piezas
+   * de la PDB, del motor, de la bateria). Esta en el catalogo para ubicarla en
+   * el 3D, no para pedirla por separado.
+   */
+  surtidaEnConjunto: z.boolean().default(false),
+  /**
+   * Como quedo el cruce con el maestro de partes (Maestro_Partes_MX80.xlsx):
+   *   confirmado  el numero corresponde a esta pieza sin duda
+   *   propuesto   el cruce es razonable pero falta que alguien lo confirme
+   *   sin-numero  la pieza no tiene numero en el maestro (diseno MXD nuevo,
+   *               tornilleria que el maestro no desglosa)
+   */
+  cruceBom: z
+    .object({
+      estado: z.enum(["confirmado", "propuesto", "sin-numero"]),
+      nota: z.string().nullable().default(null),
+    })
+    .nullable()
+    .default(null),
 });
 
 export type Pieza = z.infer<typeof PiezaEsquema>;

@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { DescargasMalla } from "@/components/catalogo/DescargasMalla";
 import { EtiquetaWeb } from "@/components/catalogo/EtiquetaWeb";
 import { FichaEditable } from "@/components/catalogo/FichaEditable";
+import { VersionesPieza } from "@/components/catalogo/VersionesPieza";
 import { BotonAtras } from "@/components/layout/BotonAtras";
 import { MODELO_PREDETERMINADO } from "@/config/modelos3d";
 import { MANUAL_MX80, MANUAL_POR_PIEZA } from "@/data/manual-mx80";
@@ -363,6 +364,12 @@ export default async function PaginaPieza({
           aterrizaje, hoy) el visor no existe y esta lista es la UNICA forma
           de llegar a sus subpiezas: por eso va fuera del "if" del visor, no
           como complemento opcional. */}
+      <VersionesPieza
+        pieza={pieza}
+        conjunto={pieza.surtidaEnConjunto && padre ? { nombre: padre.nombre, slug: padre.slug } : null}
+        cruce={pieza.cruceBom}
+      />
+
       {subpiezas.length > 0 && (
         <section className="mt-14">
           <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">

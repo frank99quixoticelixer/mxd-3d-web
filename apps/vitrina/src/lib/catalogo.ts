@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 
 import { PIEZAS_MX80 } from "@/data/mx80";
+import { gruposMaterialPorNombre } from "@/features/viewer/materiales";
 import { aPiezaPublica } from "@/lib/publico";
 import {
   CatalogoEsquema,
@@ -39,6 +40,15 @@ function conRender(pieza: Pieza): Pieza {
   return existsSync(path.join(process.cwd(), "public", ruta))
     ? { ...pieza, imagen: ruta }
     : pieza;
+}
+
+/**
+ * Tipo de material escrito en las fichas, para el filtro del visor. Sale del
+ * catalogo completo (antes del recorte publico, que quita especificaciones),
+ * pero lo que devuelve es solo nombre de nodo -> grupo: nada interno.
+ */
+export function gruposMaterialDelVisor() {
+  return gruposMaterialPorNombre(CatalogoEsquema.parse([...PIEZAS_MX80]));
 }
 
 const CATALOGO: Pieza[] = CatalogoEsquema.parse([...PIEZAS_MX80])

@@ -48,6 +48,11 @@ const EsquemaPublico = PiezaEsquema.pick({
   glb: true,
   sinDespiece: true,
   orden: true,
+  // Que la pieza tiene version CW y CCW (o izquierda y derecha) es
+  // informacion de venta: el cliente necesita saber cual le toca. El numero de
+  // parte de cada version NO sale (ver aPiezaPublica).
+  variantes: true,
+  surtidaEnConjunto: true,
 });
 
 /**
@@ -59,8 +64,10 @@ const EsquemaPublico = PiezaEsquema.pick({
  * omision (null, o lista vacia), el mismo que tiene una pieza sin medir.
  */
 export function aPiezaPublica(pieza: Pieza): Pieza {
+  const publica = EsquemaPublico.parse(pieza);
   return PiezaEsquema.parse({
-    ...EsquemaPublico.parse(pieza),
+    ...publica,
+    variantes: publica.variantes.map((v) => ({ ...v, numeroBom: null })),
     especificaciones: EspecificacionesEsquema.parse({}),
   });
 }

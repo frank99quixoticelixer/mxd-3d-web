@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { TarjetaPieza } from "@/components/catalogo/TarjetaPieza";
 import { MODELO_PREDETERMINADO } from "@/config/modelos3d";
-import { obtenerPiezas } from "@/lib/catalogo";
+import { obtenerPiezas, obtenerSubpiezas } from "@/lib/catalogo";
 import { ETIQUETAS_SUBSISTEMA, type Subsistema } from "@/lib/esquema";
 
 export const metadata: Metadata = {
@@ -19,6 +19,11 @@ export default function PaginaCatalogo() {
     (acc[pieza.subsistema] ??= []).push(pieza);
     return acc;
   }, {});
+  // El sistema de aspersion va primero: es lo que distingue al MX80 y antes
+  // quedaba al final, como una sola tarjeta entre los conjuntos.
+  const secciones = Object.entries(grupos).sort(
+    ([a], [b]) => Number(b === "aspercion") - Number(a === "aspercion"),
+  );
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
@@ -35,7 +40,7 @@ export default function PaginaCatalogo() {
         </p>
       </header>
 
-      {Object.entries(grupos).map(([subsistema, lista]) => (
+      {secciones.map(([subsistema, lista]) => (
         <section key={subsistema} className="mt-10">
           <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
             {ETIQUETAS_SUBSISTEMA[subsistema as Subsistema]}
@@ -48,6 +53,30 @@ export default function PaginaCatalogo() {
               <TarjetaPieza key={pieza.sku} pieza={pieza} />
             ))}
           </div>
+          {/* Las piezas de cada conjunto, sin tener que abrir su ficha. Las del
+              aspersor se ven abiertas; las demas, plegadas para no alargar la
+              pagina con cien tornillos. */}
+          {lista.map((pieza) => {
+            const subpiezas = obtenerSubpiezas(pieza.sku);
+            if (subpiezas.length === 0) return null;
+            return (
+              <details
+                key={`${pieza.sku}-piezas`}
+                open={subsistema === "aspercion"}
+                className="mt-4 rounded-xl border border-mxd-borde bg-mxd-fondo"
+              >
+                <summary className="cursor-pointer select-none px-4 py-3 text-sm font-semibold text-mxd-tinta hover:text-mxd-verde">
+                  Piezas de {pieza.nombre}
+                  <span className="ml-2 font-normal text-mxd-gris">({subpiezas.length})</span>
+                </summary>
+                <div className="grid gap-4 px-4 pb-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {subpiezas.map((sub) => (
+                    <TarjetaPieza key={sub.sku} pieza={sub} />
+                  ))}
+                </div>
+              </details>
+            );
+          })}
         </section>
       ))}
     </div>

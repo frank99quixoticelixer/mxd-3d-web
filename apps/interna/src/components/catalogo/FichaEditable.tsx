@@ -9,6 +9,7 @@ import {
   CAMPOS_COSTOS,
   CAMPOS_ESPECIFICACIONES,
   CAMPOS_TRAZABILIDAD,
+  ETIQUETAS_GRUPO_MATERIAL,
   monedaTexto,
   textoValor,
   valorInicial,
@@ -57,6 +58,28 @@ function FilaInput({ campo, valor }: { campo: CampoFicha; valor: string | number
           <option value="">Pendiente</option>
           <option value="CW">CW</option>
           <option value="CCW">CCW</option>
+        </select>
+      </div>
+    );
+  }
+  if (campo.tipo === "seleccionMaterial") {
+    return (
+      <div className="flex items-center justify-between gap-4 border-b border-mxd-borde py-2 last:border-0">
+        <label htmlFor={campo.clave} className="text-sm text-mxd-gris">
+          {campo.etiqueta}
+        </label>
+        <select
+          id={campo.clave}
+          name={campo.clave}
+          defaultValue={(valor as string) ?? ""}
+          className="rounded-md border border-mxd-borde bg-mxd-hueso px-2 py-1 text-sm text-mxd-tinta"
+        >
+          <option value="">Automático (reglas del visor)</option>
+          {Object.entries(ETIQUETAS_GRUPO_MATERIAL).map(([clave, etiqueta]) => (
+            <option key={clave} value={clave}>
+              {etiqueta}
+            </option>
+          ))}
         </select>
       </div>
     );

@@ -11,7 +11,7 @@ import {
   ESPECIFICACIONES_MX80,
   MANUAL_MX80,
 } from "@/data/manual-mx80";
-import { obtenerPiezas, obtenerTodas } from "@/lib/catalogo";
+import { gruposMaterialDelVisor, obtenerPiezas, obtenerTodas } from "@/lib/catalogo";
 
 export const metadata: Metadata = {
   title: "Explora el MX80 en 3D",
@@ -25,7 +25,13 @@ export default function PaginaExplorar() {
   // entran porque dentro de una zona se aisla, por ejemplo, un agarrador del
   // marco, que tiene su propia ficha.
   const fichas = obtenerTodas(MODELO_PREDETERMINADO).map(
-    ({ sku, slug, nombre }) => ({ sku, slug, nombre }),
+    ({ sku, slug, nombre, variantes }) => ({
+      sku,
+      slug,
+      nombre,
+      // Sin numero de parte: esto viaja al navegador.
+      variantes: variantes.map(({ clave, etiqueta, posicion }) => ({ clave, etiqueta, posicion })),
+    }),
   );
 
   return (
@@ -48,7 +54,11 @@ export default function PaginaExplorar() {
         </div>
 
         <div className="mt-8">
-          <SeccionAccesorios fichas={fichas} accesorios={ACCESORIOS_MX80} />
+          <SeccionAccesorios
+            fichas={fichas}
+            accesorios={ACCESORIOS_MX80}
+            gruposMaterial={gruposMaterialDelVisor()}
+          />
         </div>
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
