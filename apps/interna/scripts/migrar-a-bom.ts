@@ -20,37 +20,11 @@ import ExcelJS from "exceljs";
 import { access, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
 import { PIEZAS_MX80 } from "../src/data/mx80";
-import { COLUMNAS_BOM, RUTA_BOM, type FilaBom } from "../src/lib/bom";
+import { COLUMNAS_BOM, RUTA_BOM, filaDesdePieza } from "../src/lib/bom";
 
 /** Valores de la fila de una pieza, en el orden de COLUMNAS_BOM. */
 function valoresDe(pieza: (typeof PIEZAS_MX80)[number]): unknown[] {
-  const fila: FilaBom = {
-    sku: pieza.sku,
-    nombre: pieza.nombre,
-    categoria: pieza.categoria,
-    proceso_fabricacion: pieza.proceso_fabricacion,
-    descripcion_funcional: pieza.descripcion_funcional,
-    especificaciones_tecnicas: pieza.especificaciones_tecnicas,
-    camposNoAplican: pieza.camposNoAplican,
-    numero_parte_mxd: pieza.numeroBom,
-    precio_mxn: pieza.precio_mxn,
-    stock: pieza.stock,
-    costo_fabricado_inhouse: pieza.costosProduccion.fabricadoInhouse,
-    costo_equipo: pieza.costosProduccion.equipo,
-    costo_material: pieza.costosProduccion.material,
-    costo_masa_g: pieza.costosProduccion.masaG,
-    costo_horas_produccion: pieza.costosProduccion.horasProduccion,
-    costo_pintura_mxn: pieza.costosProduccion.costoPinturaMxn,
-    costo_mano_obra_mxn: pieza.costosProduccion.costoManoObraMxn,
-    costo_notas: pieza.costosProduccion.notas,
-    trazabilidad_criticidad: pieza.trazabilidad.criticidad,
-    trazabilidad_control_calidad: pieza.trazabilidad.controlCalidad,
-    trazabilidad_intercambiable: pieza.trazabilidad.intercambiable,
-    trazabilidad_carpeta_pieza: pieza.trazabilidad.carpetaPieza,
-    trazabilidad_archivo_step: pieza.trazabilidad.archivoStep,
-    trazabilidad_archivo_stl: pieza.trazabilidad.archivoStl,
-    ...pieza.especificaciones,
-  };
+  const fila = filaDesdePieza(pieza);
   return COLUMNAS_BOM.map((col) => {
     const v = (fila as unknown as Record<string, unknown>)[col.clave];
     if (col.tipo === "lista") return ((v as string[]) ?? []).join("; ");
