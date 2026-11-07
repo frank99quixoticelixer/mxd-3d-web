@@ -6,8 +6,9 @@
  *   - el material que ya tiene la ficha (soporte de motor y balanceador de
  *     aluminio, cubierta de motor de TPE, base del ESC de PC/ABS...)
  *   - el maestro de partes (sistema PLA = plasticos)
- *   - lo que confirmo el equipo: soportes y retenedores del marco, agarres y
- *     coples del tren, y rieles de bateria son de plastico
+ *   - lo que confirmo el equipo: los soportes de brazo del marco, los coples
+ *     del tren y los rieles de bateria son de plastico; el retenedor de brazo
+ *     y los agarres del tren son de metal
  *
  * La electronica va aparte y no entra ni en plasticas ni en metalicas: un
  * tornillo dentro del ESC es parte del ESC, no "una pieza de metal".
@@ -38,7 +39,8 @@ export const GRUPOS: GrupoMaterial[] = ["plastico", "metal", "electronica", "otr
 /** Para la interfaz: que entra en cada filtro. */
 export const DESCRIPCION_GRUPO: Record<GrupoMaterial, string> = {
   plastico: "Piezas inyectadas o impresas: cubiertas, carcasa, tanque, soportes y aspersor",
-  metal: "Aluminio y tornillería: soportes de motor, balanceador, perfiles, tubos del tren",
+  metal:
+    "Aluminio y tornillería: soportes de motor, balanceador, perfiles, retenedores de brazo, tubos y agarres del tren",
   electronica: "Sensores, PDB, ESC, motores, batería, cables y conectores",
   otros: "Fibra de carbono, hules y mangueras",
 };
@@ -75,6 +77,7 @@ const PIEZAS: readonly { re: RegExp; grupo: GrupoMaterial }[] = [
   // Metal: aluminio
   { re: /^(sujetador_motor|sujetador_balanceador|balanceador_helice)/i, grupo: "metal" },
   { re: /^(frame_tubo|patin_|travesano_)/i, grupo: "metal" },
+  { re: /^(retenedor_|agarre_)/i, grupo: "metal" },
   // Plastico
   {
     re: /^(cubierta_motor|base_ESC|tapa_trasera_ESC|carcasa_drone|DRONE_CLEAN_TOPOLOGY|ModeloAvantiv|Tanque)/i,
@@ -84,7 +87,7 @@ const PIEZAS: readonly { re: RegExp; grupo: GrupoMaterial }[] = [
     re: /^(pieza_A_cuerpo_Y|pieza_B_conector|tapa_(der|izq)|seguro_manguera|arnes_abrazadera|(der|izq)_disco)/i,
     grupo: "plastico",
   },
-  { re: /^(agarrador_|retenedor_|agarre_|cople_|RIEL_)/i, grupo: "plastico" },
+  { re: /^(agarrador_|cople_|RIEL_)/i, grupo: "plastico" },
   { re: /^(cuna|copa_tapa|abrazadera_)/i, grupo: "plastico" },
 ];
 
