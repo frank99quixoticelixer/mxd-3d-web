@@ -2,27 +2,18 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Html, OrbitControls, useGLTF, useProgress } from "@react-three/drei";
+import { OrbitControls, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 
 import { COLORES_3D } from "@/config/marca";
 import { useVisor } from "./estado";
 import { Escenario } from "./Escenario";
+import { AvisoCarga, MarcaCargado } from "./AvisoCarga";
 import { LimiteError } from "./LimiteError";
 
 /** Mismo giro de referencia que las piezas sueltas (EscenaPieza.tsx). */
 const VELOCIDAD_GIRO = 0.63;
 
-function Cargando() {
-  const { progress } = useProgress();
-  return (
-    <Html center>
-      <span className="whitespace-nowrap text-xs font-medium tracking-wide text-mxd-gris">
-        Cargando accesorio {Math.round(progress)}%
-      </span>
-    </Html>
-  );
-}
 
 /**
  * Caja gris generica: se muestra en vez de un GLB cuando el accesorio
@@ -130,8 +121,11 @@ export function EscenaAccesorio({
 }) {
   const [medidas, setMedidas] = useState<{ radio: number; semialto: number } | null>(null);
   const radio = medidas?.radio ?? null;
+  const [cargado, setCargado] = useState(false);
+  const [fallo, setFallo] = useState(false);
 
   return (
+    <>
     <Canvas
       shadows
       dpr={[1, 2]}
@@ -143,9 +137,10 @@ export function EscenaAccesorio({
       }}
     >
       <Escenario sombraY={medidas ? -medidas.semialto * 1.02 : undefined} />
-      <LimiteError respaldo={null}>
+      <LimiteError respaldo={null} alFallar={() => setFallo(true)}>
         {url ? (
-          <Suspense fallback={<Cargando />}>
+          <Suspense fallback={null}>
+            <MarcaCargado alCambiar={setCargado} />
             <ModeloAccesorio url={url} girando={girando} alMedir={setMedidas} />
           </Suspense>
         ) : (
@@ -163,5 +158,8 @@ export function EscenaAccesorio({
         />
       )}
     </Canvas>
+    {/* Sin GLB (la caja generica) no hay nada que esperar. */}
+    <AvisoCarga texto="Cargando accesorio" listo={!url || cargado} fallo={fallo} />
+    </>
   );
 }

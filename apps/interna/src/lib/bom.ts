@@ -13,7 +13,7 @@
 import ExcelJS from "exceljs";
 import { mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { EspecificacionesEsquema, type Especificaciones } from "./esquema";
+import { EspecificacionesEsquema, type Especificaciones, type Pieza } from "./esquema";
 
 const RUTA_BOM = process.env.BOM_XLSX_PATH ?? join(process.cwd(), "contenido", "BOM_MX80.xlsx");
 const HOJA = "BOM_MX80";
@@ -91,6 +91,11 @@ const COLUMNAS: { clave: string; encabezado: string; tipo: TipoColumna }[] = [
   { clave: "trazabilidad_carpeta_pieza", encabezado: "Carpeta de la pieza", tipo: "texto" },
   { clave: "trazabilidad_archivo_step", encabezado: "Archivo STEP", tipo: "booleano" },
   { clave: "trazabilidad_archivo_stl", encabezado: "Archivo STL", tipo: "booleano" },
+  // -- Cruce con el maestro de partes (pagina /maestro). El numero de la pieza
+  // entera va en numero_parte_mxd; si la pieza tiene versiones (CW/CCW,
+  // derecha/izquierda) cada una puede llevar el suyo: "cw=MXD-...; ccw=MXD-...".
+  { clave: "cruce_estado", encabezado: "Estado del cruce con el maestro", tipo: "texto" },
+  { clave: "numeros_variantes", encabezado: "No. parte MXD por versión", tipo: "texto" },
 ];
 
 /**
@@ -195,6 +200,8 @@ export type FilaBom = Pick<Especificaciones, Exclude<keyof Especificaciones, "fu
   trazabilidad_carpeta_pieza: string | null;
   trazabilidad_archivo_step: boolean | null;
   trazabilidad_archivo_stl: boolean | null;
+  cruce_estado: string | null;
+  numeros_variantes: string | null;
 };
 
 /** Campos editables desde la UI (todo menos sku/nombre, que no se tocan aqui). */
@@ -289,6 +296,8 @@ function normalizarFila(obj: Record<string, unknown>): FilaBom {
     trazabilidad_carpeta_pieza: (obj.trazabilidad_carpeta_pieza as string | null) ?? null,
     trazabilidad_archivo_step: (obj.trazabilidad_archivo_step as boolean | null) ?? null,
     trazabilidad_archivo_stl: (obj.trazabilidad_archivo_stl as boolean | null) ?? null,
+    cruce_estado: (obj.cruce_estado as string | null) ?? null,
+    numeros_variantes: (obj.numeros_variantes as string | null) ?? null,
   } as FilaBom;
 }
 
@@ -357,6 +366,64 @@ export async function escribirPieza(
 
     await libro.xlsx.writeFile(RUTA_BOM);
   });
+}
+
+/** "cw=MXD-...; ccw=MXD-..." -> { cw: "MXD-...", ccw: "MXD-..." } */
+export function leerNumerosVariantes(texto: string | null): Record<string, string> {
+  const mapa: Record<string, string> = {};
+  for (const parte of (texto ?? "").split(";")) {
+    const [clave, numero] = parte.split("=").map((s) => s.trim());
+    if (clave && numero) mapa[clave] = numero;
+  }
+  return mapa;
+}
+
+/** { cw: "MXD-...", ccw: "MXD-..." } -> "cw=MXD-...; ccw=MXD-..." (null si vacio) */
+export function escribirNumerosVariantes(mapa: Record<string, string>): string | null {
+  const partes = Object.entries(mapa).map(([clave, numero]) => `${clave}=${numero}`);
+  return partes.length > 0 ? partes.join("; ") : null;
+}
+
+/**
+ * La fila completa del BOM de una pieza, con lo que hoy dice el catalogo.
+ *
+ * Una fila nueva NUNCA se crea solo con el campo que se cambio: escribirPieza
+ * deja en null todo lo demas y, como la fila manda sobre el catalogo, la
+ * ficha perderia categoria, cotas y material. Por eso se siembra con esto.
+ */
+export function filaDesdePieza(pieza: Pieza): FilaBom {
+  const porVersion = Object.fromEntries(
+    pieza.variantes.filter((v) => v.numeroBom).map((v) => [v.clave, v.numeroBom as string]),
+  );
+  return {
+    ...pieza.especificaciones,
+    sku: pieza.sku,
+    nombre: pieza.nombre,
+    categoria: pieza.categoria,
+    proceso_fabricacion: pieza.proceso_fabricacion,
+    descripcion_funcional: pieza.descripcion_funcional,
+    especificaciones_tecnicas: pieza.especificaciones_tecnicas,
+    camposNoAplican: pieza.camposNoAplican,
+    numero_parte_mxd: pieza.numeroBom,
+    precio_mxn: pieza.precio_mxn,
+    stock: pieza.stock,
+    costo_fabricado_inhouse: pieza.costosProduccion.fabricadoInhouse,
+    costo_equipo: pieza.costosProduccion.equipo,
+    costo_material: pieza.costosProduccion.material,
+    costo_masa_g: pieza.costosProduccion.masaG,
+    costo_horas_produccion: pieza.costosProduccion.horasProduccion,
+    costo_pintura_mxn: pieza.costosProduccion.costoPinturaMxn,
+    costo_mano_obra_mxn: pieza.costosProduccion.costoManoObraMxn,
+    costo_notas: pieza.costosProduccion.notas,
+    trazabilidad_criticidad: pieza.trazabilidad.criticidad,
+    trazabilidad_control_calidad: pieza.trazabilidad.controlCalidad,
+    trazabilidad_intercambiable: pieza.trazabilidad.intercambiable,
+    trazabilidad_carpeta_pieza: pieza.trazabilidad.carpetaPieza,
+    trazabilidad_archivo_step: pieza.trazabilidad.archivoStep,
+    trazabilidad_archivo_stl: pieza.trazabilidad.archivoStl,
+    cruce_estado: pieza.cruceBom?.estado ?? null,
+    numeros_variantes: escribirNumerosVariantes(porVersion),
+  };
 }
 
 export { COLUMNAS as COLUMNAS_BOM, RUTA_BOM };

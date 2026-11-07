@@ -3,8 +3,15 @@ import Link from "next/link";
 
 import { MODELO_PREDETERMINADO } from "@/config/modelos3d";
 import MAESTRO from "@/data/maestro-mx80.json";
-import { obtenerTodas } from "@/lib/catalogo";
+import { conBomTodas, obtenerTodas } from "@/lib/catalogo";
 import type { Pieza } from "@/lib/esquema";
+import { pendientesMaestro } from "@/lib/pendientes-maestro";
+
+import { EditorCruces, type Disponible, type Enlace } from "./EditorCruces";
+
+// Lee el BOM editable en cada visita: un numero capturado en una ficha deja
+// de salir como pendiente sin reconstruir el sitio.
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Maestro de partes",
@@ -69,11 +76,84 @@ function piezasPorNumero(piezas: Pieza[]): Map<string, { pieza: Pieza; version: 
  * (la aviónica de la bahía, casi todo el cableado) y si el cruce esta
  * confirmado o solo propuesto. El cruce vive en data/cruce-maestro.ts.
  */
-export default function PaginaMaestro() {
-  const piezas = obtenerTodas(MODELO_PREDETERMINADO);
+/** Una lista plegable de pendientes. */
+function Pendiente({
+  titulo,
+  explicacion,
+  total,
+  abierto = false,
+  children,
+}: {
+  titulo: string;
+  explicacion: string;
+  total: number;
+  abierto?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <details open={abierto && total > 0} className="rounded-xl border border-mxd-borde bg-mxd-fondo">
+      <summary className="cursor-pointer select-none px-4 py-3">
+        <span className="text-sm font-semibold text-mxd-tinta">{titulo}</span>
+        <span className="ml-2 rounded-full bg-mxd-verde-claro px-2 py-0.5 text-xs font-semibold text-mxd-verde-oscuro">
+          {total}
+        </span>
+        <span className="mt-0.5 block text-xs font-normal text-mxd-gris">{explicacion}</span>
+      </summary>
+      <div className="border-t border-mxd-borde px-4 py-3">
+        {total === 0 ? <p className="text-xs italic text-mxd-gris">Nada pendiente.</p> : children}
+      </div>
+    </details>
+  );
+}
+
+/** Lista de piezas del catalogo con su enlace a la ficha. */
+function ListaPiezas({ piezas, detalle }: { piezas: Pieza[]; detalle: (p: Pieza) => React.ReactNode }) {
+  return (
+    <ul className="flex flex-col divide-y divide-mxd-borde text-xs">
+      {piezas.map((p) => (
+        <li key={p.sku} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 py-1.5">
+          <span className="font-mono text-[10px] text-mxd-gris">{p.sku}</span>
+          <Link href={`/catalogo/${p.slug}`} className="font-medium text-mxd-tinta hover:text-mxd-verde">
+            {p.nombre}
+          </Link>
+          <span className="basis-full text-mxd-gris sm:basis-auto">{detalle(p)}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export default async function PaginaMaestro() {
+  const piezas = await conBomTodas(obtenerTodas(MODELO_PREDETERMINADO));
+  const pendientes = pendientesMaestro(piezas);
   const porNumero = piezasPorNumero(piezas);
   const partidas = (MAESTRO.partidas as Partida[]).filter((p) => p.sistema !== "PRD");
   const ligadas = partidas.filter((p) => porNumero.has(p.numero)).length;
+  // Lo que el editor necesita, armado aqui en el servidor: que pieza (o
+  // version) lleva cada numero, y cuales aun no llevan ninguno.
+  const enlaces: Record<string, Enlace[]> = {};
+  for (const [numero, lista] of porNumero) {
+    enlaces[numero] = lista.map(({ pieza, version }) => ({
+      sku: pieza.sku,
+      slug: pieza.slug,
+      nombre: pieza.nombre,
+      variante: pieza.variantes.find((v) => v.etiqueta === version)?.clave ?? null,
+      etiquetaVariante: version,
+      estado: pieza.cruceBom?.estado ?? null,
+    }));
+  }
+  const disponibles: Disponible[] = piezas
+    .filter((p) => !p.surtidaEnConjunto)
+    .flatMap((p): Disponible[] =>
+      p.variantes.length > 0
+        ? p.variantes
+            .filter((v) => !v.numeroBom)
+            .map((v) => ({ sku: p.sku, nombre: p.nombre, variante: v.clave, etiquetaVariante: v.etiqueta }))
+        : p.numeroBom
+          ? []
+          : [{ sku: p.sku, nombre: p.nombre, variante: null, etiquetaVariante: null }],
+    );
+
   const porSistema = partidas.reduce<Record<string, Partida[]>>((acc, p) => {
     (acc[p.sistema ?? "?"] ??= []).push(p);
     return acc;
@@ -106,76 +186,95 @@ export default function PaginaMaestro() {
         </dl>
       </header>
 
-      {Object.entries(porSistema).map(([sistema, lista]) => (
-        <section key={sistema} className="mt-10">
-          <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
-            {SISTEMAS[sistema] ?? sistema}
-            <span className="ml-2 font-normal normal-case tracking-normal text-mxd-gris/70">
-              ({lista.length})
-            </span>
-          </h2>
-          <div className="mt-3 overflow-x-auto rounded-xl border border-mxd-borde">
-            <table className="w-full min-w-[720px] text-left text-xs">
-              <thead className="bg-mxd-hueso text-[11px] uppercase tracking-wider text-mxd-gris">
-                <tr>
-                  <th className="px-3 py-2 font-semibold">No. parte</th>
-                  <th className="px-3 py-2 font-semibold">Partida</th>
-                  <th className="px-3 py-2 font-semibold">Cant.</th>
-                  <th className="px-3 py-2 font-semibold">Posición</th>
-                  <th className="px-3 py-2 font-semibold">Pieza del catálogo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lista.map((p) => {
-                  const enCatalogo = porNumero.get(p.numero) ?? [];
-                  return (
-                    <tr key={p.numero} className="border-t border-mxd-borde align-top">
-                      <td className="whitespace-nowrap px-3 py-2 font-mono text-[11px] text-mxd-verde">
-                        {p.numero.replace(/^MXD-MX80-/, "").replace(/-R00$/, "")}
-                      </td>
-                      <td className="px-3 py-2">
-                        <p className="font-medium text-mxd-tinta">{p.nombre}</p>
-                        <p className="text-[11px] text-mxd-gris">{p.nombreOem}</p>
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2 text-mxd-tinta">
-                        {p.cantidad ?? "—"} {p.unidad}
-                      </td>
-                      <td className="px-3 py-2 text-mxd-gris">{p.posicion}</td>
-                      <td className="px-3 py-2">
-                        {enCatalogo.length === 0 ? (
-                          <span className="italic text-mxd-gris/70">Sin pieza en el 3D</span>
-                        ) : (
-                          <ul className="flex flex-col gap-1">
-                            {enCatalogo.map(({ pieza, version }) => (
-                              <li key={`${pieza.sku}-${version}`}>
-                                <Link
-                                  href={`/catalogo/${pieza.slug}`}
-                                  className="font-medium text-mxd-tinta hover:text-mxd-verde"
-                                >
-                                  {pieza.nombre}
-                                </Link>
-                                <span className="ml-1 font-mono text-[10px] text-mxd-gris">{pieza.sku}</span>
-                                {version && (
-                                  <span className="ml-1 rounded-full bg-mxd-verde-claro px-1.5 text-[10px] font-semibold text-mxd-verde-oscuro">
-                                    {version.replace("Versión ", "")}
-                                  </span>
-                                )}
-                                {pieza.cruceBom?.estado === "propuesto" && (
-                                  <span className="ml-1 text-[10px] italic text-mxd-gris">por confirmar</span>
-                                )}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+      {/* Lo que falta enlazar, arriba: es lo que hay que trabajar. */}
+      <section className="mt-8 rounded-2xl border border-mxd-borde bg-mxd-hueso p-5 sm:p-6">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
+              Pendientes de enlazar
+            </h2>
+            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-mxd-gris">
+              Lo que falta para que cada pieza del 3D tenga su número del
+              maestro y cada partida su pieza. Un número se captura en la ficha
+              de la pieza («Número de parte (BOM)»); el cruce por omisión vive
+              en <code>data/cruce-maestro.ts</code>.
+            </p>
           </div>
-        </section>
-      ))}
+          <a
+            href="/api/maestro/pendientes"
+            className="rounded-lg bg-mxd-verde px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-mxd-verde-oscuro"
+          >
+            Descargar pendientes (CSV)
+          </a>
+        </div>
+
+        <div className="mt-4 flex flex-col gap-2">
+          <Pendiente
+            titulo="Cruces por confirmar"
+            explicacion="Tienen número propuesto, o varios candidatos, y alguien que conozca el BOM debe confirmarlo."
+            total={pendientes.porConfirmar.length}
+            abierto
+          >
+            <ListaPiezas
+              piezas={pendientes.porConfirmar}
+              detalle={(p) => (
+                <>
+                  {p.numeroBom && (
+                    <span className="mr-1 font-mono text-[10px] text-mxd-verde">
+                      {p.numeroBom.replace(/MXD-MX80-|-R00/g, "")}
+                    </span>
+                  )}
+                  {p.cruceBom?.nota}
+                </>
+              )}
+            />
+          </Pendiente>
+
+          <Pendiente
+            titulo="Piezas sin número: dar de alta o enlazar"
+            explicacion="Piezas del 3D que se compran o se fabrican y no tienen partida en el maestro (diseño MXD nuevo o piezas que el maestro no separa)."
+            total={pendientes.porDarDeAlta.length}
+            abierto
+          >
+            <ListaPiezas piezas={pendientes.porDarDeAlta} detalle={(p) => p.categoria} />
+          </Pendiente>
+
+          <Pendiente
+            titulo="Tornillería sin número"
+            explicacion="El maestro casi no desglosa tornillos, arandelas ni tuercas. Decidir si se dan de alta o se compran como consumible."
+            total={pendientes.tornilleria.length}
+          >
+            <ListaPiezas piezas={pendientes.tornilleria} detalle={(p) => p.categoria} />
+          </Pendiente>
+
+          <Pendiente
+            titulo="Partidas del maestro sin pieza en el 3D"
+            explicacion="Están en el BOM pero no en el modelo (aviónica de la bahía, la mayoría del cableado, partes del tanque). Se enlazan cuando se modelen."
+            total={pendientes.partidasSinPieza.length}
+          >
+            <ul className="flex flex-col divide-y divide-mxd-borde text-xs">
+              {pendientes.partidasSinPieza.map((m) => (
+                <li key={m.numero} className="flex flex-wrap items-baseline gap-x-2 py-1.5">
+                  <span className="font-mono text-[10px] text-mxd-verde">
+                    {m.numero.replace(/MXD-MX80-|-R00/g, "")}
+                  </span>
+                  <span className="font-medium text-mxd-tinta">{m.nombre}</span>
+                  <span className="text-mxd-gris">
+                    {m.cantidad ?? "—"} {m.unidad} · {m.posicion}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </Pendiente>
+        </div>
+      </section>
+
+      <EditorCruces
+        sistemas={Object.entries(porSistema)}
+        enlaces={enlaces}
+        disponibles={disponibles}
+        nombresSistema={SISTEMAS}
+      />
     </div>
   );
 }

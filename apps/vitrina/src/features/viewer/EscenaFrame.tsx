@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { Html, OrbitControls, useGLTF, useProgress } from "@react-three/drei";
+import { OrbitControls, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 
 import { COLORES } from "@/config/marca";
@@ -44,6 +44,7 @@ import { crearGotas } from "./aspersion/gotas";
 import { grupoDeMalla, type GrupoMaterial } from "./materiales";
 import { organizarEnCuadricula } from "./cuadricula";
 import { Escenario } from "./Escenario";
+import { AvisoCarga, MarcaCargado } from "./AvisoCarga";
 import { LimiteError } from "./LimiteError";
 
 /**
@@ -265,16 +266,6 @@ function signoAperturaPala(pala: THREE.Object3D, ejeRotor: THREE.Vector3): numbe
   return signo;
 }
 
-function Cargando() {
-  const { progress } = useProgress();
-  return (
-    <Html center>
-      <span className="whitespace-nowrap text-xs font-medium tracking-wide text-mxd-gris">
-        Cargando chasis {Math.round(progress)}%
-      </span>
-    </Html>
-  );
-}
 
 interface Pala {
   objeto: THREE.Object3D;
@@ -1545,8 +1536,11 @@ export function EscenaFrame({
   const [medidas, setMedidas] = useState<{ radio: number; semialto: number } | null>(null);
   const radio = medidas?.radio ?? null;
   const [radioVisible, setRadioVisible] = useState<number | null>(null);
+  const [cargado, setCargado] = useState(false);
+  const [fallo, setFallo] = useState(false);
 
   return (
+    <>
     <Canvas
       shadows
       dpr={[1, 2]}
@@ -1559,16 +1553,10 @@ export function EscenaFrame({
       }}
     >
       <Escenario sombraY={medidas ? -medidas.semialto * 1.02 : undefined} />
-      <LimiteError
-        respaldo={
-          <Html center>
-            <span className="whitespace-nowrap text-xs font-medium text-mxd-gris">
-              No se pudo cargar el modelo 3D
-            </span>
-          </Html>
-        }
-      >
-        <Suspense fallback={<Cargando />}>
+      {/* El aviso de carga y el de error van fuera del lienzo (AvisoCarga). */}
+      <LimiteError respaldo={null} alFallar={() => setFallo(true)}>
+        <Suspense fallback={null}>
+          <MarcaCargado alCambiar={setCargado} />
           <ChasisPlegable
             despliegue={despliegue}
             encendido={encendido}
@@ -1618,6 +1606,8 @@ export function EscenaFrame({
         />
       )}
     </Canvas>
+    <AvisoCarga texto="Cargando chasis" listo={cargado} fallo={fallo} />
+    </>
   );
 }
 
