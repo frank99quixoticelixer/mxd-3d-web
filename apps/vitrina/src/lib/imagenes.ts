@@ -13,13 +13,13 @@ import path from "node:path";
  * una descarga nueva en cualquier cache.
  *
  * Solo corre en servidor (Server Components): usa fs para leer el archivo
- * real en public/. Si no lo encuentra, devuelve la ruta tal cual en vez de
+ * real en protegido/. Si no lo encuentra, devuelve la ruta tal cual en vez de
  * romper el render.
  */
 export function conVersion(rutaPublica: string | null | undefined): string | null {
   if (!rutaPublica) return null;
   try {
-    const absoluta = path.join(process.cwd(), "public", rutaPublica);
+    const absoluta = path.join(process.cwd(), "protegido", rutaPublica);
     const { mtimeMs } = fs.statSync(absoluta);
     const separador = rutaPublica.includes("?") ? "&" : "?";
     return `${rutaPublica}${separador}v=${Math.round(mtimeMs)}`;

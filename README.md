@@ -44,7 +44,7 @@ salvo que sea en `public/` (ver [Assets compartidos](#assets-compartidos)).
 | Comportamiento del visor 3D | `src/features/viewer/` de cada app |
 | Fichas tecnicas PDF | `src/features/ficha-pdf/` de interna (vitrina no las tiene) |
 | Que GLB carga el visor | `src/config/modelos3d.ts` de cada app |
-| Modelos 3D, renders, descargas | `apps/vitrina/public/` (para las dos webs) |
+| GLB y renders | `apps/vitrina/protegido/` (para las dos webs; ADR 0005) |
 | Editor de etiquetas de piezas | `apps/vitrina/public/brand/etiqueta-editor.html` |
 
 Las dos apps tienen hoy el mismo codigo pero son copias independientes: un
@@ -55,17 +55,21 @@ La excepcion son los assets.
 
 ## Assets compartidos
 
-`apps/vitrina/public/` es la fuente de verdad de los GLB, renders y
-descargas de **las dos webs**. Son 103 MB y no se duplican en git:
-`apps/interna/public/` esta gitignored y se llena copiando desde vitrina.
+`apps/vitrina/protegido/` (GLB y renders) y `apps/vitrina/public/` (marca y
+manual) son la fuente de verdad de los assets de **las dos webs**. Son 103 MB y
+no se duplican en git: `apps/interna/public/` y `apps/interna/protegido/`
+estan gitignored y se llenan copiando desde vitrina. Los GLB y renders van en
+`protegido/` y no en `public/` porque Hostinger entrega lo de `public/` sin
+contrasena (ADR 0005).
 
 Esa copia la hace `apps/interna/scripts/sincronizar-publico.mjs`, que corre
 solo antes de cada `npm run dev` y `npm run build` de interna. No hay que
 invocarlo a mano.
 
 Consecuencia practica: **un asset nuevo se pone siempre en
-`apps/vitrina/public/`**, aunque sea solo para interna. El espejo es
-unidireccional y lo que quede unicamente en `apps/interna/public/` se pierde
+`apps/vitrina/protegido/`** (o `public/` si es publico), aunque sea solo para
+interna. El espejo es unidireccional y lo que quede unicamente en
+`apps/interna/public/` o `apps/interna/protegido/` se pierde
 en el siguiente build.
 
 ## Como desplegar
@@ -101,11 +105,11 @@ alguno de ellos.
 |------------------------------|-------------------|-------------------|
 | `apps/vitrina/src/**` | si | no |
 | `apps/interna/src/**` | no | si |
-| `apps/vitrina/public/**` (un GLB nuevo) | si | si |
+| `apps/vitrina/protegido/**` o `public/**` (un GLB nuevo) | si | si |
 | `apps/pedidos/**`, `CLAUDE.md`, este archivo | no | no |
 
 El unico caso donde salen las dos a la vez es un cambio en
-`apps/vitrina/public/`, y es intencional: esa carpeta alimenta a las dos
+`apps/vitrina/protegido/` o `public/`, y es intencional: esas carpetas alimentan a las dos
 webs, asi que un GLB reexportado tiene que llegar a ambas o interna se queda
 con la version vieja.
 
@@ -118,8 +122,8 @@ Los dos workflows son iguales salvo el dominio y un paso extra en interna.
 Viven en [`.github/workflows/`](.github/workflows/).
 
 1. **checkout** del repositorio.
-2. **Sincronizar assets** — solo interna. Copia `apps/vitrina/public/` a
-   `apps/interna/public/`. Tiene que pasar aqui porque el paquete que se
+2. **Sincronizar assets** — solo interna. Copia `apps/vitrina/public/` y
+   `apps/vitrina/protegido/` a `apps/interna/`. Tiene que pasar aqui porque el paquete que se
    sube a Hostinger lleva solo `apps/interna` y alla no hay ninguna carpeta
    de vitrina al lado.
 3. **Empaquetar** la app en `app.zip`, sin `node_modules`, `.next` ni
@@ -187,7 +191,7 @@ La configuracion de produccion vive en Hostinger.
   Hostinger. Se suben por FTP o SFTP a
   `contenido/piezas_MX80/descargas/` en la raiz del proyecto en el servidor.
   Mientras no esten, `/api/descarga/[sku]/glb` cae a
-  `public/models/mx80/piezas/`.
+  `protegido/models/mx80/piezas/`.
 - **Las fotos crudas y los proyectos COLMAP.** Viven en Google Drive, nunca
   en git.
 - **Pedidos.** Sin workflow todavia.

@@ -34,11 +34,12 @@ Thumbs.db
 # Assets: NO se versionan aqui
 # ---------------------------------------------------------------
 # interna usa exactamente los mismos GLB, renders y descargas que vitrina
-# (103 MB). La fuente de verdad es apps/vitrina/public; esta carpeta se
+# (103 MB). La fuente de verdad es apps/vitrina/public y apps/vitrina/protegido; se
 # llena con `npm run assets:sincronizar` (lo corren predev y prebuild).
 # Si necesitas un asset solo para interna, ponlo en vitrina igual: el
 # espejo es unidireccional y lo que este aqui sin estar alla se pierde.
 /public/
+/protegido/
 /contenido/
 
 # ---------------------------------------------------------------

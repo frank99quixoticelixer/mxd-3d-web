@@ -12,7 +12,7 @@
  *    el arbol de nodos del GLB del sitio. Asi el render y el 3D de la ficha
  *    muestran exactamente lo mismo.
  * 3. Corre Blender sin interfaz con blender/render_piezas.py.
- * 4. Copia cada JPG a public/renders/<SKU>.jpg. La ficha lo toma sola: el
+ * 4. Copia cada JPG a protegido/renders/<SKU>.jpg. La ficha lo toma sola: el
  *    catalogo usa ese archivo si la pieza no declara otra imagen.
  *
  * Los tornillos no se renderizan.
@@ -44,7 +44,7 @@ import type { Pieza } from "@/lib/esquema";
 const RAIZ = process.cwd();
 const CARPETA_BLENDER = path.join(RAIZ, "blender");
 const SALIDA = path.join(CARPETA_BLENDER, "salida");
-const RENDERS = path.join(RAIZ, "public", "renders");
+const RENDERS = path.join(RAIZ, "protegido", "renders");
 
 const argumento = (nombre: string) =>
   process.argv.find((a) => a.startsWith(`--${nombre}=`))?.split("=")[1];
@@ -89,7 +89,7 @@ function rutaBlender(): string {
 
 /** El arbol de nodos de un GLB, sin geometria: basta para resolver nombres. */
 function arbolDeGlb(rutaPublica: string): THREE.Object3D {
-  const b = readFileSync(path.join(RAIZ, "public", rutaPublica));
+  const b = readFileSync(path.join(RAIZ, "protegido", rutaPublica));
   const json = JSON.parse(b.subarray(20, 20 + b.readUInt32LE(12)).toString());
   const sanear = (n?: string) => (n ?? "").replace(/\s/g, "_").replace(/[[\].:/]/g, "");
   const nodos: THREE.Object3D[] = json.nodes.map((n: { name?: string; mesh?: number }) => {
@@ -188,7 +188,7 @@ function main() {
 
   console.log(
     `\n[MXD] Listo: ${resultado.renderizadas.length} renders ${
-      copiar ? "copiados a public/renders/" : "en blender/salida/ (sin copiar)"
+      copiar ? "copiados a protegido/renders/" : "en blender/salida/ (sin copiar)"
     }.`,
   );
   if (resultado.sin_objetos.length > 0) {
