@@ -38,8 +38,11 @@ export async function GET(
   return entregarArchivo(peticion, {
     ruta: archivo,
     tipo: "model/gltf-binary",
-    // private: nunca en una cache compartida (CDN, proxy). no-cache: se puede
-    // guardar pero se revalida siempre, y el ETag responde 304.
-    cache: "private, no-cache",
+    // private: nunca en una cache compartida (CDN, proxy). Los GLB llevan la
+    // version en el nombre (MX80_completo_v5_web.glb) y no se sobrescriben, asi
+    // que el navegador puede guardarlo un dia sin preguntar; pasado ese plazo
+    // revalida y el ETag responde 304. Sin esto, cada visita nueva de una
+    // persona vuelve a bajar los 27 MB desde el servidor.
+    cache: "private, max-age=86400",
   });
 }

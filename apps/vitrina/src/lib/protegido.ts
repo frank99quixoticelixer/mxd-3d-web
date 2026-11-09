@@ -133,6 +133,15 @@ interface OpcionesEntrega {
 }
 
 /**
+ * Tamano de cada trozo al transmitir. Node lee de 64 KB en 64 KB por omision: un
+ * GLB de 27 MB son ~416 escrituras, y detras del proxy de Hostinger cada una
+ * parece esperar al otro lado (el GLB v5 tardo mas de 3 minutos en producion;
+ * servido como estatico no pasaba). Con 2 MB son ~13 escrituras y la
+ * memoria por peticion sigue acotada (a diferencia de leer el archivo entero).
+ */
+const TROZO_BYTES = 2 * 1024 * 1024;
+
+/**
  * Entrega el archivo con ETag (tamano + fecha): el navegador revalida y recibe
  * 304 en vez de volver a bajar los MB del GLB. Se transmite en trozos.
  */
@@ -159,7 +168,9 @@ export async function entregarArchivo(
     return new Response(null, { status: 304, headers: cabeceras });
   }
 
-  const flujo = Readable.toWeb(createReadStream(ruta)) as unknown as ReadableStream<Uint8Array>;
+  const flujo = Readable.toWeb(
+    createReadStream(ruta, { highWaterMark: TROZO_BYTES }),
+  ) as unknown as ReadableStream<Uint8Array>;
   return new Response(flujo, {
     headers: {
       ...cabeceras,
