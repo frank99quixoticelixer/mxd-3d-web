@@ -136,19 +136,32 @@ las rutas `/api`, los GLB de `public/` y los chunks de `/_next/static`. Los
 chunks importan porque son estaticos que se piden por URL y en esta app pueden
 llevar dentro el catalogo interno.
 
-- Necesita `INTERNA_USUARIO` e `INTERNA_CLAVE`. **Sin ellas responde 503 a
-  todo**, a proposito: un olvido de configuracion no debe publicar el panel.
-  Si interna devuelve 503, falta configurar esas variables en hPanel.
-- Se leen en cada peticion y no se hornean en el bundle: cambiar la contrasena
-  solo exige reiniciar el sitio, no reconstruir.
+- Cada persona del equipo tiene su cuenta en `INTERNA_USUARIOS`: entradas
+  `usuario:sal:hash` (scrypt) separadas por coma. Se generan con
+  `cd apps/interna && npm run hash-clave -- <usuario>` (pide la contrasena sin
+  mostrarla). Alta o baja de una persona = editar la variable en hPanel y
+  **reiniciar el sitio**. Ver ADR 0006.
+- Si `INTERNA_USUARIOS` no esta definida se usa el par antiguo
+  `INTERNA_USUARIO` / `INTERNA_CLAVE`. Si esta definida, el par antiguo se
+  **ignora**: asi quitar a alguien de la lista le quita el acceso de verdad.
+- **Sin configuracion utilizable responde 503 a todo**, a proposito: un olvido
+  no debe publicar el panel. Tambien si `INTERNA_USUARIOS` solo trae entradas
+  mal formadas; el mensaje del 503 dice cual. Si interna devuelve 503, revisa
+  esas variables en hPanel.
+- Se leen en cada peticion y no se hornean en el bundle: cambiar cuentas solo
+  exige reiniciar el sitio, no reconstruir.
+- El proxy limita 10 intentos fallidos por IP cada 5 minutos (429) y escribe en
+  el log una linea por inicio de sesion (`[interna] acceso usuario=...`). Le pasa
+  al resto de la app quien entro en la cabecera `x-mxd-usuario`, que siempre
+  sobrescribe: sirve para registrar quien cambia cada dato.
 - En local van en `apps/interna/.env.local` (gitignored).
 - El archivo se llama `proxy.ts` y no `middleware.ts` porque Next 16 renombro
   la convencion; el export tiene que llamarse `proxy`.
 
-No es un sistema de cuentas, a proposito: para tres personas detras de HTTPS,
-una contrasena compartida es la proteccion correcta por el esfuerzo que cuesta.
-Cuando haya que saber QUIEN cambio cada dato, se reemplaza por cuentas de
-verdad.
+Son cuentas por persona pero todavia no un sistema de sesiones: sin roles, sin
+cierre de sesion y sin autoservicio, porque es autenticacion basica del
+navegador. Eso es la fase 2 de `docs/plan-usuarios-vitrina.md`. La vitrina sigue
+con una sola cuenta compartida (`VITRINA_USUARIO` / `VITRINA_CLAVE`).
 
 ## Equipo
 

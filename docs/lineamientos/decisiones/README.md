@@ -18,5 +18,6 @@ Se escribe un ADR cuando la decision:
 | [0003](0003-descargas-solo-en-interna.md) | Las descargas de modelos 3D son solo de interna | Aceptada |
 | [0004](0004-un-solo-glb.md) | Un solo GLB para todo lo que se muestra | Aceptada |
 | [0005](0005-glb-y-renders-fuera-de-public.md) | Los GLB y renders se entregan por una ruta de la app, no desde `public/` | Aceptada |
+| [0006](0006-cuentas-por-persona-en-interna.md) | Interna tiene una cuenta por persona (fase 1 del plan de usuarios) | Aceptada |
 
 Plantilla: [plantilla.md](plantilla.md).

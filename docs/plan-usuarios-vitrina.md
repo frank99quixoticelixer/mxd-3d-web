@@ -1,6 +1,19 @@
 # Plan: varios usuarios en la vitrina
 
-Estado actual: una sola cuenta compartida (autenticacion HTTP basica en
+> **Estado, 2026-11-09: la fase 1 esta implementada en INTERNA** (no en
+> vitrina), ver [ADR 0006](lineamientos/decisiones/0006-cuentas-por-persona-en-interna.md).
+> Lo de abajo sigue siendo el plan original, escrito para vitrina; la vitrina
+> todavia tiene una sola cuenta compartida y la fase 2 no se ha empezado.
+>
+> **Como dar de alta o baja a alguien en interna:**
+>
+> 1. `cd apps/interna && npm run hash-clave -- <usuario>` (la contrasena se
+>    teclea sin mostrarse; minimo 12 caracteres).
+> 2. Agregar la linea que imprime a `INTERNA_USUARIOS` en hPanel, separada por
+>    coma de las demas. Para una baja, quitar su entrada.
+> 3. Reiniciar el sitio. La contrasena se le pasa a la persona por otro canal.
+
+Estado de la vitrina: una sola cuenta compartida (autenticacion HTTP basica en
 `apps/vitrina/src/proxy.ts`), con `VITRINA_USUARIO` y `VITRINA_CLAVE` en las
 variables de entorno de hPanel. La contrasena no va en el repo (es publico).
 

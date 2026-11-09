@@ -15,6 +15,7 @@
     "bom:migrar": "tsx scripts/migrar-a-bom.ts",
     "bom:agregar": "tsx scripts/migrar-a-bom.ts --agregar-faltantes",
     "maestro:importar": "tsx scripts/importar-maestro.ts",
+    "hash-clave": "tsx scripts/hash-clave.ts",
     "verificar": "npm run typecheck && npm run lint && npm run build"
   },
   "dependencies": {

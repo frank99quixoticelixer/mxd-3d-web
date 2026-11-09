@@ -65,7 +65,7 @@ const ventanas = new Map<string, Ventana>();
  * usarla permitiria saltarse el limite rotando una cabecera inventada.
  * Si despues se pone un CDN delante, esta funcion hay que revisarla.
  */
-function ipDelCliente(peticion: Request): string {
+export function ipDelCliente(peticion: Request): string {
   const reenviada = peticion.headers.get("x-forwarded-for");
   if (reenviada) {
     const entradas = reenviada.split(",");
