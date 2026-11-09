@@ -157,10 +157,10 @@ medio. No conectar los sitios al builder de Git en hPanel.
 | `HOSTINGER_API_TOKEN` | GitHub, Settings > Secrets and variables > Actions | autentica al workflow contra la API de Hostinger |
 | `NEXT_PUBLIC_SITIO_URL` | hPanel, variables de entorno del sitio | URL publica en metadatos y Open Graph |
 | `NEXT_PUBLIC_DIAGNOSTICO_3D` | hPanel, variables de entorno del sitio | panel de piezas del GLB sin coincidencia en el catalogo. `false` en vitrina, `true` en interna |
-| `INTERNA_USUARIO` | hPanel, variables de entorno del sitio de interna | usuario del acceso al panel interno. **Sin el, interna responde 503 a todo** |
-| `INTERNA_CLAVE` | hPanel, variables de entorno del sitio de interna | contrasena del acceso al panel interno. Idem |
+| `INTERNA_USUARIOS` | hPanel, variables de entorno del sitio de interna | cuentas del panel: `usuario:sal:hash,usuario:sal:hash`. Se generan con `npm run hash-clave -- <usuario>` en `apps/interna` (ADR 0006). **Si esta definida, manda sobre el par de abajo** |
+| `INTERNA_USUARIO` / `INTERNA_CLAVE` | hPanel, variables de entorno del sitio de interna | cuenta unica de antes; solo se usa si `INTERNA_USUARIOS` no esta definida. **Sin ninguna de las dos, interna responde 503 a todo** |
 
-A diferencia de las `NEXT_PUBLIC_*`, `INTERNA_USUARIO` e `INTERNA_CLAVE` se leen
+A diferencia de las `NEXT_PUBLIC_*`, las variables `INTERNA_*` se leen
 en cada peticion y no se hornean en el bundle: cambiarlas surte efecto al
 reiniciar el sitio, sin reconstruir.
 
