@@ -5,9 +5,10 @@ on:
     branches: [main]
     paths:
       # Los assets viven en vitrina y se copian a interna en el build, asi que
-      # un cambio en public/ de vitrina tambien cambia lo que sirve interna.
+      # un cambio en public/ o protegido/ de vitrina tambien cambia lo que sirve interna.
       - "apps/interna/**"
       - "apps/vitrina/public/**"
+      - "apps/vitrina/protegido/**"
       - ".github/workflows/deploy-interna.yml"
   workflow_dispatch: {}
 

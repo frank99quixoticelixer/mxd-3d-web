@@ -15,8 +15,9 @@ const BASE_CDN = process.env.NEXT_PUBLIC_ASSETS_URL ?? "";
  * MX80 completo: 4 brazos plegables, marco, tanque, tren y frente. Es el
  * UNICO modelo que muestra el sitio: la portada lo usa entero y la ficha de
  * cada pieza saca de el sus nodos (ver componentes.ts). Ruta relativa a
- * public/. Al actualizar el modelo, copia el nuevo _web.glb a
- * public/models/mx80/ y cambia el nombre aqui.
+ * /models, que se sirve desde protegido/models/. Al actualizar el modelo, copia
+ * el nuevo _web.glb a protegido/models/mx80/ y cambia el nombre aqui. NO va en
+ * public/: Hostinger lo entregaria sin contrasena (ver lib/protegido.ts).
  */
 export const GLB_FRAME = "models/mx80/MX80_completo_v5_web.glb";
 
@@ -31,7 +32,7 @@ export const ANGULO_MAX_PLEGADO_FRAME = 135;
 
 /**
  * Devuelve la URL publica de un archivo de modelo.
- * - origen "local": /models/...            (archivos dentro de public/)
+ * - origen "local": /models/...            (archivos de protegido/, via /api/modelos)
  * - origen "cdn":   https://.../models/... (Cloudflare R2 o S3)
  */
 export function urlModelo(rutaRelativa: string): string {

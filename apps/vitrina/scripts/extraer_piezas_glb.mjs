@@ -30,7 +30,7 @@ const ENTRADA = path.join(
   AQUI, "..", "contenido", "piezas_MX80",
   "visualizacion", "brazo-cw", "MX80_brazo_CW.glb",
 );
-const SALIDA = path.join(AQUI, "..", "public", "models", "mx80", "piezas");
+const SALIDA = path.join(AQUI, "..", "protegido", "models", "mx80", "piezas");
 
 /** Mismo criterio que src/lib/texto.ts, para emparejar con el catalogo igual que el visor. */
 const norm = (t) =>

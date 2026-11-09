@@ -15,10 +15,15 @@ import { NextResponse, type NextRequest } from "next/server";
  * proteccion correcta por el esfuerzo que cuesta. Cuando haya que saber QUIEN
  * hizo cada cambio, esto se cambia por cuentas de verdad.
  *
- * CUBRE TODO, no solo las paginas: tambien las rutas de API, los GLB de
- * /public y los chunks de JavaScript de /_next/static. Los chunks importan
- * porque son archivos estaticos que cualquiera puede pedir por su URL, y en
- * esta app pueden llevar dentro el catalogo interno.
+ * CUBRE TODO lo que pasa por la app: paginas, rutas de API, las rutas que
+ * entregan los GLB y renders (/models, /renders) y los chunks de JavaScript de
+ * /_next/static. Los chunks importan porque son archivos estaticos que
+ * cualquiera puede pedir por su URL, y en esta app pueden llevar dentro el
+ * catalogo interno.
+ *
+ * NO VE lo que hay en public/: en Hostinger esos archivos los entrega su
+ * servidor estatico sin pasar por la app. Por eso los GLB y renders viven en
+ * protegido/ y los sirven /api/modelos y /api/renders (ADR 0005).
  *
  * El archivo se llama proxy.ts y no middleware.ts porque Next 16 renombro la
  * convencion; el export tiene que llamarse igual que el archivo. Con el nombre
@@ -107,7 +112,7 @@ export function proxy(peticion: NextRequest) {
 
 export const config = {
   /**
-   * Todas las rutas: paginas, /api, los GLB de /public y /_next/static.
+   * Todas las rutas: paginas, /api, /models, /renders y /_next/static.
    *
    * Lo normal en un sitio publico es excluir los estaticos para ahorrar
    * trabajo. Aqui no se excluyen porque son justamente lo que hay que

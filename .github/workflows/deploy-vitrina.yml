@@ -97,12 +97,25 @@ jobs:
           echo "::error::Timeout esperando el build"
           exit 1
 
+      # La vitrina esta detras de autenticacion basica (src/proxy.ts), asi que sin
+      # credenciales la portada responde 401, no 200. Eso es el sitio sano: el
+      # proxy esta arriba y pidiendo contrasena. Se exige el encabezado
+      # WWW-Authenticate con el realm de la vitrina para no confundirlo con un
+      # 401 generico de otro lado. Un 503 (faltan VITRINA_USUARIO/VITRINA_CLAVE),
+      # un 502 o un 404 siguen fallando. Si algun dia se quita la contrasena, un
+      # 200 tambien pasa.
       - name: Verificar que el sitio responde
         run: |
           sleep 5
-          CODE=$(curl -sS -o /dev/null -w "%{http_code}" "https://$DOMAIN/")
+          CABECERAS=$(curl -sS -o /dev/null -D - "https://$DOMAIN/")
+          CODE=$(echo "$CABECERAS" | head -1 | awk '{print $2}')
           echo "HTTP status: $CODE"
-          if [ "$CODE" != "200" ]; then
-            echo "::error::El sitio no responde 200 despues del deploy"
-            exit 1
+          if [ "$CODE" = "200" ]; then
+            exit 0
           fi
+          if [ "$CODE" = "401" ] && echo "$CABECERAS" | grep -qi '^www-authenticate:.*MXD vitrina'; then
+            echo "El sitio esta arriba y pide contrasena (esperado)."
+            exit 0
+          fi
+          echo "::error::El sitio respondio $CODE despues del deploy (se esperaba 200, o 401 de la vitrina)"
+          exit 1

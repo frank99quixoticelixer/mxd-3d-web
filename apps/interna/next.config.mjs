@@ -31,7 +31,7 @@ const politicaContenido = [
  */
 const ARCHIVOS_FICHA_PDF = [
   "./public/brand/logo-mxd.png",
-  "./public/renders/**",
+  "./protegido/renders/**",
   "./node_modules/pdfkit/js/standard-fonts/**/*.cjs",
   "./node_modules/pdfkit/js/data/*",
 ];
@@ -59,6 +59,9 @@ const nextConfig = {
   outputFileTracingIncludes: {
     // Las descargas se leen del disco en cada peticion (ver su route.ts).
     "/api/descargas/**": ["./descargas/**"],
+    // Los GLB y renders se leen de protegido/ en cada peticion (lib/protegido.ts).
+    "/api/modelos/**": ["./protegido/models/**"],
+    "/api/renders/**": ["./protegido/renders/*.jpg"],
     // Las claves son globs (picomatch): "[sku]" se leeria como clase de
     // caracteres y no coincidiria con la ruta, por eso va "**".
     "/api/ficha/**": ARCHIVOS_FICHA_PDF,
@@ -89,15 +92,23 @@ const nextConfig = {
           { key: "Content-Security-Policy-Report-Only", value: politicaContenido },
         ],
       },
-      {
-        source: "/models/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=0, must-revalidate",
-          },
-        ],
-      },
+    ];
+  },
+
+  /**
+   * Los GLB y los renders ya no son estaticos de public/: los entregan las
+   * rutas /api/modelos y /api/renders desde protegido/ (ver lib/protegido.ts).
+   * Se reescriben para que las URLs que usa el codigo sigan siendo /models/... y
+   * /renders/.... proxy.ts corre antes de las reescrituras y ve la URL original.
+   *
+   * Aqui estaba la cabecera "public, max-age=0" de /models/*. Se quito: "public"
+   * permite que un CDN o proxy guarde el GLB y lo sirva sin pasar por la
+   * contrasena. Las rutas mandan "private" por su cuenta.
+   */
+  async rewrites() {
+    return [
+      { source: "/models/:path*", destination: "/api/modelos/:path*" },
+      { source: "/renders/:archivo", destination: "/api/renders/:archivo" },
     ];
   },
 };

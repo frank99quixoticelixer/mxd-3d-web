@@ -21,13 +21,18 @@ import { fileURLToPath } from "node:url";
 const raizInterna = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const raizVitrina = resolve(raizInterna, "..", "vitrina");
 
-/** Carpetas que se espejan. `contenido` es opcional: no existe en todos los equipos. */
-const CARPETAS = ["public", "contenido"];
+/**
+ * Carpetas que se espejan. `protegido` trae los GLB y renders que entregan
+ * /api/modelos y /api/renders (no pueden ir en public/: ver lib/protegido.ts).
+ * `contenido` es opcional: no existe en todos los equipos, y en interna guarda
+ * el BOM, asi que NO se le pone el mismo nombre a la carpeta de vitrina.
+ */
+const CARPETAS = ["public", "protegido", "contenido"];
 
 /**
  * Renders de piezas que solo existen en el catalogo de interna (sujetadores
- * que vitrina no muestra: tornillos, arandelas, goma del tren). No vienen de
- * vitrina/public/renders, asi que sin esta excepcion `podar` los borraria en
+ * que vitrina no muestra: tornillos, arandelas, goma del tren). Si no estuvieran
+ * en vitrina/protegido/renders, sin esta excepcion `podar` los borraria en
  * cada dev/build.
  */
 const RENDERS_SOLO_INTERNA = [
@@ -142,7 +147,7 @@ for (const carpeta of hayVitrina ? CARPETAS : []) {
   // Sin mas excepciones: las descargas ya no van en public/ (las sirve
   // /api/descargas desde apps/interna/descargas), asi que una carpeta
   // public/downloads de antes tambien se borra.
-  await podar(origen, join(raizInterna, carpeta), carpeta === "public" ? RENDERS_SOLO_INTERNA : []);
+  await podar(origen, join(raizInterna, carpeta), carpeta === "protegido" ? RENDERS_SOLO_INTERNA : []);
 }
 
 console.log(
