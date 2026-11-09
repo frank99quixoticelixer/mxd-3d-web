@@ -19,7 +19,7 @@ const BASE_CDN = process.env.NEXT_PUBLIC_ASSETS_URL ?? "";
  * el nuevo _web.glb a protegido/models/mx80/ y cambia el nombre aqui. NO va en
  * public/: Hostinger lo entregaria sin contrasena (ver lib/protegido.ts).
  */
-export const GLB_FRAME = "models/mx80/MX80_completo_v4_web.glb";
+export const GLB_FRAME = "models/mx80/MX80_completo_v5_web.glb";
 
 /**
  * Angulo maximo del control de plegado del chasis (grados), 0 = desplegado.

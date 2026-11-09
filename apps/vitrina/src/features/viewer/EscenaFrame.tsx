@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { Html, OrbitControls, useGLTF, useProgress } from "@react-three/drei";
+import { OrbitControls, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 
 import { COLORES } from "@/config/marca";
@@ -24,29 +24,38 @@ import { prepararMateriales, type MaterialGuardado } from "./resolverPiezas";
 import { construirBVH } from "./bvh";
 import { DESPIECE_MAXIMO, useVisor, type ZonaVisor } from "./estado";
 import {
+  brazosDelModelo,
+  claveDeNodo,
   componentesDelBrazo,
   esDescendiente,
   nodosDeZonaEn,
-  nombreBase,
+  partirClave,
   skuDeNodo,
+  subpiezasDe,
 } from "./componentes";
+import {
+  PARTICULAS_MAX,
+  PARTICULAS_MAX_MOVIL,
+  RAMPA_CAUDAL_S,
+  RAMPA_GIRO_S,
+} from "./aspersion/config";
+import { detenerDiscos, girarDiscos, prepararDiscos } from "./aspersion/discos";
+import { crearGotas } from "./aspersion/gotas";
+import { grupoDeMalla, type GrupoMaterial } from "./materiales";
 import { organizarEnCuadricula } from "./cuadricula";
 import { Escenario } from "./Escenario";
+import { AvisoCarga, MarcaCargado } from "./AvisoCarga";
 import { LimiteError } from "./LimiteError";
 
 /**
- * Los cuatro brazos del chasis se identifican por nombre de nodo, no por SKU.
- * El GLB es el de GLB_FRAME (4 brazos, geometria espejada en pares).
- *
- * THREE.GLTFLoader sanea nombres (PropertyBinding.sanitizeNodeName): quita
- * puntos y convierte espacios en guion bajo. Los nombres del v3 NO tienen
- * puntos en los propios brazos (brazo_2, no brazo.002), pero sus hijos si:
- * "giratorio.001" → "giratorio001", "propela_1.002" → "propela_1002".
+ * Los cuatro brazos del chasis se encuentran por estructura (brazosDelModelo),
+ * no por una lista de nombres: el GLB v5 los renombro (brazo_CW_1...) y cambio
+ * los sufijos de sus hijos, y con nombres fijos el plegado y los rotores
+ * dejaban de encontrar sus nodos sin avisar.
  *
  * Los agarradores y retenedores del marco son fijos: no se animan con el
  * plegado.
  */
-const NOMBRES_BRAZO = ["brazo", "brazo_2", "brazo_3", "brazo_4"] as const;
 
 const COLOR_HOVER = new THREE.Color(COLORES.verdeAcento);
 /** El tanque comparte tono con el verde de acento: ese hover no se nota encima. */
@@ -57,14 +66,6 @@ const INTENSIDAD_HOVER = 0.7;
 const INTENSIDAD_HOVER_FUERTE = 1.8;
 /** Componente o pieza suelta dentro de una zona. */
 const INTENSIDAD_HOVER_PIEZA = 0.9;
-
-/** Zona de la capa 1 a la que lleva cada brazo, por el sentido de su helice. */
-const ZONA_DE_BRAZO: Record<(typeof NOMBRES_BRAZO)[number], ZonaVisor> = {
-  brazo: "brazo-ccw",
-  brazo_2: "brazo-cw",
-  brazo_3: "brazo-cw",
-  brazo_4: "brazo-ccw",
-};
 
 /**
  * Lo que queda bajo el cursor en la capa actual:
@@ -147,17 +148,12 @@ const AMORTIGUACION_PLEGADO = 4.5;
 const EJE_BISAGRA = new THREE.Vector3(0, 1, 0);
 
 /**
- * Signo de giro de CADA brazo sobre EJE_BISAGRA: 1 = sentido horario visto
- * desde arriba (+Y), -1 = antihorario. Los brazos espejados llevan signo
- * contrario entre si. Corrije aqui si algun brazo pliega en la direccion
- * equivocada al probar visualmente.
+ * Signo del plegado de un brazo sobre EJE_BISAGRA, por el cuadrante en que
+ * esta su bisagra respecto al centro del dron. Es la misma tabla que se
+ * valido a ojo con el GLB v4 (brazo -X-Z: +1, +X-Z: -1, -X+Z: -1, +X+Z: +1),
+ * escrita como regla para no depender del nombre de cada brazo.
  */
-const SIGNO_PLEGADO: Record<(typeof NOMBRES_BRAZO)[number], number> = {
-  brazo: 1,
-  brazo_2: -1,
-  brazo_3: -1,
-  brazo_4: 1,
-};
+const signoPlegado = (x: number, z: number) => (x * z >= 0 ? 1 : -1);
 
 /**
  * Orden de despliegue: los brazos NO se abren a la vez, cada uno ocupa
@@ -193,21 +189,10 @@ function tramo(progreso: number, [inicio, fin]: readonly [number, number]): numb
 const ANGULO_APERTURA_GIRATORIO = 180;
 
 /**
- * Que brazos van en la primera tanda. Los pares (2 y 4) abren primero y los
- * impares (1 y 3) despues, para que no se estorben entre si al girar.
+ * Primera tanda del despliegue: los brazos del lado +X (los "2 y 4" del GLB
+ * v4). Abren primero y los otros despues, para que no se estorben al girar.
  */
-const BRAZOS_PRIMERA_TANDA: readonly string[] = ["brazo_2", "brazo_4"];
-
-/**
- * Las 2 palas de la helice de cada brazo. THREE.js sanitiza los puntos de
- * los hijos: "propela_1.002" → "propela_1002", etc.
- */
-const NOMBRES_PALA: Record<(typeof NOMBRES_BRAZO)[number], readonly [string, string]> = {
-  brazo: ["propela_1", "propela_2"],
-  brazo_2: ["propela_1001", "propela_2001"],
-  brazo_3: ["propela_1003", "propela_2003"],
-  brazo_4: ["propela_1002", "propela_2002"],
-};
+const esPrimeraTanda = (x: number) => x > 0;
 
 /** Cuanto abre cada pala (grados) cuando su brazo llega a desplegado del todo. */
 const ANGULO_APERTURA_PALA = 80;
@@ -221,12 +206,6 @@ const ANGULO_APERTURA_PALA = 80;
  */
 const UMBRAL_APERTURA_PALA = 0.85;
 
-/**
- * Signo de apertura de cada pala dentro del par: opuesto entre las dos para
- * que se abran en tijera (una hacia cada lado) en vez de las dos para el
- * mismo lado. Mismo mecanismo que SIGNO_PLEGADO, a otra escala.
- */
-const SIGNO_APERTURA_PALA: readonly [number, number] = [1, -1];
 
 /** Eje LOCAL vertical, usado tanto por las palas como por "giratorio" (no
  * mundial: ambos viven varios niveles abajo de un brazo que ya esta
@@ -235,16 +214,6 @@ const SIGNO_APERTURA_PALA: readonly [number, number] = [1, -1];
  * pre-multiplicando como EJE_BISAGRA — ver el useFrame). */
 const EJE_LOCAL_VERTICAL = new THREE.Vector3(0, 1, 0);
 
-/**
- * Nodo giratorio de cada brazo (motor_giratorio + balanceador + helices).
- * En el GLB los sufijos son .001, .002, .003; THREE.js los sanitiza a 001, etc.
- */
-const NOMBRES_GIRATORIO: Record<(typeof NOMBRES_BRAZO)[number], string> = {
-  brazo: "giratorio",
-  brazo_2: "giratorio001",
-  brazo_3: "giratorio003",
-  brazo_4: "giratorio002",
-};
 
 /**
  * Vueltas por segundo del rotor con la barra de encendido al 100%.
@@ -269,26 +238,34 @@ const VELOCIDAD_GIRO_MOTOR = 5.0;
 const DESPIECE_REINICIA_ROTOR = 0.1;
 
 /**
- * Sentido de giro de cada rotor: +1 = CCW visto desde arriba, -1 = CW.
- * Determinado por el tipo de helice del GLB (Propela_CCW_* / Propela_CW_*).
+ * Signo de apertura de una pala: el que la abre hacia afuera, con la punta
+ * lejos del eje del rotor. El otro la cruzaria por encima de la maza.
+ *
+ * Se mide en vez de fijarse por orden ([1, -1] en el v4) porque el GLB v5
+ * trae las dos palas en orden inverso: con la tabla fija se abrian hacia
+ * dentro y se atravesaban.
  */
-const SIGNO_GIRO: Record<(typeof NOMBRES_BRAZO)[number], number> = {
-  brazo: 1,    // Propela_CCW
-  brazo_2: -1, // Propela_CW
-  brazo_3: -1, // Propela_CW
-  brazo_4: 1,  // Propela_CCW
-};
-
-function Cargando() {
-  const { progress } = useProgress();
-  return (
-    <Html center>
-      <span className="whitespace-nowrap text-xs font-medium tracking-wide text-mxd-gris">
-        Cargando chasis {Math.round(progress)}%
-      </span>
-    </Html>
-  );
+function signoAperturaPala(pala: THREE.Object3D, ejeRotor: THREE.Vector3): number {
+  const base = pala.quaternion.clone();
+  const distanciaCon = (signo: number) => {
+    pala.quaternion
+      .copy(base)
+      .multiply(
+        new THREE.Quaternion().setFromAxisAngle(
+          EJE_LOCAL_VERTICAL,
+          THREE.MathUtils.degToRad(ANGULO_APERTURA_PALA * signo),
+        ),
+      );
+    pala.updateMatrixWorld(true);
+    const c = new THREE.Box3().setFromObject(pala).getCenter(new THREE.Vector3());
+    return Math.hypot(c.x - ejeRotor.x, c.z - ejeRotor.z);
+  };
+  const signo = distanciaCon(1) >= distanciaCon(-1) ? 1 : -1;
+  pala.quaternion.copy(base);
+  pala.updateMatrixWorld(true);
+  return signo;
 }
+
 
 interface Pala {
   objeto: THREE.Object3D;
@@ -300,6 +277,12 @@ interface Brazo {
   nombre: string;
   objeto: THREE.Object3D;
   baseQuat: THREE.Quaternion;
+  /** Zona de la capa 1 a la que lleva, por el sentido de su helice. */
+  zona: ZonaVisor;
+  /** +1 = rotor antihorario visto desde arriba (CCW), -1 = horario (CW). */
+  signoGiro: number;
+  signoPlegado: number;
+  primeraTanda: boolean;
   palas: Pala[];
   giratorio: { objeto: THREE.Object3D; baseQuat: THREE.Quaternion } | null;
   materiales: MaterialGuardado[];
@@ -315,6 +298,9 @@ function ChasisPlegable({
   pieza,
   senalada,
   alMedir,
+  alEncuadrar,
+  filtroMaterial,
+  gruposMaterial,
   alEntrarZona,
   alAislar,
   alPasarSobre,
@@ -333,6 +319,12 @@ function ChasisPlegable({
   /** Pieza senalada desde la lista de fuera del lienzo. */
   senalada: string | null;
   alMedir: (medidas: { radio: number; semialto: number }) => void;
+  /** Radio de lo que se ve al cambiar de capa: fija hasta donde se puede acercar. */
+  alEncuadrar: (radioVisible: number) => void;
+  /** Solo se ven las piezas de este grupo de material; null = todas. */
+  filtroMaterial: GrupoMaterial | null;
+  /** Grupo escrito a mano en las fichas, por nombre de nodo normalizado. */
+  gruposMaterial: Readonly<Record<string, GrupoMaterial>>;
   /** Clic en un conjunto de la capa 1. */
   alEntrarZona: (zona: ZonaVisor) => void;
   /** Clic en una pieza de la capa 2: su clave. */
@@ -366,8 +358,11 @@ function ChasisPlegable({
   /** Angulo acumulado (radianes) del rotor de cada brazo: crece sin limite
    * mientras gira, no es un "hacia un objetivo" como progreso. */
   const anguloGiro = useRef<Record<string, number>>({});
+  /** Rampas de la aspersion (0..1) por lado: giro del disco y caudal. */
+  const rampaGiro = useRef({ cw: 0, ccw: 0 });
+  const rampaCaudal = useRef({ cw: 0, ccw: 0 });
 
-  const { raiz, brazos, marco, tanque, tren, frente, radio, semialto } =
+  const { raiz, brazos, marco, tanque, tren, frente, energia, radar, discos, radio, semialto } =
     useMemo(() => {
     const copia = gltf.scene.clone(true);
     // Arbol de limites por malla: sin esto, resolver que pieza esta bajo el
@@ -376,24 +371,34 @@ function ChasisPlegable({
     // pasar el mouse o al arrastrar para girar — ver bvh.ts.
     construirBVH(copia);
 
-    const brazos: Brazo[] = NOMBRES_BRAZO.map((nombre) => {
-      const objeto = copia.getObjectByName(nombre) as THREE.Object3D;
-      const palas: Pala[] = NOMBRES_PALA[nombre].map((nombrePala, i) => {
-        const objetoPala = objeto.getObjectByName(nombrePala) as THREE.Object3D;
-        return {
-          objeto: objetoPala,
-          baseQuat: objetoPala.quaternion.clone(),
-          signo: SIGNO_APERTURA_PALA[i],
-        };
-      });
-      const objetoGiratorio = objeto.getObjectByName(NOMBRES_GIRATORIO[nombre]);
+    // Los discos se cuelgan de su pivote aqui, antes de capturar poses y
+    // materiales, para que el resto del visor vea el arbol ya modificado.
+    const discos = prepararDiscos(copia);
+
+    copia.updateMatrixWorld(true);
+    const centroDron = new THREE.Box3().setFromObject(copia).getCenter(new THREE.Vector3());
+
+    const brazos: Brazo[] = brazosDelModelo(copia).map(({ objeto, sentido }) => {
+      const objetoGiratorio = objeto.children.find((h) => /^giratorio/i.test(h.name));
       const giratorio = objetoGiratorio
         ? { objeto: objetoGiratorio, baseQuat: objetoGiratorio.quaternion.clone() }
         : null;
+      const helices = objetoGiratorio?.children.find((h) => /^helices/i.test(h.name));
+      const ejeRotor = objetoGiratorio?.getWorldPosition(new THREE.Vector3()) ?? new THREE.Vector3();
+      const palas: Pala[] = (helices?.children ?? []).map((objetoPala) => ({
+        objeto: objetoPala,
+        baseQuat: objetoPala.quaternion.clone(),
+        signo: signoAperturaPala(objetoPala, ejeRotor),
+      }));
+      const bisagra = objeto.getWorldPosition(new THREE.Vector3()).sub(centroDron);
       return {
-        nombre,
+        nombre: objeto.name,
         objeto,
         baseQuat: objeto.quaternion.clone(),
+        zona: sentido === "ccw" ? "brazo-ccw" : "brazo-cw",
+        signoGiro: sentido === "ccw" ? 1 : -1,
+        signoPlegado: signoPlegado(bisagra.x, bisagra.z),
+        primeraTanda: esPrimeraTanda(bisagra.x),
         palas,
         giratorio,
         materiales: prepararMateriales(objeto),
@@ -411,6 +416,8 @@ function ChasisPlegable({
     const tren = conjunto("tren-aterrizaje");
     const tanque = conjunto("tanque");
     const frente = conjunto("frente");
+    const energia = conjunto("energia");
+    const radar = conjunto("radar");
 
     const caja = new THREE.Box3().setFromObject(copia);
     const centro = caja.getCenter(new THREE.Vector3());
@@ -424,10 +431,26 @@ function ChasisPlegable({
       tanque,
       tren,
       frente,
+      energia,
+      radar,
+      discos,
       radio: tamano.length() / 2,
       semialto: tamano.y / 2,
     };
   }, [gltf]);
+
+  /**
+   * Gotas de la aspersion. El pool se reserva una vez; en pantallas tactiles
+   * (telefonos) se reserva la mitad.
+   */
+  const gotas = useMemo(() => {
+    const tactil =
+      typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches;
+    return crearGotas(tactil ? PARTICULAS_MAX_MOVIL : PARTICULAS_MAX);
+  }, []);
+  // La geometria y el material de las gotas son propios (no del cache de
+  // useGLTF): se liberan al desmontar.
+  useEffect(() => () => gotas.liberar(), [gotas]);
 
   /**
    * Conjuntos de la capa 1, cada uno con la zona en la que entra su clic.
@@ -443,7 +466,7 @@ function ChasisPlegable({
       color?: THREE.Color;
     }[] = brazos.map((b) => ({
         clave: b.nombre,
-        zona: ZONA_DE_BRAZO[b.nombre as (typeof NOMBRES_BRAZO)[number]],
+        zona: b.zona,
         nodos: [b.objeto],
         intensidad: INTENSIDAD_HOVER,
       }));
@@ -459,8 +482,10 @@ function ChasisPlegable({
     }
     if (tren) lista.push({ clave: "tren", zona: "tren-aterrizaje", nodos: tren.objetos, intensidad: INTENSIDAD_HOVER_FUERTE });
     if (frente) lista.push({ clave: "frente", zona: "frente", nodos: frente.objetos, intensidad: INTENSIDAD_HOVER_FUERTE });
+    if (energia) lista.push({ clave: "energia", zona: "energia", nodos: energia.objetos, intensidad: INTENSIDAD_HOVER_FUERTE });
+    if (radar) lista.push({ clave: "radar", zona: "radar", nodos: radar.objetos, intensidad: INTENSIDAD_HOVER_FUERTE });
     return lista;
-  }, [brazos, marco, tanque, tren, frente]);
+  }, [brazos, marco, tanque, tren, frente, energia, radar]);
 
   /** Nodos de la zona abierta en la capa 2 y 3. */
   const nodosDeZona = useMemo(
@@ -483,7 +508,8 @@ function ChasisPlegable({
       }));
     }
     // Fuera de los brazos, cada pieza de primer nivel de la zona; las
-    // identicas (los tornillos repetidos) se juntan en una sola entrada.
+    // identicas (los tornillos repetidos) y las mallas de una misma pieza del
+    // catalogo (los LED de la bateria) se juntan en una sola entrada.
     const porBase = new Map<string, Objetivo>();
     for (const nodo of nodosDeZona) {
       const piezas =
@@ -492,7 +518,7 @@ function ChasisPlegable({
           : nodo.children;
       for (const n of piezas) {
         if (!n.name) continue;
-        const clave = nombreBase(n.name);
+        const clave = claveDeNodo(n.name);
         const existente = porBase.get(clave);
         if (existente) existente.nodos.push(n);
         else
@@ -508,26 +534,45 @@ function ChasisPlegable({
     return [...porBase.values()];
   }, [zona, nodosDeZona]);
 
+  /**
+   * Piezas del componente aislado en la capa 3: el aspersor se abre en su
+   * cuerpo en Y, discos, mangueras, arnes... Vacio si el componente no se
+   * abre (ver SUBPIEZAS_COMPONENTE en componentes.ts).
+   */
+  const subObjetivos = useMemo((): Objetivo[] => {
+    if (capa !== 3 || !pieza || (zona !== "brazo-cw" && zona !== "brazo-ccw")) return [];
+    const comp = objetivosDeZona.find((o) => o.clave === partirClave(pieza).componente);
+    if (!comp) return [];
+    return subpiezasDe({ clave: comp.clave, nodos: comp.nodos, sku: comp.sku }).map((c) => ({
+      clave: c.clave,
+      nodos: c.nodos,
+      sku: c.sku,
+      zona: null,
+      intensidad: INTENSIDAD_HOVER_PIEZA,
+    }));
+  }, [capa, pieza, zona, objetivosDeZona]);
+
   /** Nodos de lo aislado en la capa 3, resueltos desde su clave. */
-  const nodosAislados = useMemo(
-    () =>
-      capa === 3 && pieza
-        ? (objetivosDeZona.find((o) => o.clave === pieza)?.nodos ?? [])
-        : [],
-    [capa, pieza, objetivosDeZona],
-  );
+  const nodosAislados = useMemo(() => {
+    if (capa !== 3 || !pieza) return [];
+    const lista = pieza.includes("/") ? subObjetivos : objetivosDeZona;
+    return lista.find((o) => o.clave === pieza)?.nodos ?? [];
+  }, [capa, pieza, objetivosDeZona, subObjetivos]);
 
   useEffect(() => {
+    // Dentro de un componente que se abre, la lista es la de sus piezas; si
+    // no, la de la zona.
+    const lista = capa === 3 && subObjetivos.length > 0 ? subObjetivos : objetivosDeZona;
     alListarPiezas(
       capa === 1
         ? []
-        : objetivosDeZona.map(({ clave, sku, nodos }) => ({
+        : lista.map(({ clave, sku, nodos }) => ({
             clave,
             sku,
             cantidad: nodos.length,
           })),
     );
-  }, [capa, objetivosDeZona, alListarPiezas]);
+  }, [capa, objetivosDeZona, subObjetivos, alListarPiezas]);
 
   /**
    * Material guardado de cada material de la escena. prepararMateriales clona
@@ -542,10 +587,12 @@ function ChasisPlegable({
       ...(tanque?.materiales ?? []),
       ...(tren?.materiales ?? []),
       ...(frente?.materiales ?? []),
+      ...(energia?.materiales ?? []),
+      ...(radar?.materiales ?? []),
     ];
     for (const g of todos) mapa.set(g.material, g);
     return mapa;
-  }, [brazos, marco, tanque, tren, frente]);
+  }, [brazos, marco, tanque, tren, frente, energia, radar]);
 
   const materialesDe = useCallback(
     (nodos: THREE.Object3D[]): MaterialGuardado[] => {
@@ -590,9 +637,16 @@ function ChasisPlegable({
           ) ?? null
         );
       }
+      // Capa 3 con un componente que se abre (el aspersor): sus piezas se
+      // iluminan y el clic baja a la pieza. Ya en la pieza no hay mas niveles.
+      if (capa === 3 && pieza && !pieza.includes("/")) {
+        return (
+          subObjetivos.find((o) => o.nodos.some((n) => esDescendiente(malla, n))) ?? null
+        );
+      }
       return null;
     },
-    [capa, conjuntos, objetivosDeZona],
+    [capa, pieza, conjuntos, objetivosDeZona, subObjetivos],
   );
 
   /** El objetivo de la interseccion visible mas cercana que tenga uno. */
@@ -643,9 +697,11 @@ function ChasisPlegable({
     resaltar(
       capa === 2 && senalada
         ? (objetivosDeZona.find((o) => o.clave === senalada) ?? null)
-        : null,
+        : capa === 3 && senalada
+          ? (subObjetivos.find((o) => o.clave === senalada) ?? null)
+          : null,
     );
-  }, [capa, zona, pieza, senalada, objetivosDeZona, resaltar]);
+  }, [capa, zona, pieza, senalada, objetivosDeZona, subObjetivos, resaltar]);
 
   useEffect(() => {
     useVisor.setState({ radio });
@@ -732,6 +788,8 @@ function ChasisPlegable({
         ...(tanque ? [{ clave: "tanque", objetos: tanque.objetos }] : []),
         ...(tren ? [{ clave: "tren", objetos: tren.objetos }] : []),
         ...(frente ? [{ clave: "frente", objetos: frente.objetos }] : []),
+        ...(energia ? [{ clave: "energia", objetos: energia.objetos }] : []),
+        ...(radar ? [{ clave: "radar", objetos: radar.objetos }] : []),
       ];
       elementos = conjuntos.flatMap((c, i) =>
         c.objetos.map((objeto) => ({ objeto, sku: c.clave, orden: i })),
@@ -808,7 +866,7 @@ function ChasisPlegable({
     });
   }, [
     capa, nodosAislados, nodosDeZona, brazos, marco, tanque, tren, frente,
-    radio, aspecto, restaurarPose,
+    energia, radar, radio, aspecto, restaurarPose,
   ]);
 
   /**
@@ -912,7 +970,14 @@ function ChasisPlegable({
    * puede desincronizarse del conjunto. Volver tampoco recarga.
    */
   const controles = useThree((s) => s.controls) as
-    | { target: THREE.Vector3; update: () => void }
+    | {
+        target: THREE.Vector3;
+        update: () => void;
+        minDistance: number;
+        maxDistance: number;
+        addEventListener: (tipo: "start", f: () => void) => void;
+        removeEventListener: (tipo: "start", f: () => void) => void;
+      }
     | null;
 
   /**
@@ -951,6 +1016,9 @@ function ChasisPlegable({
     // aparecia vacio.
     raiz.traverse((n) => {
       n.visible = true;
+      // Todo vuelve a verse: lo que el filtro de material habia ocultado ya no
+      // cuenta como suyo (ver el efecto del filtro, abajo).
+      delete n.userData.ocultaPorFiltro;
     });
 
     if (capa === 1) {
@@ -1010,6 +1078,17 @@ function ChasisPlegable({
     const distancia = distanciaPara(caja);
     encuadre.current = null;
 
+    // El limite de acercamiento y el plano cercano siguen a lo que se ve.
+    // Antes los dos eran del dron entero (minimo ~0.5 m): con una pieza chica
+    // aislada la camara no podia acercarse y rebotaba, y al acercarse a algo
+    // de milimetros el plano cercano lo cortaba.
+    const radioVisible = caja.getBoundingSphere(new THREE.Sphere()).radius || radio;
+    alEncuadrar(radioVisible);
+    if (camara instanceof THREE.PerspectiveCamera) {
+      camara.near = Math.max(radioVisible * 0.01, 0.0005);
+      camara.updateProjectionMatrix();
+    }
+
     camara.position
       .copy(centro)
       .add(new THREE.Vector3(1.1, 0.85, 1.4).normalize().multiplyScalar(distancia));
@@ -1018,7 +1097,58 @@ function ChasisPlegable({
       controles.target.copy(centro);
       controles.update();
     }
-  }, [capa, nodosDeZona, nodosAislados, raiz, camara, controles, distanciaPara]);
+  }, [capa, nodosDeZona, nodosAislados, raiz, camara, controles, distanciaPara, radio, alEncuadrar]);
+
+  /** Grupo de material de cada malla (materiales.ts), con lo escrito en las fichas. */
+  const grupoPorMalla = useMemo(() => {
+    const mapa = new Map<THREE.Object3D, GrupoMaterial | null>();
+    raiz.traverse((n) => {
+      if (!(n as THREE.Mesh).isMesh) return;
+      const ancestros: string[] = [];
+      for (let a = n.parent; a && a !== raiz; a = a.parent) ancestros.push(a.name);
+      mapa.set(n, grupoDeMalla(n.name, ancestros, gruposMaterial));
+    });
+    return mapa;
+  }, [raiz, gruposMaterial]);
+
+  /**
+   * Filtro por material. Corre DESPUES del efecto de capas (React respeta el
+   * orden de declaracion): ese decide que se ve en la zona y este oculta,
+   * encima, lo que no es del grupo. Solo devuelve lo que el mismo oculto, y
+   * solo si una capa no lo reseteo antes; asi no enciende piezas de otra zona.
+   * No mueve la camara.
+   */
+  const ocultasPorFiltro = useRef<THREE.Object3D[]>([]);
+  useEffect(() => {
+    for (const m of ocultasPorFiltro.current) {
+      if (m.userData.ocultaPorFiltro) {
+        m.visible = true;
+        delete m.userData.ocultaPorFiltro;
+      }
+    }
+    ocultasPorFiltro.current = [];
+    if (!filtroMaterial) return;
+    for (const [malla, grupo] of grupoPorMalla) {
+      if (malla.visible && grupo !== filtroMaterial) {
+        malla.visible = false;
+        malla.userData.ocultaPorFiltro = true;
+        ocultasPorFiltro.current.push(malla);
+      }
+    }
+  }, [filtroMaterial, grupoPorMalla, capa, nodosDeZona, nodosAislados]);
+
+  // En cuanto el usuario toca la camara (girar, acercar, desplazar) se suelta
+  // el encuadre automatico. Si no, el bucle de abajo lo seguia jalando hacia
+  // la distancia del despiece en cada cuadro y la camara rebotaba al hacer
+  // zoom.
+  useEffect(() => {
+    if (!controles) return;
+    const soltar = () => {
+      encuadre.current = null;
+    };
+    controles.addEventListener("start", soltar);
+    return () => controles.removeEventListener("start", soltar);
+  }, [controles]);
 
   /**
    * Encuadre que la camara persigue mientras cambia el despiece. Se fija al
@@ -1081,14 +1211,18 @@ function ChasisPlegable({
       controles.target.lerp(meta.centro, k);
       const direccionVista = camara.position.clone().sub(controles.target);
       const actual = direccionVista.length() || 1;
-      const siguiente = THREE.MathUtils.lerp(actual, meta.distancia, k);
+      // La meta se recorta a los limites de los controles: si quedaba fuera,
+      // los controles la devolvian en cada update y el encuadre nunca llegaba
+      // ni se soltaba.
+      const objetivo = THREE.MathUtils.clamp(meta.distancia, controles.minDistance, controles.maxDistance);
+      const siguiente = THREE.MathUtils.lerp(actual, objetivo, k);
       camara.position
         .copy(controles.target)
         .addScaledVector(direccionVista.divideScalar(actual), siguiente);
       controles.update();
       if (
         controles.target.distanceTo(meta.centro) < meta.distancia * 0.002 &&
-        Math.abs(siguiente - meta.distancia) < meta.distancia * 0.002
+        Math.abs(siguiente - objetivo) < objetivo * 0.002
       ) {
         encuadre.current = null;
       }
@@ -1105,6 +1239,8 @@ function ChasisPlegable({
     );
     const tAtomico = atomico.current;
     if (tAtomico > 0.001) {
+      // Desarmado pieza por pieza no hay aspersor que funcione.
+      apagarAspersion();
       const { explotar, ordenar } = tramosAtomicos(tAtomico);
       for (const n of planAtomico) {
         n.objeto.position.lerpVectors(n.posBase, n.posExplotada, explotar);
@@ -1159,16 +1295,14 @@ function ChasisPlegable({
     const giroExtra = new THREE.Quaternion();
 
     for (const b of brazos) {
-      const nombre = b.nombre as (typeof NOMBRES_BRAZO)[number];
+      const nombre = b.nombre;
 
       // ---- Brazos: por tandas, los pares antes que los impares ----
       const avanceBrazo = tramo(
         p,
-        BRAZOS_PRIMERA_TANDA.includes(nombre)
-          ? FASES.brazosPar
-          : FASES.brazosImpar,
+        b.primeraTanda ? FASES.brazosPar : FASES.brazosImpar,
       );
-      const signo = SIGNO_PLEGADO[nombre] ?? 1;
+      const signo = b.signoPlegado;
       extra.setFromAxisAngle(
         EJE_BISAGRA,
         THREE.MathUtils.degToRad(avanceBrazo * ANGULO_MAX_PLEGADO_FRAME * signo),
@@ -1197,7 +1331,7 @@ function ChasisPlegable({
       // propio rotor. De ahi el signo invertido de SIGNO_GIRO, en vez de una
       // tabla aparte que habria que mantener en sincronia con aquella.
       if (b.giratorio) {
-        const signoGiro = SIGNO_GIRO[nombre] ?? 1;
+        const signoGiro = b.signoGiro;
         const radianesApertura = THREE.MathUtils.degToRad(
           avanceGiratorios * ANGULO_APERTURA_GIRATORIO * -signoGiro,
         );
@@ -1236,9 +1370,77 @@ function ChasisPlegable({
         );
       }
     }
+
+    // ---- Aspersion: giro de los discos y gotas ----
+    // Solo con el dron entero, en la vista completa y con los brazos abiertos
+    // del todo: es la misma condicion que deja girar los rotores.
+    const aspersion = useVisor.getState().aspersion;
+    const listo =
+      capa === 1 && p >= 0.999 && explosion / DESPIECE_MAXIMO <= DESPIECE_REINICIA_ROTOR;
+    if (capa !== 1) {
+      apagarAspersion();
+      return;
+    }
+    const pasoGiro = delta / RAMPA_GIRO_S;
+    const pasoCaudal = delta / RAMPA_CAUDAL_S;
+    for (const lado of ["cw", "ccw"] as const) {
+      const quiere = listo && aspersion.activa && aspersion.brazos[lado];
+      rampaGiro.current[lado] = THREE.MathUtils.clamp(
+        rampaGiro.current[lado] + (quiere ? pasoGiro : -pasoGiro),
+        0,
+        1,
+      );
+      // El caudal va detras del giro: abre cuando el disco ya casi llego a su
+      // velocidad, y cierra antes de que se detenga, como en el equipo real.
+      const abreCaudal = quiere && rampaGiro.current[lado] > 0.6;
+      rampaCaudal.current[lado] = THREE.MathUtils.clamp(
+        rampaCaudal.current[lado] + (abreCaudal ? pasoCaudal : -pasoCaudal),
+        0,
+        1,
+      );
+    }
+    const rpmPorBrazo = {
+      cw: aspersion.rpm * rampaGiro.current.cw,
+      ccw: aspersion.rpm * rampaGiro.current.ccw,
+    };
+    if (discos.length > 0) {
+      girarDiscos(discos, rpmPorBrazo, delta);
+      gotas.actualizar(
+        discos,
+        {
+          caudalPorBrazo: {
+            cw: aspersion.caudal * rampaCaudal.current.cw,
+            ccw: aspersion.caudal * rampaCaudal.current.ccw,
+          },
+          rpmPorBrazo,
+          arrastre: aspersion.arrastre,
+          // Sin rotores no hay aire que empuje las gotas hacia abajo.
+          downwash: aspersion.downwash * encendido,
+          sueloY: -semialto * 1.02,
+        },
+        delta,
+      );
+    }
   });
 
+  /**
+   * Corta la aspersion de golpe: sin rampa, porque se llama al salir de la
+   * vista completa o al desarmar el dron, cuando los discos ya no estan en su
+   * sitio y unas gotas flotando no significarian nada.
+   */
+  function apagarAspersion() {
+    if (rampaGiro.current.cw === 0 && rampaGiro.current.ccw === 0 && !gotas.puntos.visible) {
+      return;
+    }
+    rampaGiro.current = { cw: 0, ccw: 0 };
+    rampaCaudal.current = { cw: 0, ccw: 0 };
+    detenerDiscos(discos);
+    gotas.vaciar();
+  }
+
   return (
+    <>
+    <primitive object={gotas.puntos} />
     <primitive
       object={raiz}
       onPointerMove={(evento: ThreeEvent<PointerEvent>) => {
@@ -1282,9 +1484,10 @@ function ChasisPlegable({
         const objetivo = primerObjetivo(evento.intersections);
         if (!objetivo) return;
         if (capa === 1 && objetivo.zona) alEntrarZona(objetivo.zona);
-        else if (capa === 2) alAislar(objetivo.clave);
+        else if (capa === 2 || capa === 3) alAislar(objetivo.clave);
       }}
     />
+    </>
   );
 }
 
@@ -1303,6 +1506,8 @@ export function EscenaFrame({
   alAislar,
   alPasarSobre,
   alListarPiezas,
+  filtroMaterial,
+  gruposMaterial,
 }: {
   despliegue: number;
   encendido: number;
@@ -1325,11 +1530,17 @@ export function EscenaFrame({
   alAislar: (pieza: string) => void;
   alPasarSobre: (objetivo: ObjetivoHover | null) => void;
   alListarPiezas: (piezas: PiezaDeZona[]) => void;
+  filtroMaterial: GrupoMaterial | null;
+  gruposMaterial: Readonly<Record<string, GrupoMaterial>>;
 }) {
   const [medidas, setMedidas] = useState<{ radio: number; semialto: number } | null>(null);
   const radio = medidas?.radio ?? null;
+  const [radioVisible, setRadioVisible] = useState<number | null>(null);
+  const [cargado, setCargado] = useState(false);
+  const [fallo, setFallo] = useState(false);
 
   return (
+    <>
     <Canvas
       shadows
       dpr={[1, 2]}
@@ -1342,16 +1553,10 @@ export function EscenaFrame({
       }}
     >
       <Escenario sombraY={medidas ? -medidas.semialto * 1.02 : undefined} />
-      <LimiteError
-        respaldo={
-          <Html center>
-            <span className="whitespace-nowrap text-xs font-medium text-mxd-gris">
-              No se pudo cargar el modelo 3D
-            </span>
-          </Html>
-        }
-      >
-        <Suspense fallback={<Cargando />}>
+      {/* El aviso de carga y el de error van fuera del lienzo (AvisoCarga). */}
+      <LimiteError respaldo={null} alFallar={() => setFallo(true)}>
+        <Suspense fallback={null}>
+          <MarcaCargado alCambiar={setCargado} />
           <ChasisPlegable
             despliegue={despliegue}
             encendido={encendido}
@@ -1362,6 +1567,9 @@ export function EscenaFrame({
             pieza={pieza}
             senalada={senalada}
             alMedir={setMedidas}
+            alEncuadrar={setRadioVisible}
+            filtroMaterial={filtroMaterial}
+            gruposMaterial={gruposMaterial}
             alEntrarZona={alEntrarZona}
             alAislar={alAislar}
             alPasarSobre={alPasarSobre}
@@ -1386,7 +1594,7 @@ export function EscenaFrame({
           screenSpacePanning
           autoRotate={girando}
           autoRotateSpeed={2.8}
-          minDistance={radio * 0.6}
+          minDistance={(radioVisible ?? radio) * 0.5}
           maxDistance={radio * 14}
           maxPolarAngle={Math.PI * 0.95}
           mouseButtons={{
@@ -1398,6 +1606,8 @@ export function EscenaFrame({
         />
       )}
     </Canvas>
+    <AvisoCarga texto="Cargando chasis" listo={cargado} fallo={fallo} />
+    </>
   );
 }
 

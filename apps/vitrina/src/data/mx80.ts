@@ -1,6 +1,11 @@
+import type { z } from "zod";
+
 import type { Pieza, Seccion } from "@/lib/esquema";
+import { EspecificacionesEsquema } from "@/lib/esquema";
 
 import GENERADO from "./especificaciones-mx80.json";
+import { NOMBRES_GLB_V5, PIEZAS_GLB_V5, type AreaV5, type PiezaV5 } from "./mx80-v5";
+import { CONJUNTOS_SURTIDOS_COMPLETOS, VARIANTES_POR_SKU } from "./variantes-mx80";
 
 /**
  * Los datos que un proveedor lee (cotas, material, proceso, requisitos) NO se
@@ -21,14 +26,23 @@ type DatosFicha = Pick<
   | "especificaciones_tecnicas"
 >;
 
+/**
+ * Forma cruda del JSON generado: no trae los campos que se agregaron despues
+ * (grupo_material); EspecificacionesEsquema los completa con su default al
+ * parsear.
+ */
+type DatosFichaCrudo = Omit<DatosFicha, "especificaciones"> & {
+  especificaciones: z.input<typeof EspecificacionesEsquema>;
+};
+
 function datosDeFicha(sku: string): DatosFicha {
-  const datos = (GENERADO.piezas as Record<string, DatosFicha>)[sku];
+  const datos = (GENERADO.piezas as Record<string, DatosFichaCrudo>)[sku];
   if (!datos) {
     throw new Error(
       `No hay especificaciones para ${sku}. Agrega la fila al CSV y corre: npm run specs:importar`,
     );
   }
-  return datos;
+  return { ...datos, especificaciones: EspecificacionesEsquema.parse(datos.especificaciones) };
 }
 
 /**
@@ -84,9 +98,11 @@ const BASE = {
   factorExplosion: 1,
   parteDe: null,
   numeroBom: null,
+  variantes: [] as Pieza["variantes"],
+  surtidaEnConjunto: false,
 } as const;
 
-export const PIEZAS_MX80: Pieza[] = [
+const PIEZAS_ANTERIORES: Pieza[] = [
   // ===================================================================
   // MX80-001  Balanceador de helices  (3 subpiezas)
   // ===================================================================
@@ -1084,3 +1100,67 @@ export const PIEZAS_MX80: Pieza[] = [
     orden: 14,
   },
 ];
+
+// ===================================================================
+// GLB v5: piezas nuevas y nombres nuevos de piezas existentes
+// ===================================================================
+
+/** Secciones de cada area del GLB v5 (ver data/mx80-v5.ts). */
+const SECCIONES_V5: Record<AreaV5, Seccion[]> = {
+  brazos: BRAZOS,
+  // El aspersor solo va en brazo_CW_3 y brazo_CCW_4.
+  "brazos-aspersion": ["brazo-cw-2", "brazo-ccw-2"],
+  frame: ["frame-general"],
+  tanque: ["tanque"],
+  frente: ["parte-frontal"],
+  pilas: ["pilas"],
+  // Como el resto del tren en vitrina: sin seccion asignada.
+  tren: [],
+};
+
+function desdeV5(p: PiezaV5): Pieza {
+  return {
+    ...BASE,
+    sku: p.sku,
+    parteDe: p.parteDe,
+    slug: p.slug,
+    nombre: p.nombre,
+    descripcion: p.descripcion,
+    subsistema: p.subsistema,
+    secciones: SECCIONES_V5[p.area],
+    cantidadPorSeccion: p.cantidadPorSeccion,
+    nombresBlender: p.nombresBlender,
+    orden: p.orden,
+    categoria: p.categoria,
+    proceso_fabricacion: p.proceso_fabricacion,
+    descripcion_funcional: p.descripcion_funcional,
+    especificaciones_tecnicas: p.especificaciones_tecnicas,
+    especificaciones: EspecificacionesEsquema.parse(p.especificaciones),
+  };
+}
+
+const PIEZAS_TODAS: Pieza[] = [
+  // Los nombres del v5 se suman: los anteriores se quedan por si se vuelve a
+  // cargar un GLB viejo, y no estorban (el visor busca por coincidencia).
+  ...PIEZAS_ANTERIORES.map((p) =>
+    NOMBRES_GLB_V5[p.sku]
+      ? { ...p, nombresBlender: [...p.nombresBlender, ...NOMBRES_GLB_V5[p.sku]] }
+      : p,
+  ),
+  ...PIEZAS_GLB_V5.map(desdeV5),
+];
+
+/**
+ * Versiones espejo (CW / CCW, derecha / izquierda) y piezas que se surten
+ * dentro de su conjunto. Ver data/variantes-mx80.ts.
+ */
+function conVariantes(p: Pieza): Pieza {
+  const versiones = VARIANTES_POR_SKU[p.sku];
+  return {
+    ...p,
+    variantes: versiones ? versiones.map((v) => ({ ...v, numeroBom: null })) : p.variantes,
+    surtidaEnConjunto: p.parteDe !== null && CONJUNTOS_SURTIDOS_COMPLETOS.includes(p.parteDe),
+  };
+}
+
+export const PIEZAS_MX80: Pieza[] = PIEZAS_TODAS.map(conVariantes);

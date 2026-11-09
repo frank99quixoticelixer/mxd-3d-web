@@ -12,7 +12,21 @@ import type { Pieza } from "./esquema";
  * llegaron al PDF). Este archivo no tiene nada de cliente ni de servidor
  * (sin "use client", sin exceljs): lo importan los dos.
  */
-export type TipoCampo = "numero" | "texto" | "seleccionGiro" | "seleccionBooleano" | "seleccionSiNo";
+export type TipoCampo =
+  | "numero"
+  | "texto"
+  | "seleccionGiro"
+  | "seleccionBooleano"
+  | "seleccionSiNo"
+  | "seleccionMaterial";
+/** Como se lee cada tipo de material en la ficha (mismos textos que el visor). */
+export const ETIQUETAS_GRUPO_MATERIAL: Record<string, string> = {
+  plastico: "Plástica",
+  metal: "Metálica",
+  electronica: "Electrónica",
+  otros: "Otro (carbono, hule, manguera)",
+};
+
 export type CampoFicha = { clave: string; etiqueta: string; tipo: TipoCampo; unidad?: string };
 
 export const CAMPOS_ESPECIFICACIONES: CampoFicha[] = [
@@ -24,6 +38,7 @@ export const CAMPOS_ESPECIFICACIONES: CampoFicha[] = [
   { clave: "par_apriete_nm", etiqueta: "Par de apriete", tipo: "numero", unidad: "N·m" },
   { clave: "numero_tornillos", etiqueta: "No. de tornillos", tipo: "numero" },
   { clave: "material", etiqueta: "Material", tipo: "texto" },
+  { clave: "grupo_material", etiqueta: "Tipo de material (filtro del visor)", tipo: "seleccionMaterial" },
   { clave: "acabado", etiqueta: "Acabado", tipo: "texto" },
   { clave: "proceso_fabricacion", etiqueta: "Proceso de fabricación", tipo: "texto" },
   { clave: "rosca", etiqueta: "Rosca", tipo: "texto" },
@@ -123,6 +138,7 @@ export function textoValor(pieza: Pieza, campo: CampoFicha): string {
   if (valor === null || valor === "") return "Pendiente";
   if (campo.tipo === "seleccionBooleano") return valor ? "In-house (MXD)" : "Maquilado afuera";
   if (campo.tipo === "seleccionSiNo") return valor ? "Sí" : "No";
+  if (campo.tipo === "seleccionMaterial") return ETIQUETAS_GRUPO_MATERIAL[valor as string] ?? String(valor);
   if (campo.unidad === "MXN") return monedaTexto(valor as number);
   return campo.unidad ? `${valor} ${campo.unidad}` : String(valor);
 }

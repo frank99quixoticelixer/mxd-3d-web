@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { Html, OrbitControls, useGLTF, useProgress } from "@react-three/drei";
+import { OrbitControls, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 
 import { COLORES } from "@/config/marca";
@@ -32,6 +32,7 @@ import {
 } from "./componentes";
 import { useVisor } from "./estado";
 import { Escenario } from "./Escenario";
+import { AvisoCarga, MarcaCargado } from "./AvisoCarga";
 import { LimiteError } from "./LimiteError";
 import { prepararMateriales, type MaterialGuardado } from "./resolverPiezas";
 
@@ -161,16 +162,6 @@ function DetalleTuercaEnPieza({
 
 useGLTF.preload(URL_TUERCA_DETALLADA);
 
-function Cargando() {
-  const { progress } = useProgress();
-  return (
-    <Html center>
-      <span className="whitespace-nowrap text-xs font-medium tracking-wide text-mxd-gris">
-        Cargando pieza {Math.round(progress)}%
-      </span>
-    </Html>
-  );
-}
 
 interface ParteDespiece {
   objeto: THREE.Object3D;
@@ -570,8 +561,11 @@ export function EscenaPieza({
   // se montan hasta conocerlo, ya con la camara encuadrada.
   const [medidas, setMedidas] = useState<{ radio: number; semialto: number } | null>(null);
   const radio = medidas?.radio ?? null;
+  const [cargado, setCargado] = useState(false);
+  const [fallo, setFallo] = useState(false);
 
   return (
+    <>
     <Canvas
       shadows
       dpr={[1, 2]}
@@ -583,8 +577,9 @@ export function EscenaPieza({
       }}
     >
       <Escenario sombraY={medidas ? -medidas.semialto * 1.02 : undefined} />
-      <LimiteError respaldo={null}>
-        <Suspense fallback={<Cargando />}>
+      <LimiteError respaldo={null} alFallar={() => setFallo(true)}>
+        <Suspense fallback={null}>
+          <MarcaCargado alCambiar={setCargado} />
           <PiezaGirando
             url={url}
             seleccion={seleccion}
@@ -604,9 +599,11 @@ export function EscenaPieza({
           enablePan={false}
           minDistance={radio * 1.5}
           maxDistance={radio * 9}
-          maxPolarAngle={Math.PI * 0.495}
+          maxPolarAngle={Math.PI * 0.95}
         />
       )}
     </Canvas>
+    <AvisoCarga texto="Cargando pieza" listo={cargado} fallo={fallo} />
+    </>
   );
 }

@@ -86,6 +86,24 @@ export function TarjetaPieza({ pieza }: { pieza: Pieza }) {
         {pieza.descripcion}
       </p>
 
+      {/* Una pieza con versiones espejo no es una sola: avisarlo en la
+          tarjeta evita pedir la del brazo equivocado. */}
+      {(pieza.variantes.length > 0 || pieza.surtidaEnConjunto) && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {pieza.variantes.length > 0 && (
+            <span className="rounded-full bg-mxd-verde-claro px-2 py-0.5 text-[10px] font-semibold text-mxd-verde-oscuro">
+              {pieza.variantes.length} versiones:{" "}
+              {pieza.variantes.map((v) => v.etiqueta.replace("Versión ", "")).join(" y ")}
+            </span>
+          )}
+          {pieza.surtidaEnConjunto && (
+            <span className="rounded-full border border-mxd-borde px-2 py-0.5 text-[10px] font-medium text-mxd-gris">
+              Se surte con su conjunto
+            </span>
+          )}
+        </div>
+      )}
+
       <dl className="mt-3 border-t border-mxd-borde pt-2.5 text-[11px]">
         <dt className="text-mxd-gris">Estado</dt>
         <dd className="font-medium text-mxd-tinta">

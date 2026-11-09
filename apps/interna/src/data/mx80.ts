@@ -4,6 +4,15 @@ import type { Pieza, Seccion } from "@/lib/esquema";
 import { EspecificacionesEsquema } from "@/lib/esquema";
 
 import GENERADO from "./especificaciones-mx80.json";
+import {
+  NOMBRES_GLB_V5,
+  PIEZAS_GLB_V5,
+  type AreaV5,
+  type PiezaV5,
+  type TipoV5,
+} from "./mx80-v5";
+import { CRUCE_MAESTRO } from "./cruce-maestro";
+import { CONJUNTOS_SURTIDOS_COMPLETOS, VARIANTES_POR_SKU } from "./variantes-mx80";
 
 /**
  * Los datos que un proveedor lee (cotas, material, proceso, requisitos) NO se
@@ -102,6 +111,9 @@ const BASE = {
   factorExplosion: 1,
   parteDe: null,
   numeroBom: null,
+  variantes: [] as Pieza["variantes"],
+  surtidaEnConjunto: false,
+  cruceBom: null,
   camposNoAplican: [] as string[],
   // Costeo pendiente por defecto; MX80-014 lo sobreescribe con lo que ya se
   // sabe de ella. Ver CostosProduccionEsquema en lib/esquema.ts.
@@ -127,7 +139,7 @@ const BASE = {
   },
 } as const;
 
-export const PIEZAS_MX80: Pieza[] = [
+const PIEZAS_ANTERIORES: Pieza[] = [
   // ===================================================================
   // MX80-001  Balanceador de helices  (3 subpiezas)
   // ===================================================================
@@ -1366,3 +1378,127 @@ export const PIEZAS_MX80: Pieza[] = [
     orden: 14,
   },
 ];
+
+// ===================================================================
+// GLB v5: piezas nuevas y nombres nuevos de piezas existentes
+// ===================================================================
+
+/** Secciones de cada area del GLB v5 (ver data/mx80-v5.ts). */
+const SECCIONES_V5: Record<AreaV5, Seccion[]> = {
+  brazos: BRAZOS,
+  // El aspersor solo va en brazo_CW_3 y brazo_CCW_4.
+  "brazos-aspersion": ["brazo-cw-2", "brazo-ccw-2"],
+  frame: ["frame-general"],
+  tanque: ["tanque"],
+  frente: ["parte-frontal"],
+  pilas: ["pilas"],
+  tren: ["tren-de-aterrizaje"],
+};
+
+/**
+ * Campos de la ficha que no aplican a cada tipo de pieza del GLB v5. Son las
+ * mismas listas que ya llevan las piezas equivalentes de arriba: un conjunto
+ * como MX80-009, un tornillo como MX80-001-08, la electronica como MX80-009-01
+ * y una pieza plastica como MX80-009-02.
+ */
+const COSTOS = [
+  "costo_fabricado_inhouse", "costo_equipo", "costo_material", "costo_masa_g",
+  "costo_horas_produccion", "costo_pintura_mxn", "costo_mano_obra_mxn", "costo_notas",
+];
+const MOTOR = [
+  "motor_kv", "motor_voltaje_nominal_v", "motor_rpm_nominal",
+  "motor_torque_nominal_nm", "motor_torque_max_nm",
+];
+const TUBOS_Y_PERFILES = [
+  "volumen_ml", "diametro_tubo_mm", "grosor_pared_mm", "diametro_barreno_mm",
+  "ancho_perfil_mm", "alto_perfil_mm",
+];
+const NO_APLICAN_V5: Record<TipoV5, string[]> = {
+  conjunto: ["material", "acabado", "par_apriete_nm", "numero_tornillos", ...COSTOS,
+    "rosca", "longitud_mm", "sentido_giro", "modulo_conectado", ...TUBOS_Y_PERFILES, ...MOTOR],
+  sujetador: [...COSTOS.filter((c) => c !== "costo_fabricado_inhouse" && c !== "costo_notas"),
+    "material", "acabado", "tolerancia_mm", "proceso_fabricacion", "largo_mm", "ancho_mm",
+    "alto_mm", "numero_tornillos", "sentido_giro", "modulo_conectado", ...TUBOS_Y_PERFILES, ...MOTOR],
+  electronica: ["rosca", "longitud_mm", "sentido_giro", ...TUBOS_Y_PERFILES, ...MOTOR],
+  pieza: ["rosca", "longitud_mm", "sentido_giro", "modulo_conectado", ...TUBOS_Y_PERFILES, ...MOTOR],
+  // Cables y mangueras se compran por largo: longitud_mm si aplica.
+  cable: ["rosca", "sentido_giro", ...TUBOS_Y_PERFILES, ...MOTOR],
+  manguera: ["rosca", "sentido_giro", "modulo_conectado", ...TUBOS_Y_PERFILES, ...MOTOR],
+  // El motor de la centrifuga y la bomba si tienen KV, voltaje y RPM.
+  motor: ["rosca", "longitud_mm", "sentido_giro", ...TUBOS_Y_PERFILES],
+};
+
+function desdeV5(p: PiezaV5): Pieza {
+  return {
+    ...BASE,
+    camposNoAplican: NO_APLICAN_V5[p.tipo],
+    // Mismo nombre en el 3D, en el BOM y en la carpeta de la pieza.
+    trazabilidad: { ...BASE.trazabilidad, carpetaPieza: p.carpeta },
+    sku: p.sku,
+    parteDe: p.parteDe,
+    slug: p.slug,
+    nombre: p.nombre,
+    descripcion: p.descripcion,
+    subsistema: p.subsistema,
+    secciones: SECCIONES_V5[p.area],
+    cantidadPorSeccion: p.cantidadPorSeccion,
+    nombresBlender: p.nombresBlender,
+    orden: p.orden,
+    categoria: p.categoria,
+    proceso_fabricacion: p.proceso_fabricacion,
+    descripcion_funcional: p.descripcion_funcional,
+    especificaciones_tecnicas: p.especificaciones_tecnicas,
+    especificaciones: EspecificacionesEsquema.parse(p.especificaciones),
+  };
+}
+
+const PIEZAS_TODAS: Pieza[] = [
+  // Los nombres del v5 se suman: los anteriores se quedan por si se vuelve a
+  // cargar un GLB viejo, y no estorban (el visor busca por coincidencia).
+  ...PIEZAS_ANTERIORES.map((p) =>
+    NOMBRES_GLB_V5[p.sku]
+      ? { ...p, nombresBlender: [...p.nombresBlender, ...NOMBRES_GLB_V5[p.sku]] }
+      : p,
+  ),
+  ...PIEZAS_GLB_V5.map(desdeV5),
+];
+
+/**
+ * Versiones espejo (CW / CCW, derecha / izquierda) y piezas que se surten
+ * dentro de su conjunto. Ver data/variantes-mx80.ts.
+ */
+function conVariantes(p: Pieza): Pieza {
+  const versiones = VARIANTES_POR_SKU[p.sku];
+  return {
+    ...p,
+    variantes: versiones ? versiones.map((v) => ({ ...v, numeroBom: null })) : p.variantes,
+    surtidaEnConjunto: p.parteDe !== null && CONJUNTOS_SURTIDOS_COMPLETOS.includes(p.parteDe),
+  };
+}
+
+/**
+ * Numero del maestro de partes de cada pieza y de cada version, y como quedo
+ * el cruce. Ver data/cruce-maestro.ts.
+ */
+function conCruce(p: Pieza): Pieza {
+  const c = CRUCE_MAESTRO[p.sku];
+  if (!c) {
+    // Sin cruce escrito: si ya traia numero lo cruzo el equipo a mano; si se
+    // surte dentro de su conjunto no necesita uno; si no, no tiene.
+    if (p.numeroBom) return { ...p, cruceBom: { estado: "confirmado", nota: null } };
+    if (p.surtidaEnConjunto) return p;
+    return { ...p, cruceBom: { estado: "sin-numero", nota: null } };
+  }
+  const variantes = p.variantes.map((v) => ({ ...v, numeroBom: c.porVariante?.[v.clave] ?? null }));
+  const porVersion = c.porVariante ? [...new Set(Object.values(c.porVariante))] : [];
+  return {
+    ...p,
+    variantes,
+    // Con dos numeros (uno por version) el campo unico lleva los dos: es el
+    // que va al BOM Excel y a la ficha PDF, y uno solo mentiria.
+    numeroBom: c.numero ?? (porVersion.length > 0 ? porVersion.join(" / ") : p.numeroBom),
+    cruceBom: { estado: c.estado, nota: c.nota ?? null },
+  };
+}
+
+export const PIEZAS_MX80: Pieza[] = PIEZAS_TODAS.map(conVariantes).map(conCruce);

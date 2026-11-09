@@ -2,6 +2,9 @@
 
 import { create } from "zustand";
 
+import { ARRASTRE, CAUDAL_VISUAL, DOWNWASH, RPM_VISUAL } from "./aspersion/config";
+import type { GrupoMaterial } from "./materiales";
+
 /** Recorta a 0..1 sin arrastrar three.js a un archivo de estado. */
 const recortar01 = (v: number) => Math.min(1, Math.max(0, v));
 
@@ -39,7 +42,9 @@ export type ZonaVisor =
   | "frame"
   | "tanque"
   | "tren-aterrizaje"
-  | "frente";
+  | "frente"
+  | "energia"
+  | "radar";
 
 export const ETIQUETAS_ZONA: Record<ZonaVisor, string> = {
   "brazo-cw": "Brazo CW",
@@ -48,6 +53,8 @@ export const ETIQUETAS_ZONA: Record<ZonaVisor, string> = {
   tanque: "Tanque",
   "tren-aterrizaje": "Tren de aterrizaje",
   frente: "Frente del dron",
+  energia: "Batería y PDB",
+  radar: "Radar y luces",
 };
 
 export const ZONAS = Object.keys(ETIQUETAS_ZONA) as ZonaVisor[];
@@ -55,6 +62,30 @@ export const ZONAS = Object.keys(ETIQUETAS_ZONA) as ZonaVisor[];
 export function esZona(valor: string | null): valor is ZonaVisor {
   return valor !== null && valor in ETIQUETAS_ZONA;
 }
+
+/**
+ * Mandos de la visualizacion de aspersion. Los valores son los que el usuario
+ * pide; las rampas de arranque y paro las aplica la escena.
+ */
+export interface Aspersion {
+  activa: boolean;
+  rpm: number;
+  /** Gotas por segundo por disco. */
+  caudal: number;
+  arrastre: number;
+  downwash: number;
+  /** Cada brazo con aspersor se puede apagar por separado. */
+  brazos: { cw: boolean; ccw: boolean };
+}
+
+export const ASPERSION_INICIAL: Aspersion = {
+  activa: false,
+  rpm: RPM_VISUAL.inicial,
+  caudal: CAUDAL_VISUAL.inicial,
+  arrastre: ARRASTRE.inicial,
+  downwash: DOWNWASH.inicial,
+  brazos: { cw: true, ccw: true },
+};
 
 /**
  * Estado compartido del visor 3D.
@@ -93,8 +124,9 @@ export interface EstadoVisor {
   /** Zona abierta en la capa 2 y 3. */
   zona: ZonaVisor | null;
   /**
-   * Lo aislado en la capa 3: la clave del componente en un brazo ("motor") o
-   * el nombre del nodo en las demas zonas. Es una clave y no la lista de nodos
+   * Lo aislado en la capa 3: la clave del componente en un brazo ("motor"),
+   * una pieza de ese componente ("aspersor/disco") o el nombre del nodo en
+   * las demas zonas. Es una clave y no la lista de nodos
    * para que quepa en la URL y se pueda restaurar desde un enlace; la escena
    * la traduce a nodos.
    */
@@ -114,6 +146,20 @@ export interface EstadoVisor {
    */
   despieceAtomico: number;
 
+  /**
+   * Visualizacion de aspersion. Como los motores, solo existe con el dron
+   * entero y los brazos abiertos: un aspersor plegado o a medio desarmar no
+   * representa nada real.
+   */
+  aspersion: Aspersion;
+
+  /**
+   * Filtro por material: solo se ven las piezas de ese grupo (ver
+   * materiales.ts). null = todo. Se conserva al cambiar de zona: es una forma
+   * de ver, no un estado de la animacion.
+   */
+  filtroMaterial: GrupoMaterial | null;
+
   setExplosion: (valor: number) => void;
   setDespliegue: (valor: number) => void;
   setDespieceAtomico: (valor: number) => void;
@@ -125,6 +171,11 @@ export interface EstadoVisor {
   irA: (zona: ZonaVisor | null, pieza: string | null) => void;
   setSenalada: (pieza: string | null) => void;
   reiniciarVista: () => void;
+  /** Enciende o apaga la aspersion. Encenderla abre los brazos si hace falta. */
+  setAspersionActiva: (activa: boolean) => void;
+  setFiltroMaterial: (grupo: GrupoMaterial | null) => void;
+  /** Ajusta los mandos de la aspersion (rpm, caudal, arrastre, downwash, brazos). */
+  ajustarAspersion: (cambio: Partial<Omit<Aspersion, "activa">>) => void;
 }
 
 /** Mandos en reposo: lo que se aplica al cambiar de vista. */
@@ -136,6 +187,11 @@ const REPOSO = {
   senalada: null,
 } as const;
 
+/** La aspersion apagada conservando los ajustes que el usuario ya movio. */
+const sinAspersion = (s: EstadoVisor) => ({
+  aspersion: { ...s.aspersion, activa: false },
+});
+
 export const useVisor = create<EstadoVisor>((set) => ({
   explosion: 0,
   radio: 1,
@@ -146,6 +202,8 @@ export const useVisor = create<EstadoVisor>((set) => ({
   zona: null,
   pieza: null,
   senalada: null,
+  aspersion: ASPERSION_INICIAL,
+  filtroMaterial: null,
 
   setExplosion: (valor) =>
     set((s) => {
@@ -161,6 +219,7 @@ export const useVisor = create<EstadoVisor>((set) => ({
         // sostener un despliegue sobre un dron que ya se esta separando.
         encendido: pasoUmbral ? 0 : s.encendido,
         despliegue: pasoUmbral ? 0 : s.despliegue,
+        ...(pasoUmbral ? sinAspersion(s) : {}),
       };
     }),
 
@@ -173,6 +232,8 @@ export const useVisor = create<EstadoVisor>((set) => ({
       // Con los motores en marcha el despliegue se congela: plegar un brazo
       // con su rotor girando no es una maniobra que exista.
       if (s.encendido > BLOQUEA_DESPLIEGUE) return {};
+      // Igual con la aspersion: los discos van montados en los brazos.
+      if (s.aspersion.activa) return {};
       // Con el dron a medio desarmar tampoco: los brazos ya no estan en su
       // sitio, asi que plegarlos no representa nada real.
       if (s.explosion / DESPIECE_MAXIMO >= DESPIECE_APAGA_MOTORES) return {};
@@ -188,7 +249,13 @@ export const useVisor = create<EstadoVisor>((set) => ({
       if (s.capa !== 1) return {};
       // Al bajar a pieza suelta el dron queda desarmado: ni brazos abiertos,
       // ni motores, ni el otro despiece encima.
-      return { despieceAtomico, explosion: 0, despliegue: 0, encendido: 0 };
+      return {
+        despieceAtomico,
+        explosion: 0,
+        despliegue: 0,
+        encendido: 0,
+        ...sinAspersion(s),
+      };
     }),
 
   setEncendido: (valor) =>
@@ -211,30 +278,66 @@ export const useVisor = create<EstadoVisor>((set) => ({
    * suelta no hay brazos que desplegar ni motores que acelerar, y arrastrar el
    * estado de la capa anterior dejaria el modelo a medio animar.
    */
-  entrarEnZona: (zona) => set({ ...REPOSO, capa: 2, zona, pieza: null }),
+  entrarEnZona: (zona) =>
+    set((s) => ({ ...REPOSO, ...sinAspersion(s), capa: 2, zona, pieza: null })),
 
   entrarEnPieza: (pieza) =>
-    set((s) =>
-      s.capa === 2 && pieza ? { ...REPOSO, capa: 3, pieza } : {},
-    ),
+    set((s) => {
+      if (!pieza) return {};
+      if (s.capa === 2) return { ...REPOSO, ...sinAspersion(s), capa: 3, pieza };
+      // Dentro de un componente aislado se baja a una de sus piezas
+      // ("aspersor" -> "aspersor/disco"): sigue siendo la capa 3, un nivel
+      // mas adentro.
+      if (s.capa === 3 && s.pieza && !s.pieza.includes("/") && pieza.startsWith(`${s.pieza}/`)) {
+        return { ...REPOSO, ...sinAspersion(s), pieza };
+      }
+      return {};
+    }),
 
   volver: () =>
     set((s) => {
-      if (s.capa === 3) return { ...REPOSO, capa: 2, pieza: null };
-      if (s.capa === 2) return { ...REPOSO, capa: 1, zona: null, pieza: null };
+      // De una pieza del componente se vuelve al componente entero.
+      if (s.capa === 3 && s.pieza?.includes("/")) {
+        return { ...REPOSO, ...sinAspersion(s), pieza: s.pieza.slice(0, s.pieza.indexOf("/")) };
+      }
+      if (s.capa === 3) return { ...REPOSO, ...sinAspersion(s), capa: 2, pieza: null };
+      if (s.capa === 2) return { ...REPOSO, ...sinAspersion(s), capa: 1, zona: null, pieza: null };
       return {};
     }),
 
   irA: (zona, pieza) =>
-    set({
+    set((s) => ({
       ...REPOSO,
+      ...sinAspersion(s),
       capa: zona ? (pieza ? 3 : 2) : 1,
       zona,
       pieza: zona ? pieza : null,
-    }),
+    })),
 
   setSenalada: (senalada) => set({ senalada }),
 
   reiniciarVista: () =>
-    set({ ...REPOSO, capa: 1, zona: null, pieza: null }),
+    set({
+      ...REPOSO,
+      aspersion: ASPERSION_INICIAL,
+      filtroMaterial: null,
+      capa: 1,
+      zona: null,
+      pieza: null,
+    }),
+
+  setFiltroMaterial: (filtroMaterial) => set({ filtroMaterial }),
+
+  setAspersionActiva: (activa) =>
+    set((s) => {
+      if (!activa) return sinAspersion(s);
+      // Mismas condiciones que los motores, salvo el despliegue: encender la
+      // aspersion abre los brazos, porque es lo que cualquiera haria primero.
+      if (s.capa !== 1 || s.despieceAtomico > 0) return {};
+      if (s.explosion / DESPIECE_MAXIMO >= DESPIECE_APAGA_MOTORES) return {};
+      return { aspersion: { ...s.aspersion, activa: true }, despliegue: 1 };
+    }),
+
+  ajustarAspersion: (cambio) =>
+    set((s) => ({ aspersion: { ...s.aspersion, ...cambio } })),
 }));

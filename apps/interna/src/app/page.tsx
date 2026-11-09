@@ -9,15 +9,29 @@ import {
   MANUAL_MX80,
 } from "@/data/manual-mx80";
 import { VisorFrame } from "@/features/viewer/VisorFrame";
-import { obtenerPiezas, obtenerTodas } from "@/lib/catalogo";
+import { gruposMaterialPorNombre } from "@/features/viewer/materiales";
+import { conBomTodas, obtenerPiezas, obtenerTodas } from "@/lib/catalogo";
 
-export default function PaginaInicio() {
+// Lee el BOM editable en cada visita: el tipo de material que se cambia en
+// una ficha se ve en el filtro del visor sin reconstruir el sitio.
+export const dynamic = "force-dynamic";
+
+export default async function PaginaInicio() {
+  const gruposMaterial = gruposMaterialPorNombre(
+    await conBomTodas(obtenerTodas(MODELO_PREDETERMINADO)),
+  );
   const piezas = obtenerPiezas(MODELO_PREDETERMINADO);
   // Solo lo que el visor necesita para enlazar a cada ficha. Las subpiezas
   // entran porque dentro de una zona se aisla, por ejemplo, un agarrador del
   // marco, que tiene su propia ficha.
   const fichas = obtenerTodas(MODELO_PREDETERMINADO).map(
-    ({ sku, slug, nombre }) => ({ sku, slug, nombre }),
+    ({ sku, slug, nombre, variantes }) => ({
+      sku,
+      slug,
+      nombre,
+      // Sin numero de parte: esto viaja al navegador.
+      variantes: variantes.map(({ clave, etiqueta, posicion }) => ({ clave, etiqueta, posicion })),
+    }),
   );
 
   return (
@@ -42,6 +56,7 @@ export default function PaginaInicio() {
         <div className="mt-8">
           <VisorFrame
             fichas={fichas}
+            gruposMaterial={gruposMaterial}
             className="h-[78dvh] min-h-[460px] w-full sm:h-[72dvh] lg:h-[62vh]"
           />
         </div>

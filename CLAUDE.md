@@ -184,6 +184,51 @@ pieza. La unica excepcion es el interior de la tuerca del balanceador
 (`MX80-003_v2.glb`), que el GLB completo no trae. Una pieza nueva necesita
 sus `nombresBlender` en `data/mx80.ts`, no un archivo.
 
+El modelo vigente es el **GLB v5** (`MX80_completo_v5_web.glb`, 27 MB): trae
+el aspersor centrifugo en dos brazos, cableado, bateria, PDB, rieles, radar y
+luces, bomba y LiDAR. Sus 88 piezas nuevas viven en `src/data/mx80-v5.ts`,
+**identico en vitrina e interna**; cada app lo adapta en su `data/mx80.ts`
+(interna agrega `camposNoAplican` y `trazabilidad.carpetaPieza`, que es el
+nombre del nodo en el 3D). Las cotas de esas piezas son la caja envolvente
+del nodo en el GLB y cada una dice su fuente: no son de plano.
+
+### Versiones espejo y maestro de partes
+
+- **Los brazos CW y CCW son espejo, y el lado derecho del marco es espejo del
+  izquierdo.** Una pieza asimetrica montada en espejo es otra pieza (el
+  soporte de motor CW se inclina al reves que el CCW). Cuales lo son se midio
+  en el GLB (encimar cada pieza girada y reflejada) y esta en
+  `src/data/variantes-mx80.ts`, identico en las dos apps. El catalogo y el
+  visor muestran "Version CW / CCW" o "derecha / izquierda". Posiciones del
+  maestro = nombres del GLB: M1 `brazo_CW_1`, M2 `brazo_CCW_2`, M3
+  `brazo_CW_3`, M4 `brazo_CCW_4`; la derecha del dron es -Z (M1 y M4).
+- **El maestro de partes** (`Maestro_Partes_MX80.xlsx`, el BOM de los
+  administrativos) se importa con `cd apps/interna && npm run
+  maestro:importar` a `src/data/maestro-mx80.json`. El cruce partida <-> SKU
+  esta escrito a mano en `apps/interna/src/data/cruce-maestro.ts`, con estado
+  `confirmado` o `propuesto`. La pagina `/maestro` de interna lo muestra.
+  Los numeros de parte NO salen en vitrina.
+- Los conjuntos que se compran como una sola partida (PDB, motor, bateria,
+  soporte de bateria) marcan sus subpiezas `surtidaEnConjunto`: estan en el
+  catalogo para ubicarlas en el 3D, no para pedirlas.
+
+### Aspersion (visualizacion ilustrativa)
+
+El visor de la portada hace girar los discos atomizadores y lanza gotas. Es
+una ilustracion, no CFD, y la interfaz lo dice. Vive en
+`features/viewer/aspersion/` (copia exacta en las dos apps):
+
+- `config.ts`: todo lo ajustable (RPM visual, caudal, arrastre, downwash,
+  tope de particulas). `RPM_REAL` queda en null hasta tener la ficha del
+  fabricante del cabezal.
+- `discos.ts`: saca el eje de cada `*_disco` de su geometria (PCA), lo cuelga
+  de un pivote `pivote_<disco>` y gira el pivote. Avisa en desarrollo si el
+  eje no sale a ~20 grados.
+- `gotas.ts`: pool fijo de particulas (`THREE.Points`) en coordenadas del
+  mundo, paso acotado e independiente de los FPS.
+- `PanelAspersion.tsx`: los mandos. Las reglas (solo en la vista completa,
+  abre los brazos, se apaga al despiezar) estan en `estado.ts`.
+
 Las descargas de modelos 3D (56 archivos, 65 MB) son **solo de interna**
 (ADR 0003). Viven en `apps/interna/descargas/`, en git, y las entrega la ruta
 `/api/descargas/[sku]/[archivo]`, que pasa por la contrasena. No pueden ir en
@@ -269,12 +314,18 @@ Flujo para actualizar un modelo:
    0 danados.
 5. Si es el ensamble principal, cambia `GLB_FRAME` en
    `apps/vitrina/src/config/modelos3d.ts` y revisa que el GLB conserve los
-   nombres de nodo de los que depende el visor (GLB v4): `brazo`,
-   `brazo_2..4`, `giratorio`, `motor_giratorio`, `estatico`, `balanceador`,
-   `helices`, `propela_*`, `tanque`, `carcasa_frontal` y `tren_aterrizaje`, que
-   contiene marco y tren juntos (se separan con `ES_MARCO`). Todo vive en
-   `nodosDeZonaEn()` de `EscenaFrame.tsx` y en `features/viewer/componentes.ts`.
-   Un nombre que cambie deja esa zona o ese componente sin poder tocarse.
+   nombres de nodo de los que depende el visor (GLB v5): los brazos
+   `brazo_CW_*` / `brazo_CCW_*` (el sentido sale del nombre), y dentro de cada
+   uno `giratorio` (con `helices`, cuyos dos hijos son las palas, y
+   `motor_giratorio`), `estatico`, `cables`, `ESC` y, en los que lo llevan, el
+   aspersor (`pieza_A_cuerpo_Y`, `der_disco`/`izq_disco`...). Raices:
+   `tanque`, `frente_drone`, `MX80_frame_PDB_rieles_bateria`,
+   `radar_y_luces_en_tubo_30mm` y `tren_aterrizaje`, que contiene marco y tren
+   juntos (se separan con `ES_MARCO`). Todo vive en
+   `features/viewer/componentes.ts` (`brazosDelModelo`, `nodosDeZonaEn`,
+   `PIEZAS_SUELTAS`). Un nombre que cambie deja esa zona o ese componente sin
+   poder tocarse. El plegado, las palas y el giro de los rotores ya no
+   dependen de nombres: salen de la posicion de cada brazo.
    El GLB que sale de Blender sin comprimir no se commitea (el del dron pesaba
    132 MB y GitHub rechaza mas de 100 MB): se optimiza primero con
    `npm run glb:optimizar -- entrada.glb salida_web.glb`. Las fuentes sin

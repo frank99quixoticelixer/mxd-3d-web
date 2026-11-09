@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { VersionesPieza } from "@/components/catalogo/VersionesPieza";
 import { BotonAtras } from "@/components/layout/BotonAtras";
 import { MARCA } from "@/config/marca";
 import { MODELO_PREDETERMINADO } from "@/config/modelos3d";
@@ -339,6 +340,11 @@ export default async function PaginaPieza({
           aterrizaje, hoy) el visor no existe y esta lista es la UNICA forma
           de llegar a sus subpiezas: por eso va fuera del "if" del visor, no
           como complemento opcional. */}
+      <VersionesPieza
+        pieza={pieza}
+        conjunto={pieza.surtidaEnConjunto && padre ? { nombre: padre.nombre, slug: padre.slug } : null}
+      />
+
       {subpiezas.length > 0 && (
         <section className="mt-14">
           <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">

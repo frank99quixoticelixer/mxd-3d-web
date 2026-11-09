@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 
 import { PIEZAS_MX80 } from "@/data/mx80";
-import { leerBom, leerPieza, type FilaBom } from "@/lib/bom";
+import { leerBom, leerNumerosVariantes, leerPieza, type FilaBom } from "@/lib/bom";
 import {
   CatalogoEsquema,
   ORDEN_SECCIONES,
@@ -112,8 +112,22 @@ function conBom(pieza: Pieza, fila: FilaBom | null): Pieza {
     trazabilidad_carpeta_pieza,
     trazabilidad_archivo_step,
     trazabilidad_archivo_stl,
+    cruce_estado,
+    numeros_variantes,
     ...especificaciones
   } = fila;
+  // Numero de cada version (CW/CCW...) y estado del cruce, capturados en la
+  // pagina /maestro. Sin dato en la fila se queda lo del catalogo.
+  const porVersion = leerNumerosVariantes(numeros_variantes);
+  const variantes = numeros_variantes
+    ? pieza.variantes.map((v) => ({ ...v, numeroBom: porVersion[v.clave] ?? null }))
+    : pieza.variantes;
+  const estadoValido = (["confirmado", "propuesto", "sin-numero"] as const).find(
+    (e) => e === cruce_estado,
+  );
+  const cruceBom = estadoValido
+    ? { estado: estadoValido, nota: pieza.cruceBom?.nota ?? null }
+    : pieza.cruceBom;
   return {
     ...pieza,
     categoria,
@@ -122,6 +136,8 @@ function conBom(pieza: Pieza, fila: FilaBom | null): Pieza {
     especificaciones_tecnicas,
     camposNoAplican,
     numeroBom: numero_parte_mxd,
+    variantes,
+    cruceBom,
     precio_mxn,
     stock,
     especificaciones: { ...pieza.especificaciones, ...especificaciones },

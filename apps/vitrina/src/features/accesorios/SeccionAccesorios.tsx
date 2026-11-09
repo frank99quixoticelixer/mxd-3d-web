@@ -6,6 +6,7 @@ import { urlModelo } from "@/config/modelos3d";
 import type { Accesorio } from "@/data/accesorios";
 import type { FichaEnlace } from "@/features/viewer/componentes";
 import { VisorAccesorio } from "@/features/viewer/VisorAccesorio";
+import type { GrupoMaterial } from "@/features/viewer/materiales";
 import { VisorFrame } from "@/features/viewer/VisorFrame";
 
 import { FichaAccesorio } from "./FichaAccesorio";
@@ -21,10 +22,13 @@ import { PanelAccesorios } from "./PanelAccesorios";
 export function SeccionAccesorios({
   fichas,
   accesorios,
+  gruposMaterial,
 }: {
   /** Piezas del catalogo para enlazar desde el VisorFrame del MX80. */
   fichas: FichaEnlace[];
   accesorios: Accesorio[];
+  /** Tipo de material escrito en las fichas, para el filtro del visor. */
+  gruposMaterial?: Readonly<Record<string, GrupoMaterial>>;
 }) {
   const [activo, setActivo] = useState<string | null>(null);
   const accesorioActivo = activo
@@ -48,6 +52,7 @@ export function SeccionAccesorios({
       <div className={accesorioActivo ? "hidden" : ""}>
         <VisorFrame
           fichas={fichas}
+          gruposMaterial={gruposMaterial}
           activo={!accesorioActivo}
           className="h-[78dvh] min-h-[460px] w-full sm:h-[72dvh] lg:h-[62vh]"
         />
