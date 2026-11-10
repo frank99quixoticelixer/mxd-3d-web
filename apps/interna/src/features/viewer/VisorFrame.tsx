@@ -155,6 +155,8 @@ export function VisorFrame({
   const contenedor = useRef<HTMLDivElement>(null);
   const [pantallaCompleta, setPantallaCompleta] = useState(false);
   const [girando, setGirando] = useState(false);
+  // La barra de mandos se puede ocultar para ver el dron sin nada al lado.
+  const [controlesOcultos, setControlesOcultos] = useState(false);
 
   /**
    * Pantalla completa.
@@ -555,6 +557,18 @@ export function VisorFrame({
         )}
 
         <div className="absolute right-2 top-2 z-10 flex items-center gap-1.5 lg:right-3 lg:top-3">
+          {controlesOcultos && (
+            <button
+              type="button"
+              onClick={() => setControlesOcultos(false)}
+              title="Mostrar la barra de controles"
+              aria-controls="visor-controles"
+              aria-expanded={false}
+              className="rounded-lg border border-mxd-borde bg-mxd-fondo/90 px-2.5 py-1.5 text-[11px] font-semibold text-mxd-tinta shadow-sm backdrop-blur transition-colors hover:border-mxd-verde hover:text-mxd-verde lg:text-xs"
+            >
+              Controles
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setGirando((v) => !v)}
@@ -596,10 +610,25 @@ export function VisorFrame({
       </div>
 
       {/* Barra de mandos: abajo en movil, a la derecha en escritorio. */}
-      <aside className="max-h-[38dvh] shrink-0 overflow-y-auto border-t border-mxd-borde bg-mxd-fondo/95 p-2 backdrop-blur lg:max-h-none lg:w-56 lg:border-l lg:border-t-0 lg:p-3">
-        <h2 className="mb-1.5 hidden text-[10px] font-bold uppercase tracking-widest text-mxd-gris lg:mb-2 lg:block">
-          Controles
-        </h2>
+      <aside
+        id="visor-controles"
+        hidden={controlesOcultos}
+        className="max-h-[38dvh] shrink-0 overflow-y-auto border-t border-mxd-borde bg-mxd-fondo/95 p-2 backdrop-blur lg:max-h-none lg:w-56 lg:border-l lg:border-t-0 lg:p-3">
+        <div className="mb-1.5 flex items-center justify-between gap-2 lg:mb-2">
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-mxd-gris">
+            Controles
+          </h2>
+          <button
+            type="button"
+            onClick={() => setControlesOcultos(true)}
+            title="Ocultar la barra de controles"
+            aria-controls="visor-controles"
+            aria-expanded={true}
+            className="rounded-md border border-mxd-borde px-2 py-0.5 text-[10px] font-semibold text-mxd-tinta transition-colors hover:border-mxd-verde hover:text-mxd-verde lg:text-[11px]"
+          >
+            Ocultar
+          </button>
+        </div>
         <div className="flex flex-col gap-1.5 lg:gap-2">
           <BarraLateral
             etiqueta="Despliegue"
