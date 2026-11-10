@@ -11,6 +11,11 @@ import {
   ESPECIFICACIONES_MX80,
   MANUAL_MX80,
 } from "@/data/manual-mx80";
+import {
+  seleccionDePieza,
+  seleccionTieneAlgo,
+  type SeleccionPieza,
+} from "@/features/viewer/componentes";
 import { gruposMaterialDelVisor, obtenerPiezas, obtenerTodas } from "@/lib/catalogo";
 
 export const metadata: Metadata = {
@@ -33,6 +38,31 @@ export default function PaginaExplorar() {
       variantes: variantes.map(({ clave, etiqueta, posicion }) => ({ clave, etiqueta, posicion })),
     }),
   );
+
+  // Accesorios cuyo modelo sale del GLB del dron: se resuelven aqui, en el
+  // servidor, para que el navegador no importe el catalogo.
+  const catalogo = obtenerTodas(MODELO_PREDETERMINADO);
+  const descendientes = (sku: string): string[] =>
+    catalogo
+      .filter((p) => p.parteDe === sku)
+      .flatMap((p) => [...p.nombresBlender, ...descendientes(p.sku)]);
+  const seleccionesAccesorio: Record<string, SeleccionPieza> = {};
+  for (const accesorio of ACCESORIOS_MX80) {
+    const pieza = accesorio.sku ? catalogo.find((p) => p.sku === accesorio.sku) : undefined;
+    if (!pieza) continue;
+    const ancestros: string[] = [];
+    for (let padre = pieza.parteDe; padre; ) {
+      ancestros.unshift(padre);
+      padre = catalogo.find((p) => p.sku === padre)?.parteDe ?? null;
+    }
+    const seleccion = seleccionDePieza(
+      pieza.sku,
+      pieza.nombresBlender,
+      ancestros,
+      descendientes(pieza.sku),
+    );
+    if (seleccionTieneAlgo(seleccion)) seleccionesAccesorio[accesorio.id] = seleccion;
+  }
 
   return (
     <>
@@ -57,6 +87,7 @@ export default function PaginaExplorar() {
           <SeccionAccesorios
             fichas={fichas}
             accesorios={ACCESORIOS_MX80}
+            selecciones={seleccionesAccesorio}
             gruposMaterial={gruposMaterialDelVisor()}
           />
         </div>

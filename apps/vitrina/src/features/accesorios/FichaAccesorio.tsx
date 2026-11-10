@@ -9,7 +9,7 @@ export function FichaAccesorio({ accesorio }: { accesorio: Accesorio }) {
         {accesorio.descripcion}
       </p>
 
-      {accesorio.caracteristicas.length > 0 ? (
+      {accesorio.caracteristicas.length > 0 && (
         <dl className="mt-4 divide-y divide-mxd-borde border-t border-mxd-borde">
           {accesorio.caracteristicas.map((c) => (
             <div
@@ -23,10 +23,6 @@ export function FichaAccesorio({ accesorio }: { accesorio: Accesorio }) {
             </div>
           ))}
         </dl>
-      ) : (
-        <p className="mt-4 rounded-lg border border-dashed border-mxd-borde px-3 py-2.5 text-xs text-mxd-gris">
-          Especificaciones pendientes de publicar.
-        </p>
       )}
     </div>
   );
