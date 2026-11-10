@@ -68,16 +68,33 @@ const nextConfig = {
           { key: "Content-Security-Policy-Report-Only", value: politicaContenido },
         ],
       },
-      {
-        source: "/models/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=0, must-revalidate",
-          },
-        ],
-      },
     ];
+  },
+
+  /**
+   * Los GLB y los renders ya no son estaticos de public/: los entregan las
+   * rutas /api/modelos y /api/renders desde protegido/ (ver lib/protegido.ts).
+   * Se reescriben para que las URLs que ya usa todo el codigo sigan siendo
+   * /models/... y /renders/.... proxy.ts corre antes de las reescrituras y ve la
+   * URL original, asi que las protege igual.
+   *
+   * Aqui estaba la cabecera "public, max-age=0" de /models/*. Se quito: "public"
+   * permite que un CDN o proxy guarde el GLB y lo sirva sin pasar por la
+   * contrasena. Las rutas mandan "private" por su cuenta.
+   */
+  async rewrites() {
+    return [
+      { source: "/models/:path*", destination: "/api/modelos/:path*" },
+      { source: "/renders/:archivo", destination: "/api/renders/:archivo" },
+    ];
+  },
+
+  // Las rutas leen protegido/ del disco en cada peticion. El trazado de Next no
+  // lo ve (no hay un import) y en Hostinger la carpeta no llegaria al build.
+  // Las claves son globs: "[...ruta]" se leeria como clase de caracteres, por eso "**".
+  outputFileTracingIncludes: {
+    "/api/modelos/**": ["./protegido/models/**"],
+    "/api/renders/**": ["./protegido/renders/*.jpg"],
   },
 };
 

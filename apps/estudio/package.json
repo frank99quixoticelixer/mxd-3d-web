@@ -1,0 +1,36 @@
+{
+  "name": "mxd-estudio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Estudio de renders y video publicitario del MX80 (herramienta interna, corre en local)",
+  "scripts": {
+    "predev": "node scripts/sincronizar-modelo.mjs",
+    "dev": "next dev -p 3003",
+    "prebuild": "node scripts/sincronizar-modelo.mjs",
+    "build": "next build --webpack",
+    "start": "next start -p 3003",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@react-three/drei": "^10.0.6",
+    "@react-three/fiber": "^9.1.0",
+    "fflate": "^0.8.2",
+    "next": "^16.3.5",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "three": "^0.186.0",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.4",
+    "@types/node": "^22.14.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/three": "^0.186.0",
+    "eslint": "^9.25.0",
+    "eslint-config-next": "^16.3.5",
+    "tailwindcss": "^4.1.4",
+    "typescript": "^5.8.3"
+  }
+}

@@ -1,5 +1,5 @@
 /**
- * Revisa que cada GLB de public/ este entero: que el tamanio que declara su
+ * Revisa que cada GLB de protegido/ este entero: que el tamanio que declara su
  * encabezado coincida con el del archivo y que ningun buffer ni accessor se
  * salga de sus datos.
  *
@@ -15,7 +15,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
-const RAIZ = path.join(process.cwd(), "public");
+const RAIZ = path.join(process.cwd(), "protegido");
 const COMPONENTES = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4, MAT2: 4, MAT3: 9, MAT4: 16 };
 const BYTES = { 5120: 1, 5121: 1, 5122: 2, 5123: 2, 5125: 4, 5126: 4 };
 

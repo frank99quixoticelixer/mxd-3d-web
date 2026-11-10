@@ -13,8 +13,8 @@ archivo de Blender del dron, sin abrir Blender.
    npm run renders:generar
    ```
 
-3. Los renders quedan en `public/renders/<SKU>.jpg`. Revisalos y commitealos
-   como cualquier imagen (`git add apps/vitrina/public/renders/MX80-007.jpg`).
+3. Los renders quedan en `protegido/renders/<SKU>.jpg`. Revisalos y commitealos
+   como cualquier imagen (`git add apps/vitrina/protegido/renders/MX80-007.jpg`).
 
 Opciones:
 
@@ -42,7 +42,7 @@ Tambien acepta un `.glb` del dron en lugar del `.blend`.
   los objetos en Blender.
 
 La ficha usa el render en cuanto existe el archivo: si una pieza no declara
-`imagen` en `mx80.ts`, el catalogo toma `public/renders/<SKU>.jpg`.
+`imagen` en `mx80.ts`, el catalogo toma `protegido/renders/<SKU>.jpg`.
 
 ## Requisitos
 

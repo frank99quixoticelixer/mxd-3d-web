@@ -63,11 +63,13 @@ const PIEZAS: readonly { re: RegExp; grupo: GrupoMaterial }[] = [
   // Electronica: bateria, PDB, sensores, luces, motores de cabezal y bomba
   { re: /^(BAT_|PDB_)/i, grupo: "electronica" },
   { re: /^(sensor_lidar|camara_|radar_|luz_)/i, grupo: "electronica" },
-  { re: /^((der|izq)_motor|bomba_)/i, grupo: "electronica" },
-  { re: /^(cable_cabezal|conector_(der|izq)|arnes_(com|conector))/i, grupo: "electronica" },
+  { re: /^((der|izq)_motor|bomba_recirculacion|bomba_(izq|der)_cuerpo|pmu)/i, grupo: "electronica" },
+  { re: /^(cable_|conector_(der|izq)|arnes_(com|conector))/i, grupo: "electronica" },
   // Otros: fibra de carbono, hules, mangueras, protecciones de cable
   { re: /^(tubo_fibra|Propela_)/i, grupo: "otros" },
   { re: /^(goma_|arnes_pasamuros|manguera_|arnes_(malla|termo))/i, grupo: "otros" },
+  // Mangueras de las bombas y hules de las grapas (GLB v6).
+  { re: /(_manguera_|^grapas_.*_hule)/i, grupo: "otros" },
   // Metal: tornilleria (antes que cualquier regla de pieza, porque los
   // tornillos del marco se llaman "M4x7_agarrador")
   {
@@ -78,13 +80,15 @@ const PIEZAS: readonly { re: RegExp; grupo: GrupoMaterial }[] = [
   { re: /^(sujetador_motor|sujetador_balanceador|balanceador_helice)/i, grupo: "metal" },
   { re: /^(frame_tubo|patin_|travesano_)/i, grupo: "metal" },
   { re: /^(retenedor_|agarre_)/i, grupo: "metal" },
+  // Grapas de las mangueras del tanque: abrazadera metalica con hule.
+  { re: /^grapas_.*_abrazadera/i, grupo: "metal" },
   // Plastico
   {
     re: /^(cubierta_motor|base_ESC|tapa_trasera_ESC|carcasa_drone|DRONE_CLEAN_TOPOLOGY|ModeloAvantiv|Tanque)/i,
     grupo: "plastico",
   },
   {
-    re: /^(pieza_A_cuerpo_Y|pieza_B_conector|tapa_(der|izq)|seguro_manguera|arnes_abrazadera|(der|izq)_disco)/i,
+    re: /^(pieza_A_cuerpo_Y|pieza_B_conector|tapa_(der|izq)|seguro_manguera|arnes_abrazadera|(der|izq)_disco|bomba_(izq|der)_y_)/i,
     grupo: "plastico",
   },
   { re: /^(agarrador_|cople_|RIEL_)/i, grupo: "plastico" },

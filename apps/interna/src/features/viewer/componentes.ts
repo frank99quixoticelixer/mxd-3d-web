@@ -194,6 +194,29 @@ const PIEZAS_SUELTAS: readonly {
   // Tanque (MX80-012) y su bomba (MX80-021, nueva en el GLB v5)
   { re: /^tanque/i, sku: "MX80-012" },
   { re: /^bomba_recirculacion/i, sku: "MX80-021", zona: "tanque", nodo: "bomba_recirculacion" },
+  // Tanque del GLB v6: motobombas (MX80-025), PMU (MX80-026) y su cableado
+  // (MX80-027). Las mangueras de ramal (_1, _2) van antes que las principales
+  // para que "entrada_principal" no caiga en la regla de ramal.
+  { re: /^bomba_(izq|der)_cuerpo/i, sku: "MX80-025-01", zona: "tanque", nodo: "bomba_izq_cuerpo" },
+  { re: /^bomba_(izq|der)_tornillos/i, sku: "MX80-025-02", zona: "tanque", nodo: "bomba_izq_tornillos" },
+  { re: /^bomba_(izq|der)_manguera_entrada_principal/i, sku: "MX80-025-03", zona: "tanque", nodo: "bomba_izq_manguera_entrada_principal" },
+  { re: /^bomba_(izq|der)_manguera_entrada_\d/i, sku: "MX80-025-04", zona: "tanque", nodo: "bomba_izq_manguera_entrada_1" },
+  { re: /^bomba_(izq|der)_manguera_salida_principal/i, sku: "MX80-025-05", zona: "tanque", nodo: "bomba_izq_manguera_salida_principal" },
+  { re: /^bomba_(izq|der)_manguera_salida_\d/i, sku: "MX80-025-06", zona: "tanque", nodo: "bomba_izq_manguera_salida_1" },
+  { re: /^bomba_(izq|der)_y_entrada/i, sku: "MX80-025-07", zona: "tanque", nodo: "bomba_izq_y_entrada" },
+  { re: /^bomba_(izq|der)_y_salida/i, sku: "MX80-025-08", zona: "tanque", nodo: "bomba_izq_y_salida" },
+  { re: /^grapas_.*_abrazadera/i, sku: "MX80-025-09", zona: "tanque", nodo: "grapas_abrazadera" },
+  { re: /^grapas_.*_hule/i, sku: "MX80-025-10", zona: "tanque", nodo: "grapas_hule" },
+  { re: /^grapas_.*_tornillo/i, sku: "MX80-025-11", zona: "tanque", nodo: "grapas_tornillo" },
+  { re: /^pmu__cuerpo/i, sku: "MX80-026-01", zona: "tanque", nodo: "pmu__cuerpo" },
+  { re: /^pmu__disipador/i, sku: "MX80-026-02", zona: "tanque", nodo: "pmu__disipador" },
+  { re: /^pmu__puerto/i, sku: "MX80-026-03", zona: "tanque", nodo: "pmu__puerto" },
+  { re: /^pmu__tornillos/i, sku: "MX80-026-04", zona: "tanque", nodo: "pmu__tornillos" },
+  { re: /^cable_alimentacion/i, sku: "MX80-027-01", zona: "tanque", nodo: "cable_alimentacion" },
+  { re: /^cable_bomba_der/i, sku: "MX80-027-02", zona: "tanque", nodo: "cable_bomba_der" },
+  { re: /^cable_bomba_izq/i, sku: "MX80-027-03", zona: "tanque", nodo: "cable_bomba_izq" },
+  { re: /^cable_recirc/i, sku: "MX80-027-04", zona: "tanque", nodo: "cable_recirc" },
+  { re: /^cable_senal_pdb/i, sku: "MX80-027-05", zona: "tanque", nodo: "cable_senal_pdb" },
   // Bateria (MX80-017): sus 28 mallas se agrupan en las 11 subpiezas.
   { re: /^BAT_Carcasa/i, sku: "MX80-017-01", zona: "energia", nodo: "BAT_Carcasa" },
   { re: /^BAT_(Asa|Barra_asa|Clip_asa)/i, sku: "MX80-017-02", zona: "energia", nodo: "BAT_Asa" },

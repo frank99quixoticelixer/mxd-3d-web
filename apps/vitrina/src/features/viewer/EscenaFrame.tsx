@@ -518,6 +518,9 @@ function ChasisPlegable({
           : nodo.children;
       for (const n of piezas) {
         if (!n.name) continue;
+        // Un grupo vacio (Blender exporta a veces el padre sin sus hijos, como
+        // "pmu" o "tanque_bombas_pmu" en el GLB v6) no es nada que tocar.
+        if (!(n as THREE.Mesh).isMesh && n.children.length === 0) continue;
         const clave = claveDeNodo(n.name);
         const existente = porBase.get(clave);
         if (existente) existente.nodos.push(n);

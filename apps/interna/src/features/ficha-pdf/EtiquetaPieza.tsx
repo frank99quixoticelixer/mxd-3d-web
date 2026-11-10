@@ -26,6 +26,12 @@ import type { ImagenPdf } from "./recursos";
  * Si no esta disponible, la etiqueta se genera igual, sin logo — igual que
  * el encabezado cae al texto "MXD" cuando el PNG falta.
  *
+ * PROVEEDOR sale de especificaciones.proveedor. Un "Pendiente" ahi significa
+ * que todavia no se captura quien la surte, NO que la pieza se fabrique en
+ * casa: hoy el catalogo no distingue las dos cosas. Mientras siga asi, la
+ * etiqueta no afirma que una pieza sea de fabricacion interna. Es el mismo
+ * criterio de EtiquetaWeb.tsx.
+ *
  * Los campos MODULO y UBICACION usan lo unico que el catalogo ya sabe de
  * eso: el subsistema y las secciones donde se monta. No inventan una
  * ubicacion de almacen: eso lo define quien imprime, ahi mismo en el editor
@@ -172,6 +178,14 @@ export function EtiquetaPieza({
             <Text style={estilos.valorCampo}>{ubicacion(pieza)}</Text>
             <View style={estilos.linea} />
           </View>
+        </View>
+
+        <View>
+          <Text style={estilos.etiquetaCampo}>PROVEEDOR</Text>
+          <Text style={estilos.valorCampo}>
+            {pieza.especificaciones.proveedor ?? "Pendiente"}
+          </Text>
+          <View style={estilos.linea} />
         </View>
 
         <View>

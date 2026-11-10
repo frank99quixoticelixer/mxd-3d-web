@@ -18,11 +18,14 @@ const EscenaAccesorio = dynamic(
 /** Visor de un accesorio suelto (bateria, generador...): aparece solo, girando. */
 export function VisorAccesorio({
   url,
+  nodos,
   nombre,
   className = "",
 }: {
   /** URL publica del GLB, o null si el accesorio todavia no tiene modelo 3D. */
   url: string | null;
+  /** Prefijos de los nodos del GLB que son el accesorio (ver data/accesorios.ts). */
+  nodos?: string[];
   nombre: string;
   className?: string;
 }) {
@@ -35,7 +38,7 @@ export function VisorAccesorio({
       aria-label={`Modelo 3D de ${nombre}`}
     >
       <div className="absolute inset-0 mxd-reticula opacity-60" />
-      <EscenaAccesorio url={url} girando={girando} />
+      <EscenaAccesorio url={url} nodos={nodos} girando={girando} />
       <button
         type="button"
         onClick={() => setGirando((v) => !v)}

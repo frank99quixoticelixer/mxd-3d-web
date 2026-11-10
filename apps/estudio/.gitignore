@@ -1,0 +1,12 @@
+# Dependencias y salida
+node_modules/
+.next/
+next-env.d.ts
+*.tsbuildinfo
+
+# El modelo se espeja desde apps/vitrina/public (scripts/sincronizar-modelo.mjs):
+# no se duplica en git.
+public/models/
+
+# Variables locales
+.env*.local

@@ -30,14 +30,14 @@ import {
  * sin que nadie tenga que acordarse. El porque esta en lib/publico.ts.
  */
 /**
- * El render de una pieza que no declara `imagen`: public/renders/<SKU>.jpg, si
+ * El render de una pieza que no declara `imagen`: protegido/renders/<SKU>.jpg, si
  * existe. Lo generan `npm run renders:generar` (ver blender/README.md), asi
  * que una pieza nueva tiene imagen en cuanto se renderiza, sin tocar mx80.ts.
  */
 function conRender(pieza: Pieza): Pieza {
   if (pieza.imagen) return pieza;
   const ruta = `/renders/${pieza.sku}.jpg`;
-  return existsSync(path.join(process.cwd(), "public", ruta))
+  return existsSync(path.join(process.cwd(), "protegido", ruta))
     ? { ...pieza, imagen: ruta }
     : pieza;
 }

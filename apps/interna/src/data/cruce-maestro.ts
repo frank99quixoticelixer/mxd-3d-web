@@ -163,6 +163,13 @@ export const CRUCE_MAESTRO: Record<string, CruceMaestro> = {
   "MX80-020-04": { numero: N("EST-PZA-016"), estado: "propuesto", nota: "Soporte del radar rotativo." },
   "MX80-020-06": { numero: N("EST-PZA-017"), estado: "propuesto", nota: "Soporte del módulo de iluminación." },
   "MX80-022": { numero: N("AVI-SUB-002"), estado: "confirmado" },
+  // -- Tanque del GLB v6: motobombas, PMU ------------------------------------
+  "MX80-025-01": {
+    porVariante: { izq: N("BOM-SUB-001"), der: N("BOM-SUB-002") },
+    estado: "propuesto",
+    nota: "Motobomba izquierda y derecha A80 del maestro; en el modelo son espejo. Confirmar el modelo de bomba. El maestro tambien lista el cabezal (BOM-ENS-001) y su tuberia (BOM-ENS-002).",
+  },
+  "MX80-026": { numero: N("ELE-SUB-001"), estado: "confirmado", nota: "Módulo PMU; se maneja como una sola parte." },
   "MX80-023": { numero: N("AVI-ENS-001"), estado: "propuesto", nota: "Ensamble FPV frontal." },
   "MX80-024": { numero: N("AVI-ENS-002"), estado: "propuesto", nota: "Ensamble de cámara FPV de mapeo (inferior)." },
 };

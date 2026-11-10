@@ -57,10 +57,13 @@ function PlaceholderGenerico({
 /** Carga el GLB del accesorio, lo centra y lo gira sobre su eje vertical. */
 function ModeloAccesorio({
   url,
+  nodos,
   girando,
   alMedir,
 }: {
   url: string;
+  /** Solo los nodos con estos prefijos (y lo que cuelga de ellos). */
+  nodos?: string[];
   girando: boolean;
   alMedir: (medidas: { radio: number; semialto: number }) => void;
 }) {
@@ -70,6 +73,23 @@ function ModeloAccesorio({
 
   const { raiz, radio, semialto } = useMemo(() => {
     const copia = gltf.scene.clone(true);
+    // Accesorio dentro de otro GLB (la bateria en el modelo del dron): se
+    // quitan de la copia las mallas que no son suyas antes de medir, para que
+    // el encuadre y la sombra sean los de la bateria y no los del dron.
+    if (nodos && nodos.length > 0) {
+      const esDelAccesorio = (n: THREE.Object3D) => {
+        for (let a: THREE.Object3D | null = n; a; a = a.parent) {
+          const nombre = a.name;
+          if (nodos.some((prefijo) => nombre.startsWith(prefijo))) return true;
+        }
+        return false;
+      };
+      const ajenas: THREE.Object3D[] = [];
+      copia.traverse((n) => {
+        if ((n as THREE.Mesh).isMesh && !esDelAccesorio(n)) ajenas.push(n);
+      });
+      for (const n of ajenas) n.removeFromParent();
+    }
     const caja = new THREE.Box3().setFromObject(copia);
     const centro = caja.getCenter(new THREE.Vector3());
     copia.position.sub(centro);
@@ -79,7 +99,7 @@ function ModeloAccesorio({
       radio: tamano.length() / 2 || 1,
       semialto: tamano.y / 2 || 0.5,
     };
-  }, [gltf]);
+  }, [gltf, nodos]);
 
   useEffect(() => {
     useVisor.setState({ radio });
@@ -113,10 +133,13 @@ function ModeloAccesorio({
  */
 export function EscenaAccesorio({
   url,
+  nodos,
   girando = true,
 }: {
   /** URL publica del GLB (ya resuelta con urlModelo), o null para la primitiva generica. */
   url: string | null;
+  /** Prefijos de los nodos del GLB que son el accesorio. */
+  nodos?: string[];
   girando?: boolean;
 }) {
   const [medidas, setMedidas] = useState<{ radio: number; semialto: number } | null>(null);
@@ -141,7 +164,7 @@ export function EscenaAccesorio({
         {url ? (
           <Suspense fallback={null}>
             <MarcaCargado alCambiar={setCargado} />
-            <ModeloAccesorio url={url} girando={girando} alMedir={setMedidas} />
+            <ModeloAccesorio url={url} nodos={nodos} girando={girando} alMedir={setMedidas} />
           </Suspense>
         ) : (
           <PlaceholderGenerico girando={girando} alMedir={setMedidas} />

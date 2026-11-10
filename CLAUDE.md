@@ -170,12 +170,12 @@ Ritmo: checkpoint semanal con demo desplegada en Hostinger.
 
 | Tipo | Ruta en repo | Acceso en produccion |
 |------|-------------|----------------------|
-| GLB del dron completo | `apps/vitrina/public/models/mx80/` | estatico `/models/mx80/...` |
-| Tuerca detallada del balanceador | `apps/vitrina/public/models/mx80/piezas/MX80-003_v2.glb` | estatico; lo unico que el GLB completo no trae |
+| GLB del dron completo | `apps/vitrina/protegido/models/mx80/` | ruta `/models/mx80/...` (ver abajo) |
+| Tuerca detallada del balanceador | `apps/vitrina/protegido/models/mx80/piezas/MX80-003_v2.glb` | ruta; lo unico que el GLB completo no trae |
 | GLB/STL descargas | `apps/interna/descargas/<SKU>/` | ruta `/api/descargas/...`, **solo en interna, con contrasena** |
 | Manual de usuario PDF | `apps/vitrina/public/manuales/mx80/` | estatico `/manuales/mx80/...` (publico) |
 | PDFs fichas tecnicas | generados en el momento por `@react-pdf/renderer` | API `/api/ficha/...`, **solo en interna** |
-| Renders JPG | `apps/vitrina/public/renders/` | estatico `/renders/...` |
+| Renders JPG | `apps/vitrina/protegido/renders/` | ruta `/renders/...` (ver abajo) |
 
 **Un solo GLB para todo lo que se muestra** (ADR 0004). La portada usa el
 GLB completo y la ficha de cada pieza saca de el sus nodos (`seleccionDePieza`
@@ -184,10 +184,11 @@ pieza. La unica excepcion es el interior de la tuerca del balanceador
 (`MX80-003_v2.glb`), que el GLB completo no trae. Una pieza nueva necesita
 sus `nombresBlender` en `data/mx80.ts`, no un archivo.
 
-El modelo vigente es el **GLB v5** (`MX80_completo_v5_web.glb`, 27 MB): trae
+El modelo vigente es el **GLB v6** (`MX80_completo_v6_web.glb`, 27.5 MB): trae
 el aspersor centrifugo en dos brazos, cableado, bateria, PDB, rieles, radar y
-luces, bomba y LiDAR. Sus 88 piezas nuevas viven en `src/data/mx80-v5.ts`,
-**identico en vitrina e interna**; cada app lo adapta en su `data/mx80.ts`
+luces, bomba de recirculacion y LiDAR (piezas en `src/data/mx80-v5.ts`), y el
+tanque con las dos motobombas, la PMU y su cableado (`src/data/mx80-v6.ts`).
+Los dos archivos son **identicos en vitrina e interna**; cada app lo adapta en su `data/mx80.ts`
 (interna agrega `camposNoAplican` y `trazabilidad.carpetaPieza`, que es el
 nombre del nodo en el 3D). Las cotas de esas piezas son la caja envolvente
 del nodo en el GLB y cada una dice su fuente: no son de plano.
@@ -237,6 +238,16 @@ servidor estatico sin pasar por la app, asi que `proxy.ts` no los protege.**
 Se comprobo en produccion: `/downloads/...` respondia 200 sin contrasena
 mientras las paginas respondian 503.
 
+**Los GLB y renders van en `protegido/`, no en `public/`** (ADR 0005). Los
+entregan `/api/modelos` y `/api/renders` (`src/lib/protegido.ts`), que pasan por
+la contrasena, limitan a 30 GLB y 300 renders por minuto por IP, mandan
+`Cache-Control: private` y responden 403 a la navegacion directa del GLB.
+`next.config.mjs` reescribe `/models/*` y `/renders/*` hacia esas rutas, asi que
+las URLs del codigo no cambian. Un GLB o render nuevo que se ponga en `public/`
+queda abierto sin contrasena. Las rutas leen de disco en cada peticion: la
+carpeta tiene que estar en `outputFileTracingIncludes`, o falla solo en
+Hostinger. El repo es publico, asi que esto cierra el sitio, no el repo.
+
 Los datos del manual de usuario que muestra la vitrina estan en
 `apps/vitrina/src/data/manual-mx80.ts`, con la pagina de donde sale cada uno.
 
@@ -245,8 +256,10 @@ Los datos del manual de usuario que muestra la vitrina estan en
 `apps/interna` es un clon del catalogo de vitrina y usa los mismos GLB,
 renders y descargas (103 MB). Esos archivos **no se duplican en git**:
 
-- `apps/interna/public/` y `apps/interna/contenido/` estan gitignored.
-- La fuente de verdad es siempre `apps/vitrina/public/`.
+- `apps/interna/public/`, `apps/interna/protegido/` y `apps/interna/contenido/`
+  estan gitignored. (`contenido/` es propio de interna, guarda el BOM, y el
+  espejo no lo toca: por eso la carpeta de vitrina se llama `protegido/`.)
+- La fuente de verdad es siempre `apps/vitrina/public/` y `apps/vitrina/protegido/`.
 - `apps/interna/scripts/sincronizar-publico.mjs` los espeja. Lo corren
   `predev` y `prebuild`, asi que `npm run dev` y `npm run build` en interna
   ya los traen solos. La copia es incremental (compara tamanio y mtime) y
@@ -254,14 +267,15 @@ renders y descargas (103 MB). Esos archivos **no se duplican en git**:
 - El workflow de deploy corre el script antes de empaquetar, porque el zip
   que sube a Hostinger lleva solo `apps/interna` y alla no hay vitrina.
 
-Un asset nuevo para interna se pone en `apps/vitrina/public/` igual: el
+Un asset nuevo para interna se pone en `apps/vitrina/protegido/` (o `public/`
+si es publico) igual: el
 espejo es unidireccional y lo que quede solo en interna se pierde.
 
 ## Renders de piezas (automaticos)
 
 `apps/vitrina/blender/`: se pone ahi el `.blend` del dron (no va a git) y
 `cd apps/vitrina && npm run renders:generar` renderiza cada pieza del catalogo,
-menos los tornillos, a `public/renders/<SKU>.jpg` (1600 x 800, estilo estudio).
+menos los tornillos, a `protegido/renders/<SKU>.jpg` (1600 x 800, estilo estudio).
 Usa las mismas reglas del visor para saber que objetos son cada pieza, y la
 ficha toma el render solo si la pieza no declara `imagen`. Detalle y opciones
 (`--solo=`, `--sin-copiar`) en `apps/vitrina/blender/README.md`.
@@ -271,10 +285,10 @@ antes, `--sin-copiar` los deja en `blender/salida/`.
 
 ## Como agregar o actualizar un GLB
 
-Los GLB del visor y de piezas van en `apps/vitrina/public/models/` y se
+Los GLB del visor y de piezas van en `apps/vitrina/protegido/models/` y se
 commitean como **binarios reales**, sin Git LFS. Hostinger no soporta LFS.
 
-La carpeta `apps/vitrina/public/models/` tiene su propio `.gitattributes` que
+La carpeta `apps/vitrina/protegido/models/` tiene su propio `.gitattributes` que
 anula el filtro LFS para todos los GLB dentro de ella:
 
 ```
@@ -285,11 +299,11 @@ Flujo para actualizar un modelo:
 
 1. Exporta el GLB del dron completo desde Blender. Ya no se exportan GLB por
    pieza (ADR 0004): la ficha de cada pieza sale de este mismo archivo.
-2. Optimizalo y copialo a `apps/vitrina/public/models/mx80/` con nombre
+2. Optimizalo y copialo a `apps/vitrina/protegido/models/mx80/` con nombre
    versionado (`MX80_completo_v{n}_web.glb`).
 3. Verifica que el filtro no aplica LFS:
    ```
-   git check-attr filter apps/vitrina/public/models/mx80/MX80_completo_v4_web.glb
+   git check-attr filter apps/vitrina/protegido/models/mx80/MX80_completo_v4_web.glb
    # debe decir: filter: unspecified
    ```
 4. Si dice `filter: lfs`, NO hagas `git add`. Algo sobreescribio el
@@ -319,7 +333,7 @@ Flujo para actualizar un modelo:
    comprimir viven en Drive, no en `public/`.
 6. Stagea solo ese archivo:
    ```
-   git add apps/vitrina/public/models/mx80/MX80_completo_v4_web.glb
+   git add apps/vitrina/protegido/models/mx80/MX80_completo_v4_web.glb
    ```
 7. Commit y push.
 
@@ -332,7 +346,7 @@ Siempre stagea por archivo o carpeta explicita:
 
 ```
 git add apps/vitrina/src/data/mx80.ts
-git add apps/vitrina/public/models/mx80/MX80_completo_v4_web.glb
+git add apps/vitrina/protegido/models/mx80/MX80_completo_v4_web.glb
 git add apps/pedidos/src/app/page.tsx
 ```
 

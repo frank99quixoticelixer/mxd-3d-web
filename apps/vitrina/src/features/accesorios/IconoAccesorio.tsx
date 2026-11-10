@@ -12,6 +12,7 @@ export function IconoAccesorio({
 }) {
   if (id === "bateria") return <IconoBateria className={className} />;
   if (id === "generador") return <IconoGenerador className={className} />;
+  if (id === "cargador") return <IconoCargador className={className} />;
   if (id === null) return <IconoDron className={className} />;
   return <IconoGenerico className={className} />;
 }
@@ -84,6 +85,26 @@ function IconoGenerador({ className }: { className: string }) {
  * y el distintivo "Equipo adicional" de SeccionAccesorios.tsx (una caja
  * tambien le queda bien a ese rotulo general).
  */
+/** Cargador: caja con un rayo y el cable que sale hacia la bateria. */
+function IconoCargador({ className }: { className: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <rect x="3" y="6" width="12" height="13" rx="1.6" />
+      <path d="M10 9.5l-2.5 3.5h3l-2.5 3.5" />
+      <path d="M15 12.5h2.5a2 2 0 0 1 2 2V18" />
+      <line x1="18.5" y1="18" x2="20.5" y2="18" />
+    </svg>
+  );
+}
+
 export function IconoGenerico({ className }: { className: string }) {
   return (
     <svg

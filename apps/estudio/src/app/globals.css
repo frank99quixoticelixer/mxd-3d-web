@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@theme {
+  --color-mxd-fondo: #0b1210;
+  --color-mxd-panel: #121a17;
+  --color-mxd-borde: #223029;
+  --color-mxd-gris: #8a9a94;
+  --color-mxd-tinta: #eef3f0;
+  --color-mxd-verde: #0f8a4c;
+  --color-mxd-verde-oscuro: #0a5f36;
+  --color-mxd-verde-acento: #34d399;
+}
+
+html,
+body {
+  height: 100%;
+  background-color: var(--color-mxd-fondo);
+  color: var(--color-mxd-tinta);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-mxd-verde-acento);
+  outline-offset: 2px;
+}

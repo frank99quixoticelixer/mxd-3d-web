@@ -31,9 +31,11 @@ export async function cargarImagen(
     ? "png"
     : "jpg";
   const relativa = ruta.replace(/^\//, "");
+  // Los renders viven en protegido/ (los entrega /api/renders); lo demas en public/.
+  const carpeta = relativa.startsWith("renders/") ? "protegido" : "public";
 
   try {
-    const data = await readFile(path.join(process.cwd(), "public", relativa));
+    const data = await readFile(path.join(process.cwd(), carpeta, relativa));
     return { data, format: formato };
   } catch {
     // Sigue al respaldo por HTTP.

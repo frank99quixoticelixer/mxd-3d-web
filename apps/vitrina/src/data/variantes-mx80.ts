@@ -75,6 +75,12 @@ export const VARIANTES_POR_SKU: Record<string, VersionBase[]> = {
     { clave: "m12", etiqueta: "Brazos M1 y M2", posicion: "Cable de potencia de los brazos M1 y M2" },
     { clave: "m34", etiqueta: "Brazos M3 y M4", posicion: "Cable de potencia de los brazos M3 y M4" },
   ],
+  // Motobombas del tanque (GLB v6): la izquierda es espejo de la derecha
+  // (medido), y el maestro tiene un numero para cada una.
+  "MX80-025-01": [
+    { clave: "izq", etiqueta: "Versión izquierda", posicion: "Lado izquierdo del tanque" },
+    { clave: "der", etiqueta: "Versión derecha", posicion: "Lado derecho del tanque" },
+  ],
   "MX80-015-02": [
     { clave: "m12", etiqueta: "Brazos M1 y M2", posicion: "Cable de potencia de los brazos M1 y M2" },
     { clave: "m34", etiqueta: "Brazos M3 y M4", posicion: "Cable de potencia de los brazos M3 y M4" },
@@ -91,4 +97,5 @@ export const CONJUNTOS_SURTIDOS_COMPLETOS: readonly string[] = [
   "MX80-017", // bateria
   "MX80-018", // PDB
   "MX80-019", // soporte de bateria (riel + mensula, por lado)
+  "MX80-026", // PMU
 ];

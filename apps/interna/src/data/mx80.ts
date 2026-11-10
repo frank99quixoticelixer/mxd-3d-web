@@ -11,6 +11,7 @@ import {
   type PiezaV5,
   type TipoV5,
 } from "./mx80-v5";
+import { NOMBRES_GLB_V6, PIEZAS_GLB_V6 } from "./mx80-v6";
 import { CRUCE_MAESTRO } from "./cruce-maestro";
 import { CONJUNTOS_SURTIDOS_COMPLETOS, VARIANTES_POR_SKU } from "./variantes-mx80";
 
@@ -1455,12 +1456,12 @@ function desdeV5(p: PiezaV5): Pieza {
 const PIEZAS_TODAS: Pieza[] = [
   // Los nombres del v5 se suman: los anteriores se quedan por si se vuelve a
   // cargar un GLB viejo, y no estorban (el visor busca por coincidencia).
-  ...PIEZAS_ANTERIORES.map((p) =>
-    NOMBRES_GLB_V5[p.sku]
-      ? { ...p, nombresBlender: [...p.nombresBlender, ...NOMBRES_GLB_V5[p.sku]] }
-      : p,
-  ),
+  ...PIEZAS_ANTERIORES.map((p) => {
+    const nuevos = [...(NOMBRES_GLB_V5[p.sku] ?? []), ...(NOMBRES_GLB_V6[p.sku] ?? [])];
+    return nuevos.length > 0 ? { ...p, nombresBlender: [...p.nombresBlender, ...nuevos] } : p;
+  }),
   ...PIEZAS_GLB_V5.map(desdeV5),
+  ...PIEZAS_GLB_V6.map(desdeV5),
 ];
 
 /**

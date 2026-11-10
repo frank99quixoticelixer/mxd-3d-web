@@ -8,8 +8,14 @@ import { NextResponse, type NextRequest } from "next/server";
  * una sola cuenta compartida, configurada por variables de entorno (la
  * contrasena NO va en el codigo: este repo es publico).
  *
- * CUBRE TODO, no solo las paginas: tambien /api, los GLB de /public y los
- * chunks de /_next/static, que son archivos que se piden por URL.
+ * CUBRE TODO lo que pasa por la app: paginas, /api, las rutas que entregan los
+ * GLB y renders (/models, /renders) y los chunks de /_next/static, que son
+ * archivos que se piden por URL.
+ *
+ * NO VE lo que hay en public/: en Hostinger esos archivos los entrega su
+ * servidor estatico sin pasar por la app. Por eso los GLB y renders viven en
+ * protegido/ y los sirven /api/modelos y /api/renders (ADR 0005). Un GLB en
+ * public/ queda abierto aunque este archivo exista.
  *
  * Es temporal y de una sola cuenta. Para varios usuarios ver
  * docs/plan-usuarios-vitrina.md.
@@ -100,7 +106,7 @@ export function proxy(peticion: NextRequest) {
 
 export const config = {
   /**
-   * Todas las rutas: paginas, /api, los GLB de /public y /_next/static.
+   * Todas las rutas: paginas, /api, /models, /renders y /_next/static.
    *
    * Lo normal en un sitio publico es excluir los estaticos para ahorrar
    * trabajo. Aqui no se excluyen porque son justamente lo que hay que
