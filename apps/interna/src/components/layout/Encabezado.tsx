@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { MARCA } from "@/config/marca";
+import { BotonSalir } from "./BotonSalir";
 import { NavegacionPrincipal } from "./NavegacionPrincipal";
 import { SelectorTema } from "./SelectorTema";
 
@@ -49,6 +50,7 @@ export function Encabezado() {
             <span className="hidden sm:inline">Descargar BOM</span>
           </a>
           <SelectorTema />
+          <BotonSalir />
         </div>
       </div>
     </header>

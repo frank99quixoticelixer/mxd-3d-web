@@ -1,19 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { obtenerAuth } from "@/lib/auth";
+
 /**
- * Puerta de entrada de la app interna.
+ * Puerta de entrada de la app interna (ADR 0006).
  *
- * POR QUE EXISTE: interno.mxddrone.com es un dominio publico. Antes de esto
- * respondia 200 a cualquiera, y la app esta pensada para guardar proveedores,
- * numeros de parte, costos y existencias. Sin esta puerta, el primero que
- * adivine el subdominio se lleva el BOM.
+ * POR QUE EXISTE: interno.mxddrone.com es un dominio publico y la app guarda
+ * proveedores, numeros de parte, costos y existencias. Sin esta puerta, el
+ * primero que adivine el subdominio se lleva el BOM.
  *
- * Es autenticacion HTTP basica: el navegador pide usuario y contrasena y los
- * reenvia solo en las siguientes peticiones al mismo origen. No es un sistema
- * de cuentas —no hay usuarios, ni sesiones, ni roles— y a proposito: para un
- * panel de tres personas detras de HTTPS, una contrasena compartida es la
- * proteccion correcta por el esfuerzo que cuesta. Cuando haya que saber QUIEN
- * hizo cada cambio, esto se cambia por cuentas de verdad.
+ * Cada persona entra con su cuenta (correo y contrasena, Better Auth) y recibe
+ * una cookie de sesion. Antes era autenticacion HTTP basica con una contrasena
+ * compartida; con eso no se sabia quien cambiaba que ni se podia dar de baja a
+ * una sola persona.
  *
  * CUBRE TODO lo que pasa por la app: paginas, rutas de API, las rutas que
  * entregan los GLB y renders (/models, /renders) y los chunks de JavaScript de
@@ -25,89 +24,108 @@ import { NextResponse, type NextRequest } from "next/server";
  * servidor estatico sin pasar por la app. Por eso los GLB y renders viven en
  * protegido/ y los sirven /api/modelos y /api/renders (ADR 0005).
  *
+ * Sin configuracion de base de datos o de sesion responde 503 a todo, a
+ * proposito: un olvido en hPanel no debe publicar el panel.
+ *
  * El archivo se llama proxy.ts y no middleware.ts porque Next 16 renombro la
- * convencion; el export tiene que llamarse igual que el archivo. Con el nombre
- * viejo funciona pero avisa en cada build que esta deprecado.
+ * convencion; el export tiene que llamarse igual que el archivo.
  */
-
-/** Lo que el navegador manda en Authorization para el metodo Basic. */
-const PREFIJO = "Basic ";
 
 /**
- * Compara sin que el tiempo de respuesta delate cuantos caracteres acerto.
- *
- * Un `===` sobre cadenas corta en la primera diferencia, asi que responde un
- * poco mas rapido cuando falla al principio que cuando falla al final. Sobre
- * muchos intentos eso permite adivinar la contrasena caracter por caracter.
- * Aqui se recorre siempre el largo completo y se acumulan las diferencias con
- * OR, de modo que el trabajo no depende de donde este el error.
+ * Archivos de marca que ve quien aun no entra: el logo del encabezado y el
+ * icono. En produccion los entrega el servidor estatico de Hostinger sin pasar
+ * por aqui; en desarrollo si pasan, y sin esto /login sale sin logo. Se listan
+ * uno por uno: public/brand/ tambien guarda herramientas internas.
  */
-function igualSeguro(a: string, b: string): boolean {
-  const largo = Math.max(a.length, b.length);
-  let diferencia = a.length ^ b.length;
-  for (let i = 0; i < largo; i += 1) {
-    diferencia |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
-  }
-  return diferencia === 0;
+const ARCHIVOS_DE_MARCA = new Set(["/brand/logo-mxd.svg", "/icon.svg"]);
+
+/**
+ * Lo unico que se sirve sin sesion: la pagina de acceso, su CSS y la marca. La
+ * pagina es un formulario HTML que funciona sin JavaScript, asi que ningun
+ * chunk .js se abre. El CSS no lleva datos del catalogo.
+ *
+ * El CSS vive en /_next/static/css/ en el build de produccion (webpack) y en
+ * /_next/static/chunks/ en desarrollo (Turbopack), por eso se acepta cualquier
+ * .css de /_next/static/ y no una sola carpeta.
+ */
+function esRutaAbierta(ruta: string, metodo: string): boolean {
+  const lectura = metodo === "GET" || metodo === "HEAD";
+  if (ruta === "/login") return lectura || metodo === "POST";
+  if (ruta.startsWith("/_next/static/") && ruta.endsWith(".css")) return lectura;
+  if (ARCHIVOS_DE_MARCA.has(ruta)) return lectura;
+  return false;
 }
 
-/** 401 con el encabezado que hace que el navegador muestre el formulario. */
-function pedirCredenciales(): NextResponse {
-  return new NextResponse("Se requiere autenticacion.", {
+/** true si el navegador pide una pagina (y por lo tanto se le puede mandar a /login). */
+function pideDocumento(peticion: NextRequest): boolean {
+  return (
+    peticion.method === "GET" &&
+    (peticion.headers.get("accept") ?? "").includes("text/html")
+  );
+}
+
+function sinSesion(peticion: NextRequest): NextResponse {
+  if (pideDocumento(peticion)) {
+    const { pathname, search } = peticion.nextUrl;
+    const siguiente = encodeURIComponent(`${pathname}${search}`);
+    // Next 16 parsea el Location de una respuesta del proxy con new URL(), asi
+    // que una ruta relativa lanza "Invalid URL" y la pagina responde 404.
+    // Tampoco sirve peticion.url: detras del proxy de Hostinger el host que ve
+    // Node puede no ser el publico. Se arma con BETTER_AUTH_URL, que es la URL
+    // publica del sitio y ya es obligatoria (sin ella el proxy responde 503).
+    const base = process.env.BETTER_AUTH_URL ?? peticion.url;
+    return new NextResponse(null, {
+      status: 307,
+      headers: {
+        Location: new URL(`/login?siguiente=${siguiente}`, base).toString(),
+        "Cache-Control": "no-store",
+      },
+    });
+  }
+  return new NextResponse("Se requiere iniciar sesion.", {
     status: 401,
-    headers: {
-      "WWW-Authenticate": 'Basic realm="MXD interna", charset="UTF-8"',
-      // Sin esto, un proxy intermedio podria guardar la respuesta negada.
-      "Cache-Control": "no-store",
-    },
+    headers: { "Cache-Control": "no-store" },
   });
 }
 
-export function proxy(peticion: NextRequest) {
-  const usuario = process.env.INTERNA_USUARIO;
-  const clave = process.env.INTERNA_CLAVE;
+export async function proxy(peticion: NextRequest) {
+  const ruta = peticion.nextUrl.pathname;
+  const abierta = esRutaAbierta(ruta, peticion.method);
 
-  /**
-   * Sin credenciales configuradas se cierra, no se abre.
-   *
-   * Es la decision importante de este archivo. Si faltan las variables en
-   * Hostinger, la alternativa seria dejar pasar a todos, y entonces un olvido
-   * de configuracion publica el panel sin que nadie se entere. Asi el olvido
-   * se nota de inmediato: el sitio no abre.
-   */
-  if (!usuario || !clave) {
+  const auth = obtenerAuth();
+  if (!auth) {
+    // /login tambien se cierra: sin configuracion no hay con que validar.
     return new NextResponse(
-      "La app interna no tiene credenciales configuradas. Define INTERNA_USUARIO e INTERNA_CLAVE.",
+      "La app interna no esta configurada. Faltan las variables de la base de datos o de la sesion (DB_*, BETTER_AUTH_*).",
       { status: 503, headers: { "Cache-Control": "no-store" } },
     );
   }
 
-  const encabezado = peticion.headers.get("authorization");
-  if (!encabezado?.startsWith(PREFIJO)) return pedirCredenciales();
+  if (abierta) return NextResponse.next();
 
-  let descifrado: string;
+  let resultado;
   try {
-    descifrado = atob(encabezado.slice(PREFIJO.length));
+    resultado = await auth.api.getSession({
+      headers: peticion.headers,
+      returnHeaders: true,
+    });
   } catch {
-    // Base64 invalido: no es un intento valido, se trata como falta de credenciales.
-    return pedirCredenciales();
+    // Base de datos caida o sesion ilegible: se cierra, no se abre.
+    return new NextResponse("No se pudo validar la sesion.", {
+      status: 503,
+      headers: { "Cache-Control": "no-store" },
+    });
   }
 
-  // El formato es "usuario:clave", y la clave puede traer ":" dentro, asi que
-  // se corta solo en el primer separador.
-  const corte = descifrado.indexOf(":");
-  if (corte === -1) return pedirCredenciales();
+  const sesion = resultado.response;
+  if (!sesion || sesion.user.activo === false) return sinSesion(peticion);
 
-  const usuarioRecibido = descifrado.slice(0, corte);
-  const claveRecibida = descifrado.slice(corte + 1);
-
-  // Se evaluan los dos siempre, sin cortocircuito, para no revelar por el
-  // tiempo de respuesta si lo que fallo fue el usuario o la contrasena.
-  const usuarioOk = igualSeguro(usuarioRecibido, usuario);
-  const claveOk = igualSeguro(claveRecibida, clave);
-  if (!usuarioOk || !claveOk) return pedirCredenciales();
-
-  return NextResponse.next();
+  const respuesta = NextResponse.next();
+  // Si Better Auth renovo la cookie de sesion, se entrega en esta misma respuesta.
+  for (const cookie of resultado.headers.getSetCookie()) {
+    respuesta.headers.append("Set-Cookie", cookie);
+  }
+  return respuesta;
 }
 
 export const config = {
@@ -116,8 +134,8 @@ export const config = {
    *
    * Lo normal en un sitio publico es excluir los estaticos para ahorrar
    * trabajo. Aqui no se excluyen porque son justamente lo que hay que
-   * proteger. El costo es despreciable: el navegador reenvia las credenciales
-   * solo, sin volver a preguntar.
+   * proteger. La sesion firmada en la cookie se valida sin consultar la base
+   * durante 60 segundos (ver lib/auth.ts), asi que el costo es bajo.
    */
   matcher: ["/:path*"],
 };

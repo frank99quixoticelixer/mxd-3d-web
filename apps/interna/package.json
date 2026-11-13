@@ -15,13 +15,17 @@
     "bom:migrar": "tsx scripts/migrar-a-bom.ts",
     "bom:agregar": "tsx scripts/migrar-a-bom.ts --agregar-faltantes",
     "maestro:importar": "tsx scripts/importar-maestro.ts",
+    "db:migrar": "tsx --env-file=.env.local scripts/db-migrar.ts",
+    "usuarios": "tsx --env-file=.env.local scripts/usuarios.ts",
     "verificar": "npm run typecheck && npm run lint && npm run build"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.9.0",
     "@react-three/drei": "^10.0.6",
     "@react-three/fiber": "^9.1.0",
+    "better-auth": "^1.7.19",
     "exceljs": "^4.4.0",
+    "mysql2": "^3.24.6",
     "next": "^16.4.3",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

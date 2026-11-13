@@ -375,6 +375,18 @@ zip de interna y las sirve `/api/descargas`; no hay que subir nada por FTP.
 
 ## Estado y pendientes
 
+### Cuentas de usuario en interna (en curso)
+
+Trabajo en la rama `interna-cuentas`: login con cuentas individuales (Better Auth
++ MySQL de Hostinger) y el BOM pasando a la base de datos. **Antes de tocar
+`apps/interna/src/proxy.ts`, `lib/auth.ts`, `lib/db.ts` o `lib/bom.ts`, lee
+[docs/plan-usuarios-interna.md](docs/plan-usuarios-interna.md)**: trae el
+checklist, la ubicacion de la base, las trampas ya encontradas y el
+"Siguiente paso". Al terminar una sesion de este trabajo, actualiza ese
+documento (checklist, registro de avance y siguiente paso). La descripcion de
+`proxy.ts` mas abajo (autenticacion HTTP basica) es la de `main`; en esa rama ya
+usa sesiones.
+
 ### Donde esta cada cosa
 
 > **El recorte de la vitrina y la contrasena de interna estan en la rama
