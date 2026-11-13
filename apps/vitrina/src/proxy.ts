@@ -18,7 +18,7 @@ import { NextResponse, type NextRequest } from "next/server";
  * public/ queda abierto aunque este archivo exista.
  *
  * Es temporal y de una sola cuenta. Para varios usuarios ver
- * docs/plan-usuarios-vitrina.md.
+ * docs/plan-usuarios-interna.md.
  *
  * El archivo se llama proxy.ts y no middleware.ts porque Next 16 renombro la
  * convencion; el export tiene que llamarse igual que el archivo.
