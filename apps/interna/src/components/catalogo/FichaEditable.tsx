@@ -145,22 +145,31 @@ function FilaInput({ campo, valor }: { campo: CampoFicha; valor: string | number
 export function FichaEditable({
   pieza,
   slug,
+  version,
   filasFijas = [],
 }: {
   pieza: Pieza;
   slug: string;
+  /** Version del BOM que vio quien abrio la ficha; se manda al guardar para no pisar cambios ajenos. */
+  version: number;
   /** Filas de solo lectura (no viven en el BOM: secciones/cantidad vienen de mx80.ts). */
   filasFijas?: { etiqueta: string; valor: string }[];
 }) {
   const [editando, setEditando] = useState(false);
   const [guardando, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   function onGuardar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     const datos = new FormData(evento.currentTarget);
     startTransition(async () => {
-      await guardarEspecificaciones(datos);
+      const resultado = await guardarEspecificaciones(datos);
+      if (!resultado.ok) {
+        setError(resultado.error);
+        return;
+      }
+      setError(null);
       setEditando(false);
       router.refresh();
     });
@@ -256,6 +265,7 @@ export function FichaEditable({
     <form onSubmit={onGuardar}>
       <input type="hidden" name="sku" value={pieza.sku} />
       <input type="hidden" name="slug" value={slug} />
+      <input type="hidden" name="version" value={version} />
 
       <section className="mt-8">
         <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
@@ -319,12 +329,35 @@ export function FichaEditable({
         <button
           type="button"
           disabled={guardando}
-          onClick={() => setEditando(false)}
+          onClick={() => {
+            setError(null);
+            setEditando(false);
+          }}
           className="rounded-lg border border-mxd-borde px-5 py-2 text-sm font-semibold text-mxd-tinta transition-colors hover:border-mxd-verde hover:text-mxd-verde"
         >
           Cancelar
         </button>
       </div>
+
+      {error && (
+        <div role="alert" className="mt-3 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800">
+          <p>{error}</p>
+          {/* El formulario manda todos los campos: guardar sobre una version vieja
+              revertiria lo que la otra persona cambio. Hay que volver a abrir la
+              ficha ya actualizada. */}
+          <button
+            type="button"
+            onClick={() => {
+              setError(null);
+              setEditando(false);
+              router.refresh();
+            }}
+            className="mt-2 rounded-md border border-red-300 px-3 py-1 text-xs font-semibold hover:bg-red-100"
+          >
+            Descartar mis cambios y recargar
+          </button>
+        </div>
+      )}
     </form>
   );
 }

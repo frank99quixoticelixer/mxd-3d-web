@@ -1,35 +1,40 @@
 /**
  * Capa de lectura/escritura del BOM editable (especificaciones + compras +
- * inventario), un Excel en contenido/BOM_MX80.xlsx: una fila por SKU, una
- * columna por campo. Es la fuente de verdad que reemplaza al import de CSV
- * (ver scripts/migrar-a-bom.ts para la migracion inicial).
+ * inventario + costos + trazabilidad): una fila por SKU en la tabla
+ * `bom_piezas` de la base de datos.
  *
- * contenido/ esta gitignored y no existe en Hostinger salvo que se suba por
- * FTP o se genere en el propio servidor: la primera escritura (vía
- * escribirPieza) crea el archivo si no existe.
+ * Antes era un Excel en contenido/BOM_MX80.xlsx. El zip que se sube a Hostinger
+ * lleva la app completa, asi que una edicion escrita a disco podia perderse en
+ * el siguiente despliegue, y dos personas editando a la vez se pisaban. Ahora
+ * la fuente de verdad es la base: lo que alguien guarda lo ven todos, cada
+ * cambio queda en `bom_cambios` con quien lo hizo, y el Excel se genera al
+ * descargarlo (lib/bom-excel.ts).
+ *
+ * Solo servidor. No importar desde un componente de cliente (usa mysql2); lo
+ * que comparte con el cliente vive en lib/campos-ficha.ts.
  *
  * No vive en vitrina ni se sincroniza con ella: es exclusivo de interna.
  */
-import ExcelJS from "exceljs";
-import { mkdir } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import type { PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
+
+import { obtenerPool } from "./db";
 import { EspecificacionesEsquema, type Especificaciones, type Pieza } from "./esquema";
 
-const RUTA_BOM = process.env.BOM_XLSX_PATH ?? join(process.cwd(), "contenido", "BOM_MX80.xlsx");
-const HOJA = "BOM_MX80";
-
 /**
- * Orden de columnas del Excel. Es la unica lista que define "que campos
- * tiene el BOM": el migrador y leerBom/escribirPieza la reusan, asi que
- * agregar una columna es agregar una entrada aqui.
+ * Orden de columnas del BOM (y del Excel que se descarga). Es la unica lista
+ * que define "que campos tiene el BOM": la lectura, la escritura, la
+ * importacion y la descarga la reusan, asi que agregar una columna es agregar
+ * una entrada aqui. En la base los datos van como JSON, asi que una columna
+ * nueva no pide ALTER TABLE.
  *
- * "tipo" controla como se serializa la celda:
+ * "tipo" controla como se lee el formulario y como se escribe la celda del
+ * Excel (en la base los valores van tal cual, como JSON):
  *   texto/numero -> tal cual
  *   lista        -> array de string, unido con "; " en la celda
  *   listaCorta   -> array de string, unido con "," en la celda (nombres de
  *                   campo sin espacios, para camposNoAplican)
  */
-type TipoColumna = "texto" | "numero" | "lista" | "listaCorta" | "booleano";
+export type TipoColumna = "texto" | "numero" | "lista" | "listaCorta" | "booleano";
 const COLUMNAS: { clave: string; encabezado: string; tipo: TipoColumna }[] = [
   { clave: "sku", encabezado: "SKU", tipo: "texto" },
   { clave: "nombre", encabezado: "Nombre (referencia, no editable aqui)", tipo: "texto" },
@@ -98,81 +103,6 @@ const COLUMNAS: { clave: string; encabezado: string; tipo: TipoColumna }[] = [
   { clave: "numeros_variantes", encabezado: "No. parte MXD por versión", tipo: "texto" },
 ];
 
-/**
- * Formato visual del Excel: mismo criterio que
- * mxd-3d/Maestro_Partes_MX80.xlsx (encabezado azul marino con texto blanco
- * centrado y en negritas, columnas anchas segun su contenido, encabezado
- * inmovilizado). Ese archivo vive fuera de este repo y nunca se toca desde
- * aqui -- esto solo copia su formato, no lo lee ni lo escribe.
- */
-const ANCHO_AMPLIO = new Set<string>([
-  "nombre",
-  "descripcion_funcional",
-  "especificaciones_tecnicas",
-  "camposNoAplican",
-  "fuente",
-  "notas",
-  "costo_notas",
-  "trazabilidad_control_calidad",
-  "trazabilidad_carpeta_pieza",
-]);
-
-function anchoColumna(col: { clave: string; encabezado: string; tipo: TipoColumna }): number {
-  if (ANCHO_AMPLIO.has(col.clave)) return 45;
-  if (col.tipo === "numero" || col.tipo === "booleano") return Math.max(col.encabezado.length + 4, 14);
-  return Math.max(col.encabezado.length + 6, 22);
-}
-
-const RELLENO_ENCABEZADO: ExcelJS.Fill = {
-  type: "pattern",
-  pattern: "solid",
-  fgColor: { argb: "FF1F3864" },
-};
-const BORDE_ENCABEZADO: Partial<ExcelJS.Borders> = {
-  top: { style: "thin" },
-  left: { style: "thin" },
-  bottom: { style: "thin" },
-  right: { style: "thin" },
-};
-const BORDE_FILA_DATOS: Partial<ExcelJS.Borders> = {
-  top: { style: "thin", color: { argb: "FFD9D9D9" } },
-  left: { style: "thin", color: { argb: "FFD9D9D9" } },
-  bottom: { style: "thin", color: { argb: "FFD9D9D9" } },
-  right: { style: "thin", color: { argb: "FFD9D9D9" } },
-};
-
-/**
- * Se reaplica cada vez que se abre el libro, no solo al crearlo, para que un
- * archivo ya existente (como el que hoy tiene todo apretado) tambien quede
- * al corriente la proxima vez que se guarde algo.
- */
-function aplicarFormato(hoja: ExcelJS.Worksheet): void {
-  COLUMNAS.forEach((col, i) => {
-    hoja.getColumn(i + 1).width = anchoColumna(col);
-  });
-
-  const encabezado = hoja.getRow(1);
-  encabezado.height = 32;
-  encabezado.eachCell({ includeEmpty: true }, (celda) => {
-    celda.font = { name: "Calibri", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
-    celda.fill = RELLENO_ENCABEZADO;
-    celda.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-    celda.border = BORDE_ENCABEZADO;
-  });
-
-  for (let i = 2; i <= hoja.rowCount; i++) {
-    const fila = hoja.getRow(i);
-    fila.height = 28;
-    fila.eachCell({ includeEmpty: true }, (celda) => {
-      celda.font = { name: "Calibri", size: 10 };
-      celda.alignment = { horizontal: "left", vertical: "middle" };
-      celda.border = BORDE_FILA_DATOS;
-    });
-  }
-
-  hoja.views = [{ state: "frozen", ySplit: 1 }];
-}
-
 /** Una fila del BOM ya tipada: especificaciones + compras/inventario + metadatos. */
 export type FilaBom = Pick<Especificaciones, Exclude<keyof Especificaciones, "fuente">> & {
   sku: string;
@@ -207,62 +137,8 @@ export type FilaBom = Pick<Especificaciones, Exclude<keyof Especificaciones, "fu
 /** Campos editables desde la UI (todo menos sku/nombre, que no se tocan aqui). */
 export type CambiosFilaBom = Partial<Omit<FilaBom, "sku" | "nombre">>;
 
-function celdaALista(valor: unknown, separador: string): string[] {
-  if (typeof valor !== "string" || valor.trim() === "") return [];
-  return valor.split(separador).map((s) => s.trim()).filter(Boolean);
-}
-
-function listaACelda(valor: string[] | undefined, separador: string): string {
-  return (valor ?? []).join(separador);
-}
-
-async function abrirOCrearLibro(): Promise<{ libro: ExcelJS.Workbook; hoja: ExcelJS.Worksheet }> {
-  const libro = new ExcelJS.Workbook();
-  const existe = await libro.xlsx
-    .readFile(RUTA_BOM)
-    .then(() => true)
-    .catch(() => false);
-
-  let hoja = libro.getWorksheet(HOJA);
-  if (!existe || !hoja) {
-    hoja = libro.addWorksheet(HOJA);
-    hoja.addRow(COLUMNAS.map((c) => c.encabezado));
-  }
-  aplicarFormato(hoja);
-  return { libro, hoja };
-}
-
-function filaAObjeto(hoja: ExcelJS.Worksheet, indiceFila: number): Record<string, unknown> {
-  const fila = hoja.getRow(indiceFila);
-  const obj: Record<string, unknown> = {};
-  COLUMNAS.forEach((col, i) => {
-    const celda = fila.getCell(i + 1).value;
-    const valorCrudo = celda && typeof celda === "object" && "result" in celda ? celda.result : celda;
-    if (col.tipo === "lista") obj[col.clave] = celdaALista(valorCrudo, "; ");
-    else if (col.tipo === "listaCorta") obj[col.clave] = celdaALista(valorCrudo, ",");
-    else if (col.tipo === "numero") obj[col.clave] = typeof valorCrudo === "number" ? valorCrudo : null;
-    else if (col.tipo === "booleano") {
-      const texto = typeof valorCrudo === "string" ? valorCrudo.trim().toLowerCase() : "";
-      obj[col.clave] = texto === "si" ? true : texto === "no" ? false : null;
-    } else
-      obj[col.clave] =
-        valorCrudo === undefined || valorCrudo === null || valorCrudo === "" ? null : String(valorCrudo);
-  });
-  return obj;
-}
-
-function objetoAValoresFila(obj: Record<string, unknown>): unknown[] {
-  return COLUMNAS.map((col) => {
-    const v = obj[col.clave];
-    if (col.tipo === "lista") return listaACelda(v as string[], "; ");
-    if (col.tipo === "listaCorta") return listaACelda(v as string[], ",");
-    if (col.tipo === "booleano") return v === true ? "si" : v === false ? "no" : null;
-    return v ?? null;
-  });
-}
-
-/** Valida la forma minima de una fila leida (sku no vacio); el resto son los defaults de Zod. */
-function normalizarFila(obj: Record<string, unknown>): FilaBom {
+/** Valida la forma minima de una fila (de la base o de un Excel) (sku no vacio); el resto son los defaults de Zod. */
+export function normalizarFila(obj: Record<string, unknown>): FilaBom {
   if (!obj.sku || typeof obj.sku !== "string") {
     throw new Error(`Fila del BOM sin SKU valido: ${JSON.stringify(obj)}`);
   }
@@ -301,71 +177,244 @@ function normalizarFila(obj: Record<string, unknown>): FilaBom {
   } as FilaBom;
 }
 
-/** Lee el BOM completo. Si el archivo no existe todavia, devuelve un mapa vacio. */
+/** Quien hace un cambio. `id` es null solo en cargas por script (sin sesion). */
+export interface AutorBom {
+  id: string | null;
+  correo: string | null;
+}
+
+/**
+ * Se lanza cuando alguien guarda una pieza que otra persona ya cambio desde que
+ * se abrio la ficha. La interfaz lo atrapa y avisa en vez de pisar el cambio.
+ */
+export class ConflictoBom extends Error {
+  constructor(public readonly sku: string) {
+    super(`${sku} cambio mientras la editabas. Recarga la ficha y vuelve a aplicar tus cambios.`);
+    this.name = "ConflictoBom";
+  }
+}
+
+function poolBom() {
+  const pool = obtenerPool();
+  if (!pool) {
+    throw new Error("La base de datos no esta configurada (DB_NOMBRE, DB_USUARIO, DB_CLAVE).");
+  }
+  return pool;
+}
+
+/**
+ * `datos` llega como objeto en MySQL y como texto en MariaDB (donde JSON es un
+ * alias de LONGTEXT). Se acepta cualquiera de los dos.
+ */
+function leerDatos(crudo: unknown): Record<string, unknown> {
+  const valor = typeof crudo === "string" ? JSON.parse(crudo) : crudo;
+  if (!valor || typeof valor !== "object") throw new Error("bom_piezas.datos no es un objeto JSON.");
+  return valor as Record<string, unknown>;
+}
+
+function filaDeRegistro(registro: RowDataPacket): FilaBom {
+  return normalizarFila({ ...leerDatos(registro.datos), sku: registro.sku });
+}
+
+/** Lee el BOM completo. Si la tabla esta vacia, devuelve un mapa vacio. */
 export async function leerBom(): Promise<Map<string, FilaBom>> {
-  const { hoja } = await abrirOCrearLibro();
+  const [registros] = await poolBom().query<RowDataPacket[]>("SELECT sku, datos FROM bom_piezas");
   const mapa = new Map<string, FilaBom>();
-  for (let i = 2; i <= hoja.rowCount; i++) {
-    const obj = filaAObjeto(hoja, i);
-    if (!obj.sku) continue;
-    const fila = normalizarFila(obj);
+  for (const registro of registros) {
+    const fila = filaDeRegistro(registro);
     mapa.set(fila.sku, fila);
   }
   return mapa;
 }
 
 export async function leerPieza(sku: string): Promise<FilaBom | null> {
-  const bom = await leerBom();
-  return bom.get(sku) ?? null;
-}
-
-// Mutex en memoria: serializa escrituras dentro de este proceso de Node.
-// Suficiente para un equipo de 3 personas en un solo servidor; no protege
-// contra dos procesos de Node escribiendo el mismo archivo a la vez.
-let colaEscritura: Promise<unknown> = Promise.resolve();
-function conBloqueo<T>(tarea: () => Promise<T>): Promise<T> {
-  const resultado = colaEscritura.then(tarea, tarea);
-  colaEscritura = resultado.catch(() => undefined);
-  return resultado;
+  const [registros] = await poolBom().query<RowDataPacket[]>(
+    "SELECT sku, datos FROM bom_piezas WHERE sku = ? LIMIT 1",
+    [sku],
+  );
+  return registros[0] ? filaDeRegistro(registros[0]) : null;
 }
 
 /**
- * Actualiza una pieza (crea la fila si el SKU no existe todavia) y guarda el
- * archivo. `nombre` se pasa solo para piezas nuevas (filas ya existentes no
- * lo tocan: el nombre vive en mx80.ts, aqui es solo referencia).
+ * La version actual de una pieza (sube en uno con cada cambio), o 0 si todavia
+ * no tiene fila. El formulario de la ficha la manda de vuelta al guardar para
+ * que escribirPieza detecte si alguien cambio la pieza mientras se editaba.
+ */
+export async function leerVersionBom(sku: string): Promise<number> {
+  const [registros] = await poolBom().query<RowDataPacket[]>(
+    "SELECT version FROM bom_piezas WHERE sku = ? LIMIT 1",
+    [sku],
+  );
+  return registros[0] ? Number(registros[0].version) : 0;
+}
+
+/** Como se guarda un valor en bom_cambios: el texto tal cual, lo demas como JSON. */
+function textoDeCambio(valor: unknown): string | null {
+  if (valor === null || valor === undefined) return null;
+  return typeof valor === "string" ? valor : JSON.stringify(valor);
+}
+
+function iguales(a: unknown, b: unknown): boolean {
+  return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+}
+
+export interface OpcionesEscritura {
+  /** Para piezas nuevas: el nombre de referencia (las que ya tienen fila no lo tocan). */
+  nombreSiEsNueva?: string;
+  /**
+   * La version que vio quien edita. Si la pieza ya va en otra, se lanza
+   * ConflictoBom y no se escribe nada. Sin esto, los campos que se mandan se
+   * mezclan sobre lo que haya (sirve para escrituras por lote, como los cruces).
+   */
+  versionEsperada?: number;
+}
+
+/**
+ * Actualiza una pieza (crea la fila si el SKU no existe todavia) y registra en
+ * bom_cambios una fila por cada campo que de verdad cambio, con quien lo hizo.
+ * Todo en una sola transaccion: o se guarda la pieza y su historial, o nada.
+ *
+ * Devuelve cuantos campos cambiaron (0 si lo que se mando ya era lo guardado:
+ * en ese caso no sube la version ni se escribe historial).
  */
 export async function escribirPieza(
   sku: string,
   cambios: CambiosFilaBom,
-  nombreSiEsNueva?: string,
-): Promise<void> {
-  return conBloqueo(async () => {
-    await mkdir(dirname(RUTA_BOM), { recursive: true });
-    const { libro, hoja } = await abrirOCrearLibro();
+  autor: AutorBom,
+  opciones: OpcionesEscritura = {},
+): Promise<number> {
+  const conexion = await poolBom().getConnection();
+  try {
+    await conexion.beginTransaction();
+    const cambiados = await escribirDentro(conexion, sku, cambios, autor, opciones);
+    await conexion.commit();
+    return cambiados;
+  } catch (error) {
+    await conexion.rollback().catch(() => undefined);
+    throw error;
+  } finally {
+    conexion.release();
+  }
+}
 
-    let indiceFila = -1;
-    for (let i = 2; i <= hoja.rowCount; i++) {
-      if (hoja.getRow(i).getCell(1).value === sku) {
-        indiceFila = i;
-        break;
-      }
-    }
+async function escribirDentro(
+  conexion: PoolConnection,
+  sku: string,
+  cambios: CambiosFilaBom,
+  autor: AutorBom,
+  opciones: OpcionesEscritura,
+): Promise<number> {
+  // FOR UPDATE: dos personas guardando la misma pieza a la vez se turnan.
+  const [existentes] = await conexion.query<RowDataPacket[]>(
+    "SELECT datos, version FROM bom_piezas WHERE sku = ? FOR UPDATE",
+    [sku],
+  );
+  const existente = existentes[0];
+  const ahora = new Date();
 
-    if (indiceFila === -1) {
-      const base = normalizarFila({ sku, nombre: nombreSiEsNueva ?? "" });
-      const combinado = { ...base, ...cambios };
-      hoja.addRow(objetoAValoresFila(combinado as unknown as Record<string, unknown>));
-    } else {
-      const actual = normalizarFila(filaAObjeto(hoja, indiceFila));
-      const combinado = { ...actual, ...cambios };
-      const valores = objetoAValoresFila(combinado as unknown as Record<string, unknown>);
-      const fila = hoja.getRow(indiceFila);
-      valores.forEach((v, i) => fila.getCell(i + 1).value = v as ExcelJS.CellValue);
-      fila.commit();
-    }
+  if (!existente && opciones.versionEsperada) {
+    // Se abrio la ficha con una version y la fila ya no esta: algo la borro.
+    throw new ConflictoBom(sku);
+  }
+  if (existente && opciones.versionEsperada !== undefined) {
+    if (Number(existente.version) !== opciones.versionEsperada) throw new ConflictoBom(sku);
+  }
 
-    await libro.xlsx.writeFile(RUTA_BOM);
+  const antes: FilaBom = existente
+    ? normalizarFila({ ...leerDatos(existente.datos), sku })
+    : normalizarFila({ sku, nombre: opciones.nombreSiEsNueva ?? "" });
+  // Se vuelve a validar la fila completa con el esquema: un valor invalido
+  // (un numero negativo donde no cabe, por ejemplo) falla aqui y revierte todo.
+  const despues = normalizarFila({ ...antes, ...cambios });
+
+  const claves = COLUMNAS.map((c) => c.clave).filter(
+    (clave) => clave !== "sku" && clave !== "nombre" && Object.hasOwn(cambios, clave),
+  );
+  const cambiados = claves.filter((clave) => {
+    const k = clave as keyof FilaBom;
+    return !iguales(antes[k], despues[k]);
   });
+
+  // Una fila nueva se guarda siempre (aunque no cambie ningun campo): sembrar
+  // un SKU es en si el cambio.
+  if (existente && cambiados.length === 0) return 0;
+
+  if (existente) {
+    await conexion.query(
+      "UPDATE bom_piezas SET datos = ?, version = version + 1, actualizado_por = ?, actualizado_en = ? WHERE sku = ?",
+      [JSON.stringify(despues), autor.id, ahora, sku],
+    );
+  } else {
+    await conexion.query(
+      "INSERT INTO bom_piezas (sku, datos, version, actualizado_por, actualizado_en) VALUES (?, ?, 1, ?, ?)",
+      [sku, JSON.stringify(despues), autor.id, ahora],
+    );
+  }
+
+  if (cambiados.length > 0) {
+    await conexion.query(
+      "INSERT INTO bom_cambios (sku, campo, anterior, nuevo, usuario_id, usuario_correo, fecha) VALUES ?",
+      [
+        cambiados.map((clave) => [
+          sku,
+          clave,
+          textoDeCambio(antes[clave as keyof FilaBom]),
+          textoDeCambio(despues[clave as keyof FilaBom]),
+          autor.id,
+          autor.correo,
+          ahora,
+        ]),
+      ],
+    );
+  }
+  return cambiados.length;
+}
+
+/**
+ * Carga inicial: inserta filas completas en bom_piezas (version 1, sin
+ * historial: no son cambios de nadie). Rehusa si la tabla ya tiene filas, para
+ * no pisar ediciones, salvo `reemplazar`, que la vacia primero.
+ *
+ * Con `soloFaltantes` agrega unicamente los SKU que todavia no estan y no toca
+ * los que ya existen.
+ */
+export async function cargarFilasIniciales(
+  filas: FilaBom[],
+  opciones: { reemplazar?: boolean; soloFaltantes?: boolean } = {},
+): Promise<{ insertadas: number; yaExistian: number }> {
+  const conexion = await poolBom().getConnection();
+  try {
+    await conexion.beginTransaction();
+    const [conteo] = await conexion.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS n FROM bom_piezas FOR UPDATE",
+    );
+    const n = Number(conteo[0].n);
+    if (n > 0 && !opciones.reemplazar && !opciones.soloFaltantes) {
+      throw new Error(
+        `bom_piezas ya tiene ${n} filas. No las piso: usa --reemplazar para empezar de cero o --agregar-faltantes para sumar solo las nuevas.`,
+      );
+    }
+    if (opciones.reemplazar) await conexion.query("DELETE FROM bom_piezas");
+
+    const [registros] = await conexion.query<RowDataPacket[]>("SELECT sku FROM bom_piezas");
+    const existentes = new Set(registros.map((r) => String(r.sku)));
+    const nuevas = filas.filter((f) => !existentes.has(f.sku));
+
+    const ahora = new Date();
+    for (const fila of nuevas) {
+      await conexion.query<ResultSetHeader>(
+        "INSERT INTO bom_piezas (sku, datos, version, actualizado_por, actualizado_en) VALUES (?, ?, 1, NULL, ?)",
+        [fila.sku, JSON.stringify(fila), ahora],
+      );
+    }
+    await conexion.commit();
+    return { insertadas: nuevas.length, yaExistian: filas.length - nuevas.length };
+  } catch (error) {
+    await conexion.rollback().catch(() => undefined);
+    throw error;
+  } finally {
+    conexion.release();
+  }
 }
 
 /** "cw=MXD-...; ccw=MXD-..." -> { cw: "MXD-...", ccw: "MXD-..." } */
@@ -426,4 +475,4 @@ export function filaDesdePieza(pieza: Pieza): FilaBom {
   };
 }
 
-export { COLUMNAS as COLUMNAS_BOM, RUTA_BOM };
+export { COLUMNAS as COLUMNAS_BOM };

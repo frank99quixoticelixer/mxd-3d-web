@@ -165,11 +165,11 @@ function conBom(pieza: Pieza, fila: FilaBom | null): Pieza {
 }
 
 /**
- * Version "en vivo" de obtenerPiezaPorSlug/Sku: lee el BOM_MX80.xlsx en cada
+ * Version "en vivo" de obtenerPiezaPorSlug/Sku: lee el BOM de la base de datos en cada
  * llamada y la superpone a la pieza estatica. Usar solo donde de verdad hace
  * falta el dato fresco (la ficha web editable y la ficha PDF) -- el resto del
  * sitio (listados, navegacion, visor 3D) sigue con las funciones sincronas de
- * arriba, que no tienen el costo de leer un archivo en cada peticion.
+ * arriba, que no tienen el costo de consultar la base en cada peticion.
  */
 export async function obtenerPiezaConBomPorSlug(slug: string): Promise<Pieza | undefined> {
   const pieza = obtenerPiezaPorSlug(slug);
@@ -185,7 +185,7 @@ export async function obtenerPiezaConBomPorSku(sku: string): Promise<Pieza | und
 
 /**
  * Igual que obtenerPiezaConBomPorSku pero para varias piezas (fichas de
- * seccion o del catalogo completo): una sola lectura del Excel para todas,
+ * seccion o del catalogo completo): una sola lectura de la base para todas,
  * no una por pieza.
  */
 export async function conBomTodas(piezas: Pieza[]): Promise<Pieza[]> {

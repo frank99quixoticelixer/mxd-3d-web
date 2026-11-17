@@ -97,21 +97,27 @@ contra datos reales.** Hecho en seco: `db:migrar` lista las 2 tablas por crear,
 
 ### Produccion
 
-- [ ] Crear una base de datos de produccion, distinta de la `_dev`.
-- [ ] Variables en hPanel: `DB_HOST=127.0.0.1`, `DB_PUERTO`, `DB_NOMBRE`,
-      `DB_USUARIO`, `DB_CLAVE`, `BETTER_AUTH_SECRET` (32 caracteres o mas, distinto
-      al de desarrollo), `BETTER_AUTH_URL=https://interno.mxddrone.com`.
-      **Definirlas antes de que interna redespliegue**: sin ellas el sitio
-      responde 503.
-- [ ] Correr la migracion contra la base de produccion y crear las cuentas reales.
-- [ ] Quitar `INTERNA_USUARIO` e `INTERNA_CLAVE` de hPanel (ya no se usan).
-- [ ] Probar con `next build --webpack` y `next start`: que el CSS de `/login`
-      pase por `/_next/static/css/`, y que `better-auth` y `mysql2` sobrevivan al
-      trazado de Hostinger (ver `outputFileTracingIncludes` en
-      `next.config.mjs`).
-- [ ] Revisar `deploy-interna.yml`.
-- [ ] Comprobar en produccion que sin sesion todo responde 401 o redirige,
-      incluidos GLB y chunks.
+- [ ] Crear una base de datos de produccion, distinta de la `_dev`. **Hoy
+      produccion usa `u352406053_interno_dev`**, la misma que local (decision
+      del 2026-11-13, para una prueba): las cuentas y, cuando llegue, el BOM se
+      comparten. Con la clave de desarrollo. Cambiar antes del uso real.
+- [x] Variables en hPanel puestas el 2026-11-13 por la API de Hostinger (DB_*,
+      `DB_HOST=127.0.0.1`, `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET` nuevo, 32+
+      caracteres). La API reemplaza el juego completo y oculta los valores: para
+      cambiar una hay que mandar todas.
+- [x] Las tablas de cuentas ya existian en la base (creadas desde local).
+- [ ] Crear las cuentas reales del equipo (hoy solo existe la de Francisco).
+- [ ] Quitar `INTERNA_USUARIO` e `INTERNA_CLAVE` de hPanel (ya no se usan; se
+      conservaron para no cortar el sitio durante el deploy). Hacerlo cuando
+      alguien confirme que el login funciona en el navegador.
+- [x] Probado con `next build --webpack` (rama `interna-login`). `next start`
+      local no se pudo por la IP; el CSS de `/login` si sale por
+      `/_next/static/css/` en produccion.
+- [x] Revisado `deploy-interna.yml`: sin cambios necesarios.
+- [x] Comprobado en produccion (2026-11-13) sin sesion: `/` 401 (307 a `/login`
+      si el cliente pide HTML), GLB, descargas, ficha PDF, BOM y `/api/auth/*`
+      401, chunks JS 401, `/login`, su CSS y el logo 200, y la contrasena vieja
+      ya no entra. **Falta probar un inicio de sesion real en produccion.**
 - [ ] Respaldo: los respaldos de hPanel mas una exportacion periodica del BOM a
       Excel guardada fuera del servidor.
 
@@ -212,6 +218,24 @@ Con `npm run dev` ya corriendo, y sin levantar otro servidor:
 
 Una entrada por sesion, la mas reciente arriba. Formato: fecha, que se hizo, que
 quedo pendiente.
+
+### 2026-11-13: el login, en produccion
+
+- El login se separo del BOM y se desplego: rama `interna-login` (commit
+  `0e3e2b4`), PR #5 a `main`, deploy en verde. Produccion lee el BOM del Excel
+  como antes; el BOM en base **no esta desplegado** y sigue solo en la rama
+  `interna-cuentas` (sin commitear).
+- Hay que rebasar `interna-cuentas` sobre `main` (ya trae el login) antes de
+  seguir con el BOM. Los archivos del login son identicos, pero este documento
+  y `db-migrar.ts` difieren. El arbol de trabajo auxiliar `../MXD-WEB-login` se
+  puede quitar con `git worktree remove`.
+- La IP publica de la maquina cambio (de 38.224.27.5 a 201.144.33.141) y la
+  base rechazo la conexion: se agrego la nueva con la API de Hostinger. Si
+  vuelve a fallar con `Access denied ... @'<ip>'`, es esto (ver "Trampas").
+- `.env.local` tenia `BETTER_AUTH_SECRET` con el texto de ejemplo; funciona pero
+  no es un secreto. Reemplazarlo en local.
+- Pendiente: probar un login real en produccion, crear las cuentas del equipo,
+  quitar `INTERNA_*`, y la base de produccion aparte.
 
 ### 2026-11-11 (segunda parte): BOM a la base, codigo escrito
 

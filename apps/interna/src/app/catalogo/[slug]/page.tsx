@@ -16,11 +16,11 @@ import {
   ubicacionDeSku,
 } from "@/features/viewer/componentes";
 import { VisorPieza } from "@/features/viewer/VisorPieza";
+import { leerVersionBom } from "@/lib/bom";
 import {
   obtenerPiezaConBomPorSlug,
   obtenerPiezaPorSlug,
   obtenerTodas,
-  obtenerSlugs,
 } from "@/lib/catalogo";
 import {
   cantidadPorDron,
@@ -32,10 +32,13 @@ import {
 } from "@/lib/esquema";
 import { conVersion } from "@/lib/imagenes";
 
-/** Genera una ruta estatica por pieza: carga instantanea y SEO correcto. */
-export function generateStaticParams() {
-  return obtenerSlugs().map((slug) => ({ slug }));
-}
+/**
+ * Dinamica a proposito: la ficha muestra el BOM, que vive en la base de datos y
+ * lo edita el equipo. Prerenderizarla en el build la congelaria con lo que
+ * hubiera entonces (y el build exigiria llegar a la base). Es una app detras de
+ * contrasena: no necesita SEO ni carga estatica.
+ */
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -122,10 +125,12 @@ export default async function PaginaPieza({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  // Version "en vivo": lee el BOM_MX80.xlsx en cada visita para que una
+  // Version "en vivo": lee el BOM de la base en cada visita para que una
   // edicion reciente se vea de inmediato (ver comentario en lib/catalogo.ts).
   const pieza = await obtenerPiezaConBomPorSlug(slug);
   if (!pieza) notFound();
+  // La version del BOM que ve esta persona; el formulario la manda al guardar.
+  const versionBom = await leerVersionBom(pieza.sku);
 
   // El visor recibe tambien las subpiezas: son los objetos que trae el GLB.
   const catalogo = obtenerTodas(MODELO_PREDETERMINADO);
@@ -263,6 +268,7 @@ export default async function PaginaPieza({
           <FichaEditable
             pieza={pieza}
             slug={slug}
+            version={versionBom}
             filasFijas={[
               { etiqueta: "Se monta en", valor: seccionesTexto(pieza) },
               { etiqueta: "Cantidad por dron", valor: cantidadTexto(pieza) },

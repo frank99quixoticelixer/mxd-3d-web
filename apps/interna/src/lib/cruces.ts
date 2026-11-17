@@ -5,6 +5,7 @@ import {
   escribirPieza,
   filaDesdePieza,
   leerBom,
+  type AutorBom,
   type CambiosFilaBom,
 } from "@/lib/bom";
 import { conBomTodas, obtenerTodas } from "@/lib/catalogo";
@@ -28,7 +29,10 @@ export interface CambioCruce {
  * maestro, la pieza en el catalogo y la version en la pieza. Asi un formulario
  * alterado no puede escribir un numero inventado en el BOM.
  */
-export async function aplicarCruces(cambios: CambioCruce[]): Promise<{ piezas: number }> {
+export async function aplicarCruces(
+  cambios: CambioCruce[],
+  autor: AutorBom,
+): Promise<{ piezas: number }> {
   if (!Array.isArray(cambios) || cambios.length === 0) return { piezas: 0 };
   if (cambios.length > 500) throw new Error("Demasiados cambios en una sola guardada.");
 
@@ -90,7 +94,7 @@ export async function aplicarCruces(cambios: CambioCruce[]): Promise<{ piezas: n
       numeros_variantes: escribirNumerosVariantes(porVersion),
       cruce_estado: tieneNumero ? estado : "sin-numero",
     };
-    await escribirPieza(sku, fila, pieza.nombre);
+    await escribirPieza(sku, fila, autor, { nombreSiEsNueva: pieza.nombre });
   }
 
   return { piezas: porPieza.size };

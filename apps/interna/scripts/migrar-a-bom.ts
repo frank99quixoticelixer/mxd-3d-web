@@ -20,7 +20,8 @@ import ExcelJS from "exceljs";
 import { access, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
 import { PIEZAS_MX80 } from "../src/data/mx80";
-import { COLUMNAS_BOM, RUTA_BOM, filaDesdePieza } from "../src/lib/bom";
+import { COLUMNAS_BOM, filaDesdePieza } from "../src/lib/bom";
+import { RUTA_BOM } from "../src/lib/bom-excel";
 
 /** Valores de la fila de una pieza, en el orden de COLUMNAS_BOM. */
 function valoresDe(pieza: (typeof PIEZAS_MX80)[number]): unknown[] {
