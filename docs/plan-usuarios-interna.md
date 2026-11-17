@@ -4,7 +4,9 @@ Documento vivo. **Quien trabaje en esto (persona o Claude) lo actualiza al
 terminar cada sesion**: marca el checklist, agrega una entrada al registro del
 final y corrige "Siguiente paso". Es lo primero que se lee al retomar.
 
-- Rama: `interna-cuentas` (sin merge a `main`, sin desplegar).
+- Estado: login y BOM en base **desplegados en `main`** (2026-11-17, commit
+  "demostracion"). Se uso para una demostracion; lo que falta para el uso real
+  esta marcado con `[ ]` y resumido en "Siguiente paso".
 - Decision de fondo: [ADR 0006](lineamientos/decisiones/0006-cuentas-individuales-en-interna.md).
 - interna es el banco de pruebas. Si funciona aqui, vitrina y pedidos pueden
   reutilizarlo despues.
@@ -61,11 +63,11 @@ queda registrada con quien la hizo.
 
 ### El BOM pasa a la base de datos
 
-Codigo escrito y que compila (`tsc` y `eslint` limpios). **Todavia NO se aplico
-la migracion ni la importacion en la base, asi que nada de esto esta probado
-contra datos reales.** Hecho en seco: `db:migrar` lista las 2 tablas por crear,
-`bom:importar` lee 66 filas del Excel y `bom:agregar` ve 154 piezas en el catalogo
-(es decir, 88 sin fila: las del GLB v5).
+Codigo escrito, desplegado y con la migracion e importacion aplicadas
+(2026-11-17): `bom_piezas` tiene las 66 filas del Excel. Quedan sin fila las 88
+piezas del GLB v5 (`bom:agregar` ve 154 piezas en el catalogo). La edicion de
+fichas, el conflicto de version y la descarga del Excel **todavia no se han
+probado contra la base**.
 
 - [x] `src/lib/bom-tablas.ts`: DDL de `bom_piezas` y `bom_cambios`.
 - [x] `db:migrar` tambien crea las tablas del BOM.
@@ -86,8 +88,10 @@ contra datos reales.** Hecho en seco: `db:migrar` lista las 2 tablas por crear,
       genera el Excel desde la base.
 - [x] `scripts/importar-bom.ts`: `npm run bom:importar` (Excel a base) y
       `npm run bom:agregar` (suma al BOM las piezas del catalogo sin fila).
-- [ ] **Aplicar**: `npm run db:migrar -- --aplicar`, luego
-      `npm run bom:importar -- --aplicar`, luego decidir si correr `bom:agregar`.
+- [x] Aplicado el 2026-11-17: `db:migrar -- --aplicar` (2 tablas) y
+      `bom:importar -- --aplicar` (66 filas).
+- [ ] Decidir con el equipo si se corre `bom:agregar -- --aplicar` para dar fila
+      a las 88 piezas del GLB v5.
 - [ ] Probar contra la base: lectura, edicion desde la ficha, historial en
       `bom_cambios`, conflicto de version (dos navegadores), descarga del Excel
       y que el numero de filas coincida con el Excel original.
@@ -147,17 +151,47 @@ Por eso la fuente de verdad pasa a MySQL.
 
 ## Siguiente paso
 
-Aplicar y probar el BOM en la base de desarrollo, en este orden:
+Trabajo por hacer para dejarlo listo para uso real (notas; nada de esto esta
+hecho). Hay un respaldo del Excel original en
+`contenido/BOM_MX80.respaldo-antes-de-migrar-2026-11-09.xlsx`.
 
-1. `cd apps/interna && npm run db:migrar -- --aplicar` (crea `bom_piezas` y
-   `bom_cambios`).
-2. `npm run bom:importar -- --aplicar` (carga las 66 filas del Excel). Hay un
-   respaldo del Excel en `contenido/BOM_MX80.respaldo-antes-de-migrar-2026-11-09.xlsx`.
-3. Decidir con el equipo si se corre `npm run bom:agregar -- --aplicar` para dar
-   fila a las 88 piezas del GLB v5.
-4. Probar en el navegador: abrir una ficha, editar, ver el cambio en `bom_cambios`,
-   y provocar un conflicto abriendo la misma ficha en dos sesiones.
-5. Despues, la vista del historial.
+**Codigo** (en `apps/interna`):
+
+1. Ocultar el encabezado y el pie en `/login`. Idea: un componente cliente que
+   devuelva `null` si `usePathname()` es `/login`, envolviendo `<Encabezado />` y
+   `<PieDePagina />` en `src/app/layout.tsx`, y poner el logo dentro del
+   formulario de login.
+2. Vista del historial (`/historial`): leer `bom_cambios` (quien, cuando, campo,
+   antes y despues, con enlace a la ficha) con una funcion nueva `leerCambios` en
+   `lib/bom.ts`, pagina `force-dynamic`, y un enlace en `NavegacionPrincipal.tsx`.
+3. Retirar `scripts/migrar-a-bom.ts` y la entrada `bom:migrar` de `package.json`.
+   Nadie mas los referencia (`bom:agregar` ya apunta a `importar-bom.ts`).
+
+**Pruebas contra la base** (dejar las tablas como estaban al terminar):
+
+4. En el navegador: abrir una ficha, editar un campo y ver el renglon en
+   `bom_cambios`; abrir la misma ficha en dos sesiones y guardar en ambas para
+   provocar el conflicto de version; descargar el Excel y comprobar que tiene
+   las 66 filas del original.
+5. Probar el limite de intentos, el boton de salir y la caducidad de la cache de
+   sesion (ver Autenticacion).
+
+**Produccion** (necesita decision o datos de ustedes):
+
+6. Cuentas reales del equipo: `npm run usuarios -- crear <correo> "<Nombre>"`
+   (pide la contrasena en terminal). Hoy solo existe la de Francisco.
+7. Probar un inicio de sesion real en `interno.mxddrone.com`, y despues quitar
+   `INTERNA_USUARIO` e `INTERNA_CLAVE` de hPanel. La API de Hostinger reemplaza
+   el juego completo de variables y oculta los valores: hay que mandar todas.
+8. Base de produccion aparte de `_dev` (hoy comparten base, y el BOM de
+   demostracion tambien). Implica crearla, cambiar las variables `DB_*` en hPanel
+   y correr `db:migrar`, `bom:importar` y `usuarios` contra ella.
+9. Respaldo: los respaldos de hPanel mas una exportacion periodica del BOM a
+   Excel (`/api/bom/descargar`) guardada fuera del servidor.
+10. Decidir si se corre `bom:agregar` (88 piezas del GLB v5).
+
+**Cierre:** actualizar la seccion "Como se protege interna" de `CLAUDE.md`, que
+aun describe la autenticacion HTTP basica, y `apps/vitrina/AGENTS.md`.
 
 ## Como retomar (lo que hay que saber)
 
@@ -218,6 +252,17 @@ Con `npm run dev` ya corriendo, y sin levantar otro servidor:
 
 Una entrada por sesion, la mas reciente arriba. Formato: fecha, que se hizo, que
 quedo pendiente.
+
+### 2026-11-17: BOM en base, desplegado para la demostracion
+
+- Commit "demostracion" a `main` (`41317e4`): BOM en `bom_piezas` y
+  `bom_cambios`, scripts `bom:importar` y `bom:agregar`. Deploy en verde; sin
+  sesion `/` y `/catalogo` dan 401 y `/login` 200. El login funciona en
+  produccion (confirmado por Francisco).
+- Se aplico en la base `_dev` (compartida con produccion): `db:migrar` (2 tablas)
+  y `bom:importar` (66 filas).
+- Pendiente: todo lo de "Siguiente paso". Se decidio dejarlo como notas por
+  ahora, sin implementarlo.
 
 ### 2026-11-13: el login, en produccion
 
