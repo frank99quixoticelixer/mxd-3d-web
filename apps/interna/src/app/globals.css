@@ -207,3 +207,10 @@ canvas {
 .mxd-lienzo-3d {
   touch-action: none;
 }
+
+/* Edge dibuja su propio ojo de "ver contrasena" dentro del campo y se encima con
+   el boton Ver/Ocultar de components/acceso/CampoClave.tsx: se quita el suyo. */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}

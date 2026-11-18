@@ -43,7 +43,9 @@ queda registrada con quien la hizo.
    solicita en `/registro` (nombre, empresa, correo y su propia contrasena). La
    cuenta nace inactiva (`activo = 0`); un administrador la aprueba en
    `/usuarios`. Sin contrasenas por correo. Los administradores son Francisco y
-   Axel, con una marca `es_admin`. El correo (Hostinger Email, plan gratis 12
+   Axel, con una marca `esAdmin`. Cada cuenta tiene un `estado` (pendiente,
+   activa, rechazada, baja) y el login dice cual es; una solicitud rechazada se
+   conserva y puede reabrirse. El correo (Hostinger Email, plan gratis 12
    meses) queda para despues: avisar la aprobacion y recuperar contrasenas.
    Cuidar: spam del formulario (limite por IP y campo trampa), correo sin
    verificar, aviso de privacidad. La ruta de registro de Better Auth sigue
@@ -70,7 +72,31 @@ queda registrada con quien la hizo.
 - [x] Probado en navegador (2026-11-11): el login funciona y entra al panel.
 - [ ] Probar el limite de intentos, el boton de salir y la caducidad de la cache
       de sesion (cuenta desactivada con sesion abierta entra hasta 60 s).
-- [ ] `/login` muestra el encabezado completo con la navegacion; ocultarlo.
+- [x] `/login` y `/registro` ya no muestran el menu ni el BOM (2026-11-18,
+      `OcultarEnRutaPublica`).
+- [x] `/registro` y `/usuarios` construidos (ADR 0007): solicitud de acceso,
+      aprobar, rechazar (con segunda oportunidad), desactivar, borrar, marca de
+      administrador y salvaguardas. Probado en navegador en local el 2026-11-18
+      solo la primera version; los estados, el boton Ver y el historial estan
+      verificados por script y falta verlos en el navegador. Falta desplegar
+      (antes: `db:migrar` en `_prod` y marcar administradores).
+- [x] Boton "Ver/Ocultar" en los campos de contrasena (script en linea: estas
+      paginas no cargan JavaScript porque el proxy bloquea los chunks), efecto
+      de pulsado en los botones y circulo que gira al enviar: script en linea
+      en `/login` y `/registro` (`BotonEnviar`), `useFormStatus` en `/cuenta`
+      (`BotonEnviarEstado`).
+- [x] `/historial`: quien cambio que en el BOM (`leerCambios` en `lib/bom.ts`).
+- [x] `/cuenta` (2026-11-18): el encabezado muestra quien esta dentro (inicial y
+      nombre) y enlaza a su cuenta, donde se ve su dato y se cambia la
+      contrasena (`cuenta/acciones.ts`). Pide la actual, cuenta contra el mismo
+      limite de intentos del login y cierra las demas sesiones. Verificado por
+      script: contrasena mala no cambia, buena si, la vieja deja de entrar y
+      las otras sesiones quedan fuera de la base. Por la cache de cookie de 60 s,
+      otro dispositivo puede seguir entrando hasta un minuto.
+- [x] Campo "Ensamble" en el catalogo de interna: en la ficha de cada subpieza
+      (de lo general a lo especifico, con el SKU del inmediato) y en sus
+      tarjetas dentro de "Piezas de ...". Sale de `parteDe`, sin migracion.
+      vitrina no se toco.
 - [x] El login distingue tres casos (2026-11-18, `login/acciones.ts`): credenciales
       malas (cuenta para el limite), cuenta inactiva con la contrasena correcta
       (mensaje propio) y falla del servidor o la base (mensaje propio, no cuenta
@@ -111,7 +137,8 @@ probado contra la base**.
 - [ ] Probar contra la base: lectura, edicion desde la ficha, historial en
       `bom_cambios`, conflicto de version (dos navegadores), descarga del Excel
       y que el numero de filas coincida con el Excel original.
-- [ ] Vista del historial de cambios (quien, cuando, campo, antes y despues).
+- [x] Vista del historial de cambios (quien, cuando, campo, antes y despues):
+      `/historial`, con enlace a la ficha de cada pieza.
 - [ ] Retirar o actualizar `scripts/migrar-a-bom.ts` (`bom:migrar`), que genera el
       Excel desde el catalogo y ya no es el camino normal.
 

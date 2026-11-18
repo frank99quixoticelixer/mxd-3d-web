@@ -5,14 +5,14 @@ import { usePathname } from "next/navigation";
 import { cerrarSesion } from "@/app/login/acciones";
 
 /**
- * Cierra la sesion. Se oculta en /login, donde no hay sesion que cerrar.
+ * Cierra la sesion. Se oculta en /login y /registro, donde no hay sesion que cerrar.
  *
  * Es componente de cliente solo para leer la ruta; no recibe ni importa datos
  * del catalogo.
  */
 export function BotonSalir() {
   const ruta = usePathname();
-  if (ruta === "/login") return null;
+  if (ruta === "/login" || ruta === "/registro") return null;
 
   return (
     <form action={cerrarSesion}>

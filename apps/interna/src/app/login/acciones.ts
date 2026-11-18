@@ -17,10 +17,10 @@ import { rutaSegura } from "@/lib/ruta-segura";
  * deja pasar el CSS y nada de los chunks JS, ver proxy.ts).
  *
  * Un correo inexistente y una contrasena incorrecta dan el MISMO mensaje: no se
- * dice si el correo existe. La cuenta inactiva (pendiente de aprobacion o dada
- * de baja) y la falla del servidor tienen mensaje propio, y ninguna de las dos
- * cuenta contra el limite de intentos. La inactiva solo se muestra cuando la
- * contrasena fue correcta.
+ * dice si el correo existe. La cuenta inactiva (solicitud pendiente, rechazada
+ * o dada de baja) y la falla del servidor tienen mensaje propio, y ninguna
+ * cuenta contra el limite de intentos. Los de la cuenta solo se muestran cuando
+ * la contrasena fue correcta.
  */
 export async function iniciarSesion(formData: FormData): Promise<void> {
   const siguiente = rutaSegura(formData.get("siguiente"));
@@ -41,7 +41,13 @@ export async function iniciarSesion(formData: FormData): Promise<void> {
   const ip = ipDelCliente(peticion);
   if (accesoBloqueado(ip, correo)) return volver("limite");
 
-  let resultado: "entro" | "credenciales" | "inactiva" | "servicio" = "entro";
+  let resultado:
+    | "entro"
+    | "credenciales"
+    | "pendiente"
+    | "rechazada"
+    | "baja"
+    | "servicio" = "entro";
   try {
     await auth.api.signInEmail({
       body: { email: correo, password: clave },
@@ -52,7 +58,12 @@ export async function iniciarSesion(formData: FormData): Promise<void> {
       // Solo llega aqui si la contrasena era correcta: el hook de sesion de
       // lib/auth.ts rechaza la cuenta con activo = 0 despues de verificarla.
       // Decirlo no revela si un correo existe a quien no tiene su contrasena.
-      resultado = "inactiva";
+      const motivo = String((e.body as { message?: string } | undefined)?.message ?? e.message);
+      resultado = motivo.endsWith(":rechazada")
+        ? "rechazada"
+        : motivo.endsWith(":baja")
+          ? "baja"
+          : "pendiente";
     } else if (e instanceof APIError) {
       // Correo inexistente, contrasena incorrecta o correo mal formado.
       registrarFallo(ip, correo);

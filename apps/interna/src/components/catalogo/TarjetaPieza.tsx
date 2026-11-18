@@ -47,7 +47,14 @@ function Marcador({ sku }: { sku: string }) {
   );
 }
 
-export function TarjetaPieza({ pieza }: { pieza: Pieza }) {
+export function TarjetaPieza({
+  pieza,
+  ensamble,
+}: {
+  pieza: Pieza;
+  /** Nombre del ensamble del que forma parte, si es una subpieza. */
+  ensamble?: string | null;
+}) {
   return (
     <Link
       href={`/catalogo/${pieza.slug}`}
@@ -82,6 +89,12 @@ export function TarjetaPieza({ pieza }: { pieza: Pieza }) {
       <h3 className="mt-1.5 text-sm font-semibold leading-snug text-mxd-tinta group-hover:text-mxd-verde-oscuro">
         {pieza.nombre}
       </h3>
+
+      {ensamble && (
+        <p className="mt-1 text-[11px] text-mxd-gris">
+          Ensamble: <span className="font-medium text-mxd-tinta">{ensamble}</span>
+        </p>
+      )}
 
       <p className="mt-1.5 line-clamp-2 flex-1 text-xs leading-relaxed text-mxd-gris">
         {pieza.descripcion}
