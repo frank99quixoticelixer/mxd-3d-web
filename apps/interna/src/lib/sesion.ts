@@ -11,11 +11,18 @@ import { obtenerPool } from "@/lib/db";
  * BOM) vuelven a comprobar aqui: si algun dia se cambia el matcher del proxy o
  * se llama a una accion por otro camino, la escritura sigue sin pasar sin
  * cuenta. Es la segunda puerta.
+ *
+ * Lee las cabeceras ANTES de mirar la configuracion, a proposito: el encabezado
+ * (que muestra quien esta dentro) la llama en cada pagina, y leer `headers()`
+ * es lo que hace a la pagina dinamica. Si dependiera de que haya variables de
+ * entorno, un build sin ellas prerenderizaria paginas como /catalogo con el
+ * encabezado vacio y ese HTML se serviria a todos.
  */
 export async function sesionActual() {
+  const cabeceras = await headers();
   const auth = obtenerAuth();
   if (!auth) return null;
-  const sesion = await auth.api.getSession({ headers: await headers() });
+  const sesion = await auth.api.getSession({ headers: cabeceras });
   if (!sesion || sesion.user.activo === false) return null;
   return sesion;
 }
