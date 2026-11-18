@@ -5,8 +5,10 @@ terminar cada sesion**: marca el checklist, agrega una entrada al registro del
 final y corrige "Siguiente paso". Es lo primero que se lee al retomar.
 
 - Estado: login y BOM en base **desplegados en `main`** (2026-11-17, commit
-  "demostracion"). Se uso para una demostracion; lo que falta para el uso real
-  esta marcado con `[ ]` y resumido en "Siguiente paso".
+  "demostracion"). Desde el 2026-11-18 produccion tiene su **propia base**
+  (`u352406053_interno_prod`). Lo que falta para el uso real esta marcado con
+  `[ ]` y resumido en "Siguiente paso". La rama `interna-cuentas` ya no tiene
+  trabajo propio: todo lo suyo esta en `main`.
 - Decision de fondo: [ADR 0006](lineamientos/decisiones/0006-cuentas-individuales-en-interna.md).
 - interna es el banco de pruebas. Si funciona aqui, vitrina y pedidos pueden
   reutilizarlo despues.
@@ -37,6 +39,15 @@ queda registrada con quien la hizo.
    `/api/auth/*` no se monta. Sin registro publico: las cuentas las crea el
    equipo con `npm run usuarios -- crear`.
 6. **Base de datos:** MySQL de Hostinger. El BOM pasa a la base (ver mas abajo).
+7. **Registro con aprobacion manual (2026-11-18):** quien necesite acceso lo
+   solicita en `/registro` (nombre, empresa, correo y su propia contrasena). La
+   cuenta nace inactiva (`activo = 0`); un administrador la aprueba en
+   `/usuarios`. Sin contrasenas por correo. Los administradores son Francisco y
+   Axel, con una marca `es_admin`. El correo (Hostinger Email, plan gratis 12
+   meses) queda para despues: avisar la aprobacion y recuperar contrasenas.
+   Cuidar: spam del formulario (limite por IP y campo trampa), correo sin
+   verificar, aviso de privacidad. La ruta de registro de Better Auth sigue
+   cerrada: la cuenta se crea desde una accion del servidor.
 
 ## Estado (checklist)
 
@@ -60,6 +71,11 @@ queda registrada con quien la hizo.
 - [ ] Probar el limite de intentos, el boton de salir y la caducidad de la cache
       de sesion (cuenta desactivada con sesion abierta entra hasta 60 s).
 - [ ] `/login` muestra el encabezado completo con la navegacion; ocultarlo.
+- [x] El login distingue tres casos (2026-11-18, `login/acciones.ts`): credenciales
+      malas (cuenta para el limite), cuenta inactiva con la contrasena correcta
+      (mensaje propio) y falla del servidor o la base (mensaje propio, no cuenta
+      para el limite). Verificado con una cuenta temporal inactiva; falta verlo
+      en el navegador.
 
 ### El BOM pasa a la base de datos
 
@@ -101,19 +117,22 @@ probado contra la base**.
 
 ### Produccion
 
-- [ ] Crear una base de datos de produccion, distinta de la `_dev`. **Hoy
-      produccion usa `u352406053_interno_dev`**, la misma que local (decision
-      del 2026-11-13, para una prueba): las cuentas y, cuando llegue, el BOM se
-      comparten. Con la clave de desarrollo. Cambiar antes del uso real.
+- [x] Base de datos de produccion propia: `u352406053_interno_prod` (2026-11-18,
+      con las tablas de cuentas y del BOM). Produccion ya no usa la `_dev`. Las
+      credenciales estan en `.env.produccion.local` de la raiz (gitignored por
+      `.env.*.local`). La BOM de demostracion (66 piezas, 2 cambios) se copio de
+      `_dev` a `_prod` tal cual.
 - [x] Variables en hPanel puestas el 2026-11-13 por la API de Hostinger (DB_*,
       `DB_HOST=127.0.0.1`, `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET` nuevo, 32+
       caracteres). La API reemplaza el juego completo y oculta los valores: para
       cambiar una hay que mandar todas.
 - [x] Las tablas de cuentas ya existian en la base (creadas desde local).
-- [ ] Crear las cuentas reales del equipo (hoy solo existe la de Francisco).
-- [ ] Quitar `INTERNA_USUARIO` e `INTERNA_CLAVE` de hPanel (ya no se usan; se
-      conservaron para no cortar el sitio durante el deploy). Hacerlo cuando
-      alguien confirme que el login funciona en el navegador.
+- [ ] Crear las cuentas reales del equipo. En `_prod` existe solo
+      `fhernandez@dronesmxd.com.mx`. Falta Axel: se resuelve con `/registro` y
+      `/usuarios` (decision 7). Las cuentas de `_dev` NO pasaron a `_prod`.
+- [x] `INTERNA_USUARIO` e `INTERNA_CLAVE` quitadas de hPanel el 2026-11-18 (el
+      reemplazo del juego de variables las elimino; ya nada las leia).
+- [x] Login real probado en produccion el 2026-11-18 con la cuenta de `_prod`.
 - [x] Probado con `next build --webpack` (rama `interna-login`). `next start`
       local no se pudo por la IP; el CSS de `/login` si sale por
       `/_next/static/css/` en produccion.
@@ -121,7 +140,7 @@ probado contra la base**.
 - [x] Comprobado en produccion (2026-11-13) sin sesion: `/` 401 (307 a `/login`
       si el cliente pide HTML), GLB, descargas, ficha PDF, BOM y `/api/auth/*`
       401, chunks JS 401, `/login`, su CSS y el logo 200, y la contrasena vieja
-      ya no entra. **Falta probar un inicio de sesion real en produccion.**
+      ya no entra. (El inicio de sesion real se probo el 2026-11-18.)
 - [ ] Respaldo: los respaldos de hPanel mas una exportacion periodica del BOM a
       Excel guardada fuera del servidor.
 
@@ -151,9 +170,16 @@ Por eso la fuente de verdad pasa a MySQL.
 
 ## Siguiente paso
 
-Trabajo por hacer para dejarlo listo para uso real (notas; nada de esto esta
-hecho). Hay un respaldo del Excel original en
-`contenido/BOM_MX80.respaldo-antes-de-migrar-2026-11-09.xlsx`.
+Trabajo por hacer para dejarlo listo para uso real. Hay un respaldo del Excel
+original en `contenido/BOM_MX80.respaldo-antes-de-migrar-2026-11-09.xlsx`.
+
+**Lo primero: registro con aprobacion (decision 7).** `/registro` (formulario
+publico: nombre, empresa, correo, contrasena; crea la cuenta con `activo = 0`),
+`/usuarios` (solo administradores: pendientes, aprobar, rechazar, desactivar),
+la marca `es_admin` en `user`, y que `proxy.ts` deje pasar `/registro` sin
+sesion. Limite por IP y campo trampa contra spam. Si despues se quiere distinguir
+"pendiente" de "dada de baja", hace falta un campo `estado` (hoy `activo` no
+alcanza). El correo viene despues.
 
 **Codigo** (en `apps/interna`):
 
@@ -178,17 +204,15 @@ hecho). Hay un respaldo del Excel original en
 
 **Produccion** (necesita decision o datos de ustedes):
 
-6. Cuentas reales del equipo: `npm run usuarios -- crear <correo> "<Nombre>"`
-   (pide la contrasena en terminal). Hoy solo existe la de Francisco.
-7. Probar un inicio de sesion real en `interno.mxddrone.com`, y despues quitar
-   `INTERNA_USUARIO` e `INTERNA_CLAVE` de hPanel. La API de Hostinger reemplaza
-   el juego completo de variables y oculta los valores: hay que mandar todas.
-8. Base de produccion aparte de `_dev` (hoy comparten base, y el BOM de
-   demostracion tambien). Implica crearla, cambiar las variables `DB_*` en hPanel
-   y correr `db:migrar`, `bom:importar` y `usuarios` contra ella.
-9. Respaldo: los respaldos de hPanel mas una exportacion periodica del BOM a
+6. Cuentas reales del equipo: hoy se crean con el registro (ver arriba). Mientras
+   no exista, `npx tsx --env-file=../../.env.produccion.local scripts/usuarios.ts
+   crear <correo> "<Nombre>"` desde `apps/interna` (pide la contrasena en
+   terminal; hay que autorizar la IP en la base antes, ver "Como retomar").
+7. Respaldo: los respaldos de hPanel mas una exportacion periodica del BOM a
    Excel (`/api/bom/descargar`) guardada fuera del servidor.
-10. Decidir si se corre `bom:agregar` (88 piezas del GLB v5).
+8. Decidir si se corre `bom:agregar` (88 piezas del GLB v5).
+9. Correo (Hostinger Email, plan "Empezar", gratis 12 meses y luego se cobra) para
+   avisar aprobaciones y recuperar contrasenas. No contratado.
 
 **Cierre:** actualizar la seccion "Como se protege interna" de `CLAUDE.md`, que
 aun describe la autenticacion HTTP basica, y `apps/vitrina/AGENTS.md`.
@@ -205,6 +229,20 @@ tu IP cambia, el login local falla con error de conexion y hay que autorizar la
 nueva (`hosting_databases_create-remote-connection`). Las credenciales estan en
 `apps/interna/.env.local` (gitignored); la plantilla es `.env.example`. En
 produccion la app se conecta a `127.0.0.1`, nunca al host `srvNNNN`.
+
+### Acceso desde la maquina local (IP)
+
+La app en produccion usa `127.0.0.1` y no depende de ninguna IP. Solo tu maquina
+(`npm run dev`, scripts de cuentas, migraciones) entra por internet, y para eso
+Hostinger exige la IP publica autorizada. Esa IP cambia cuando te mueves de red.
+Por eso **no se deja ninguna autorizada**: se autoriza al empezar una sesion
+(`hosting_databases_create-remote-connection`) y se quita al terminar
+(`hosting_databases_delete-remote-connection`). Si sale `Access denied ...
+@'<ip>'`, es esto.
+
+Las credenciales de la base de produccion estan en `.env.produccion.local` de la
+raiz (gitignored). Se usan asi, desde `apps/interna`:
+`npx tsx --env-file=../../.env.produccion.local scripts/usuarios.ts listar`.
 
 ### Comandos
 
@@ -252,6 +290,30 @@ Con `npm run dev` ya corriendo, y sin levantar otro servidor:
 
 Una entrada por sesion, la mas reciente arriba. Formato: fecha, que se hizo, que
 quedo pendiente.
+
+### 2026-11-18: base de produccion propia y mensajes de login
+
+- El login de produccion fallaba con "contrasena incorrecta" y luego con el
+  limite de intentos. Los logs de Hostinger mostraron `Invalid password` x5:
+  era la contrasena, no la infraestructura. (Se sospecho de la IP, pero la IP
+  solo afecta a la maquina local.)
+- Se creo `u352406053_interno_prod`, se migraron sus 6 tablas, se creo la cuenta
+  de Francisco con el script y se cambiaron las variables de hPanel (secreto de
+  sesion nuevo: las sesiones abiertas se cerraron). Probado: `/` 307, `/login`
+  200, GLB sin sesion 401 y el login real funciona.
+- **Incidente, ya corregido:** el cambio de variables dejo a produccion leyendo
+  un `bom_piezas` vacio, porque el BOM de la demostracion (66 piezas, 2 cambios)
+  estaba en `_dev`, que era la base de produccion hasta ese momento. Se copio de
+  `_dev` a `_prod` en una transaccion y se comprobo fila por fila (66 identicas).
+  Las cuentas de `_dev` no se copiaron (Francisco con Gmail y una cuenta de
+  prueba `prueba-temporal@example.invalid`, activa, que conviene borrar).
+- Se quitaron todas las IPs autorizadas de las dos bases. Nada queda autorizado.
+- `login/acciones.ts` y `login/page.tsx`: mensajes distintos para cuenta inactiva
+  y para falla del servidor; solo las credenciales malas cuentan para el limite.
+- Ruido conocido, sin consecuencia: cada redireccion de una accion de servidor
+  deja `failed to get redirect response TypeError: fetch failed` en el log.
+- Pendiente: `/registro` y `/usuarios` (decision 7), historial del BOM, pruebas
+  del BOM en el navegador, `CLAUDE.md`, y decidir el correo.
 
 ### 2026-11-17: BOM en base, desplegado para la demostracion
 

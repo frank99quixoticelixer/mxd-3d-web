@@ -12,11 +12,15 @@ export const metadata: Metadata = {
 };
 
 /**
- * Mensajes por codigo de error. A proposito no distinguen entre "el correo no
- * existe", "la cuenta esta inactiva" y "la contrasena es incorrecta".
+ * Mensajes por codigo de error. A proposito "el correo no existe" y "la
+ * contrasena es incorrecta" dan el mismo mensaje. "inactiva" solo sale cuando
+ * la contrasena fue correcta (ver acciones.ts).
  */
 const MENSAJES: Record<string, string> = {
   credenciales: "Correo o contraseña incorrectos.",
+  inactiva:
+    "Tu cuenta todavía no está activa. Si te registraste hace poco, espera a que un administrador apruebe tu solicitud. Si ya tenías acceso, avisa al equipo.",
+  servicio: "No pudimos comprobar tu acceso en este momento. Inténtalo de nuevo en unos minutos.",
   limite: "Demasiados intentos. Espera unos minutos e inténtalo de nuevo.",
   config: "El acceso no está configurado en este servidor. Avisa al equipo.",
 };
