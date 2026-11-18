@@ -4,6 +4,8 @@
  *   npm run usuarios -- crear <correo> "<Nombre completo>"
  *   npm run usuarios -- desactivar <correo>
  *   npm run usuarios -- activar <correo>
+ *   npm run usuarios -- admin <correo>          (marca de administrador, ADR 0007)
+ *   npm run usuarios -- quitar-admin <correo>
  *   npm run usuarios -- listar
  *
  * `crear` pide la contrasena en la terminal sin mostrarla (12 caracteres o
@@ -93,6 +95,7 @@ async function crear() {
       name: nombre,
       emailVerified: true,
       activo: true,
+      estado: "activa",
     },
     // Mismo origen que declara el registro por correo de Better Auth.
     { method: "email-password" },
@@ -111,8 +114,9 @@ async function cambiarEstado(activo: boolean) {
     console.error(`Uso: npm run usuarios -- ${activo ? "activar" : "desactivar"} <correo>`);
     process.exit(1);
   }
-  const [resultado] = await pool!.query("UPDATE `user` SET activo = ? WHERE email = ?", [
+  const [resultado] = await pool!.query("UPDATE `user` SET activo = ?, estado = ? WHERE email = ?", [
     activo ? 1 : 0,
+    activo ? "activa" : "baja",
     correo,
   ]);
   if (!("affectedRows" in resultado) || resultado.affectedRows === 0) {
@@ -128,13 +132,43 @@ async function cambiarEstado(activo: boolean) {
   console.log(`${correo}: ${activo ? "activa" : "desactivada, sesiones cerradas"}`);
 }
 
+/** Da o quita la marca de administrador. Quitarla no deja a nadie sin administrador. */
+async function cambiarAdmin(esAdmin: boolean) {
+  if (!correo) {
+    console.error(`Uso: npm run usuarios -- ${esAdmin ? "admin" : "quitar-admin"} <correo>`);
+    process.exit(1);
+  }
+  if (!esAdmin) {
+    const [f] = await pool!.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS n FROM `user` WHERE activo = 1 AND esAdmin = 1 AND email <> ?",
+      [correo],
+    );
+    if (Number(f[0]?.n ?? 0) === 0) {
+      console.error("Es el ultimo administrador activo: no se le puede quitar la marca.");
+      process.exit(1);
+    }
+  }
+  const [resultado] = await pool!.query("UPDATE `user` SET esAdmin = ? WHERE email = ?", [
+    esAdmin ? 1 : 0,
+    correo,
+  ]);
+  if (!("affectedRows" in resultado) || resultado.affectedRows === 0) {
+    console.error(`No existe una cuenta con ${correo}.`);
+    process.exit(1);
+  }
+  console.log(`${correo}: ${esAdmin ? "ahora es administrador" : "ya no es administrador"}`);
+}
+
 async function listar() {
   const [filas] = await pool!.query<RowDataPacket[]>(
-    "SELECT email, name, activo, createdAt FROM `user` ORDER BY createdAt",
+    "SELECT email, name, empresa, activo, esAdmin, createdAt FROM `user` ORDER BY createdAt",
   );
   if (filas.length === 0) console.log("No hay cuentas todavia.");
   for (const f of filas) {
-    console.log(`${f.activo ? "activa  " : "inactiva"}  ${f.email}  ${f.name}`);
+    const empresa = f.empresa ? `  [${f.empresa}]` : "";
+    console.log(
+      `${f.activo ? "activa  " : "inactiva"}  ${f.esAdmin ? "ADMIN" : "     "}  ${f.email}  ${f.name}${empresa}`,
+    );
   }
 }
 
@@ -149,11 +183,17 @@ async function main() {
     case "activar":
       await cambiarEstado(true);
       break;
+    case "admin":
+      await cambiarAdmin(true);
+      break;
+    case "quitar-admin":
+      await cambiarAdmin(false);
+      break;
     case "listar":
       await listar();
       break;
     default:
-      console.error("Comandos: crear, desactivar, activar, listar");
+      console.error("Comandos: crear, desactivar, activar, admin, quitar-admin, listar");
       process.exit(1);
   }
 }

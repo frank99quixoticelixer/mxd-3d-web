@@ -7,7 +7,11 @@ const ENLACES = [
   { href: "/", texto: "Inicio", textoCorto: "Inicio" },
   { href: "/catalogo", texto: "Catálogo", textoCorto: "Catálogo" },
   { href: "/maestro", texto: "Maestro de partes", textoCorto: "Maestro" },
+  { href: "/historial", texto: "Historial", textoCorto: "Historial" },
 ];
+
+/** Solo lo ven los administradores (ADR 0007). La pagina se protege aparte. */
+const ENLACE_USUARIOS = { href: "/usuarios", texto: "Usuarios", textoCorto: "Usuarios" };
 
 /** true si la ruta actual pertenece a la seccion del enlace (incluye subpaginas como /catalogo/slug). */
 function esActivo(ruta: string, href: string): boolean {
@@ -19,13 +23,14 @@ function esActivo(ruta: string, href: string): boolean {
  * Menu del encabezado. La seccion en la que esta el usuario se resalta
  * en verde brillante con un resplandor, para que sepa donde se encuentra.
  */
-export function NavegacionPrincipal() {
+export function NavegacionPrincipal({ esAdmin = false }: { esAdmin?: boolean }) {
   const ruta = usePathname() ?? "/";
+  const enlaces = esAdmin ? [...ENLACES, ENLACE_USUARIOS] : ENLACES;
 
   return (
     <nav aria-label="Navegación principal">
       <ul className="flex items-center gap-1 sm:gap-2">
-        {ENLACES.map((enlace) => {
+        {enlaces.map((enlace) => {
           const activo = esActivo(ruta, enlace.href);
           return (
             <li key={enlace.href}>

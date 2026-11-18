@@ -1,5 +1,6 @@
 "use server";
 
+import { APIError } from "better-auth/api";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -15,8 +16,11 @@ import { rutaSegura } from "@/lib/ruta-segura";
  * JavaScript de la pagina no haya cargado, que es el caso de /login (el proxy
  * deja pasar el CSS y nada de los chunks JS, ver proxy.ts).
  *
- * Cualquier falla vuelve a /login con el mismo mensaje generico: no se dice si
- * el correo existe, si la cuenta esta inactiva o si la contrasena fallo.
+ * Un correo inexistente y una contrasena incorrecta dan el MISMO mensaje: no se
+ * dice si el correo existe. La cuenta inactiva (solicitud pendiente, rechazada
+ * o dada de baja) y la falla del servidor tienen mensaje propio, y ninguna
+ * cuenta contra el limite de intentos. Los de la cuenta solo se muestran cuando
+ * la contrasena fue correcta.
  */
 export async function iniciarSesion(formData: FormData): Promise<void> {
   const siguiente = rutaSegura(formData.get("siguiente"));
@@ -37,19 +41,43 @@ export async function iniciarSesion(formData: FormData): Promise<void> {
   const ip = ipDelCliente(peticion);
   if (accesoBloqueado(ip, correo)) return volver("limite");
 
-  let entro = false;
+  let resultado:
+    | "entro"
+    | "credenciales"
+    | "pendiente"
+    | "rechazada"
+    | "baja"
+    | "servicio" = "entro";
   try {
     await auth.api.signInEmail({
       body: { email: correo, password: clave },
       headers: peticion.headers,
     });
-    entro = true;
-  } catch {
-    registrarFallo(ip, correo);
+  } catch (e) {
+    if (e instanceof APIError && e.status === "FORBIDDEN") {
+      // Solo llega aqui si la contrasena era correcta: el hook de sesion de
+      // lib/auth.ts rechaza la cuenta con activo = 0 despues de verificarla.
+      // Decirlo no revela si un correo existe a quien no tiene su contrasena.
+      const motivo = String((e.body as { message?: string } | undefined)?.message ?? e.message);
+      resultado = motivo.endsWith(":rechazada")
+        ? "rechazada"
+        : motivo.endsWith(":baja")
+          ? "baja"
+          : "pendiente";
+    } else if (e instanceof APIError) {
+      // Correo inexistente, contrasena incorrecta o correo mal formado.
+      registrarFallo(ip, correo);
+      resultado = "credenciales";
+    } else {
+      // Falla de la base de datos u otra cosa que no es culpa de quien escribe:
+      // no cuenta contra su limite de intentos.
+      console.error("Fallo al iniciar sesion (no es de credenciales):", e);
+      resultado = "servicio";
+    }
   }
 
   // redirect() lanza una excepcion interna de Next: tiene que quedar fuera del try.
-  if (!entro) return volver("credenciales");
+  if (resultado !== "entro") return volver(resultado);
   registrarAcierto(correo);
   redirect(siguiente);
 }

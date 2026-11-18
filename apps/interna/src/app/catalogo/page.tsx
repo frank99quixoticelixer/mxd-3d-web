@@ -131,7 +131,7 @@ export default function PaginaCatalogo() {
                 </summary>
                 <div className="grid gap-4 px-4 pb-4 sm:grid-cols-2 lg:grid-cols-4">
                   {subpiezas.map((sub) => (
-                    <TarjetaPieza key={sub.sku} pieza={sub} />
+                    <TarjetaPieza key={sub.sku} pieza={sub} ensamble={pieza.nombre} />
                   ))}
                 </div>
               </details>

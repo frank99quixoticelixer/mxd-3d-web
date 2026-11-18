@@ -61,3 +61,40 @@ export function registrarFallo(ip: string, correo: string): void {
 export function registrarAcierto(correo: string): void {
   ventanas.delete(`cuenta:${correo}`);
 }
+
+/**
+ * Solicitudes de acceso (/registro, ADR 0007): 5 por IP por hora. Cuenta cada
+ * solicitud, valida o no, porque lo que se frena es llenar la base de basura.
+ * En memoria, con las mismas limitaciones que el de arriba.
+ */
+const VENTANA_SOLICITUDES_MS = 60 * 60 * 1000;
+const MAXIMO_SOLICITUDES_POR_IP = 5;
+const solicitudes = new Map<string, Ventana>();
+
+function solicitudesVigentes(ip: string, ahora: number): Ventana | undefined {
+  const v = solicitudes.get(ip);
+  if (!v) return undefined;
+  if (ahora - v.inicio >= VENTANA_SOLICITUDES_MS) {
+    solicitudes.delete(ip);
+    return undefined;
+  }
+  return v;
+}
+
+/** true si esta IP ya agoto sus solicitudes de la hora; no cuenta nada. */
+export function solicitudesAgotadas(ip: string): boolean {
+  return (solicitudesVigentes(ip, Date.now())?.fallos ?? 0) >= MAXIMO_SOLICITUDES_POR_IP;
+}
+
+/** Cuenta una solicitud de acceso hecha desde esta IP. */
+export function registrarSolicitud(ip: string): void {
+  const ahora = Date.now();
+  if (solicitudes.size > MAXIMO_ENTRADAS) {
+    for (const [clave, v] of solicitudes) {
+      if (ahora - v.inicio >= VENTANA_SOLICITUDES_MS) solicitudes.delete(clave);
+    }
+  }
+  const actual = solicitudesVigentes(ip, ahora);
+  if (actual) actual.fallos += 1;
+  else solicitudes.set(ip, { inicio: ahora, fallos: 1 });
+}

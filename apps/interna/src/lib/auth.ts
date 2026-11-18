@@ -15,8 +15,10 @@ import { obtenerPool } from "@/lib/db";
  * intentos, que vive en esa ruta, no aplica: el de `lib/limite-acceso.ts` es el
  * que frena el inicio de sesion.
  *
- * No hay registro publico: `disableSignUp`. Las cuentas las crea el equipo con
- * `npm run usuarios -- crear <correo>`.
+ * No hay registro por la ruta de Better Auth: `disableSignUp`. Las cuentas las
+ * crea el equipo con `npm run usuarios -- crear <correo>`, o nacen inactivas
+ * desde /registro (accion de servidor) y un administrador las aprueba
+ * (ADR 0007).
  *
  * Todos los usuarios activos tienen los mismos privilegios (sin roles).
  *
@@ -67,6 +69,17 @@ function crearAuth() {
         // Dar de baja a alguien = activo en 0. input:false: ningun formulario
         // puede escribirlo, solo los scripts del equipo.
         activo: { type: "boolean", required: false, defaultValue: true, input: false },
+        // Administrador: aprueba solicitudes y gestiona cuentas en /usuarios
+        // (ADR 0007). Por omision false, y tampoco lo fija ningun formulario.
+        esAdmin: { type: "boolean", required: false, defaultValue: false, input: false },
+        // Empresa que declaro quien solicito acceso, para que el administrador
+        // decida. No se usa para autorizar nada.
+        empresa: { type: "string", required: false, input: false },
+        // En que va la cuenta: "pendiente" (solicitud sin revisar), "activa",
+        // "rechazada" (un administrador dijo que no; puede volver a solicitar)
+        // o "baja" (dada de baja). SOLO informa: quien manda para entrar sigue
+        // siendo `activo`. Sin valor (cuentas anteriores) se deduce de `activo`.
+        estado: { type: "string", required: false, defaultValue: "activa", input: false },
       },
     },
 
@@ -84,11 +97,15 @@ function crearAuth() {
           // correcta.
           before: async (sesion) => {
             const [filas] = await pool.query<RowDataPacket[]>(
-              "SELECT activo FROM `user` WHERE id = ? LIMIT 1",
+              "SELECT activo, estado FROM `user` WHERE id = ? LIMIT 1",
               [sesion.userId],
             );
             if (!filas[0] || !filas[0].activo) {
-              throw new APIError("FORBIDDEN", { message: "Cuenta inactiva" });
+              // El motivo viaja en el mensaje ("inactiva:rechazada") para que el
+              // login lo muestre. Solo se llega aqui con la contrasena correcta.
+              throw new APIError("FORBIDDEN", {
+                message: `inactiva:${filas[0]?.estado ?? "pendiente"}`,
+              });
             }
             return { data: sesion };
           },

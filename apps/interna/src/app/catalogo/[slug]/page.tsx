@@ -270,6 +270,17 @@ export default async function PaginaPieza({
             slug={slug}
             version={versionBom}
             filasFijas={[
+              // Solo las subpiezas: de que ensamble forman parte, de lo general
+              // a lo especifico, con el SKU del inmediato (p. ej. "Balanceador >
+              // Tuerca (MX80-003-01)").
+              ...(padre
+                ? [
+                    {
+                      etiqueta: "Ensamble",
+                      valor: `${ancestros.map((a) => a.nombre).join(" › ")} (${padre.sku})`,
+                    },
+                  ]
+                : []),
               { etiqueta: "Se monta en", valor: seccionesTexto(pieza) },
               { etiqueta: "Cantidad por dron", valor: cantidadTexto(pieza) },
             ]}

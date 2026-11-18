@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { CampoClave, ScriptVerClave } from "@/components/acceso/CampoClave";
+import { BotonEnviar, ScriptCarga } from "@/components/acceso/BotonEnviar";
 import { rutaSegura } from "@/lib/ruta-segura";
 import { sesionActual } from "@/lib/sesion";
 
@@ -12,11 +15,18 @@ export const metadata: Metadata = {
 };
 
 /**
- * Mensajes por codigo de error. A proposito no distinguen entre "el correo no
- * existe", "la cuenta esta inactiva" y "la contrasena es incorrecta".
+ * Mensajes por codigo de error. A proposito "el correo no existe" y "la
+ * contrasena es incorrecta" dan el mismo mensaje. pendiente, rechazada y baja
+ * solo salen cuando la contrasena fue correcta (ver acciones.ts).
  */
 const MENSAJES: Record<string, string> = {
   credenciales: "Correo o contraseña incorrectos.",
+  pendiente:
+    "Tu solicitud de acceso sigue en revisión. Cuando un administrador la apruebe podrás entrar con esta misma contraseña.",
+  rechazada:
+    "Tu solicitud de acceso fue rechazada. Si crees que fue un error, o quieres intentarlo de nuevo, vuelve a solicitar acceso.",
+  baja: "Tu cuenta fue dada de baja. Si necesitas volver a entrar, avisa a un administrador.",
+  servicio: "No pudimos comprobar tu acceso en este momento. Inténtalo de nuevo en unos minutos.",
   limite: "Demasiados intentos. Espera unos minutos e inténtalo de nuevo.",
   config: "El acceso no está configurado en este servidor. Avisa al equipo.",
 };
@@ -44,7 +54,7 @@ export default async function PaginaLogin({
       </div>
 
       {/* Formulario HTML normal: no necesita JavaScript para enviarse. */}
-      <form action={iniciarSesion} className="flex flex-col gap-4">
+      <form action={iniciarSesion} data-con-carga className="flex flex-col gap-4">
         <input type="hidden" name="siguiente" value={destino} />
 
         <label className="flex flex-col gap-1 text-sm font-medium text-mxd-tinta">
@@ -60,17 +70,12 @@ export default async function PaginaLogin({
           />
         </label>
 
-        <label className="flex flex-col gap-1 text-sm font-medium text-mxd-tinta">
-          Contraseña
-          <input
-            name="clave"
-            type="password"
-            autoComplete="current-password"
-            required
-            maxLength={128}
-            className="rounded-lg border border-mxd-borde bg-mxd-fondo px-3 py-2 text-base font-normal text-mxd-tinta"
-          />
-        </label>
+        <CampoClave
+          id="clave"
+          name="clave"
+          etiqueta="Contraseña"
+          autoComplete="current-password"
+        />
 
         {mensaje && (
           <p role="alert" className="text-sm font-medium text-red-600">
@@ -78,13 +83,17 @@ export default async function PaginaLogin({
           </p>
         )}
 
-        <button
-          type="submit"
-          className="rounded-lg bg-mxd-verde-acento px-4 py-2 text-base font-semibold text-mxd-tinta transition-opacity hover:opacity-90"
-        >
-          Entrar
-        </button>
+        <BotonEnviar texto="Entrar" textoCargando="Entrando…" />
       </form>
+      <ScriptVerClave />
+      <ScriptCarga />
+
+      <p className="text-sm text-mxd-gris">
+        ¿No tienes cuenta?{" "}
+        <Link href="/registro" className="font-medium text-mxd-verde-oscuro underline">
+          Solicita acceso
+        </Link>
+      </p>
     </div>
   );
 }

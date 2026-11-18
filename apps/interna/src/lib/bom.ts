@@ -248,6 +248,52 @@ export async function leerVersionBom(sku: string): Promise<number> {
   return registros[0] ? Number(registros[0].version) : 0;
 }
 
+/** Una fila del historial del BOM (tabla bom_cambios). */
+export interface CambioBom {
+  id: number;
+  sku: string;
+  /** Clave del campo (ver COLUMNAS); usar nombreDeCampo() para mostrarlo. */
+  campo: string;
+  anterior: string | null;
+  nuevo: string | null;
+  /** Correo de quien lo cambio; null en cambios hechos por scripts. */
+  usuarioCorreo: string | null;
+  fecha: Date | string;
+}
+
+/** El nombre legible de un campo del BOM, o la clave si no se conoce. */
+export function nombreDeCampo(clave: string): string {
+  const columna = COLUMNAS.find((c) => c.clave === clave);
+  if (!columna) return clave;
+  // El encabezado de "nombre" lleva una nota para el Excel que aqui sobra.
+  return columna.encabezado.replace(/ \(referencia.*\)$/, "");
+}
+
+/**
+ * Los cambios mas recientes del BOM, del mas nuevo al mas viejo. Con `sku` solo
+ * los de esa pieza. `limite` se acota a 1-1000.
+ */
+export async function leerCambios(
+  opciones: { sku?: string; limite?: number } = {},
+): Promise<CambioBom[]> {
+  const limite = Math.min(Math.max(Math.trunc(opciones.limite ?? 200), 1), 1000);
+  const [filas] = await poolBom().query<RowDataPacket[]>(
+    `SELECT id, sku, campo, anterior, nuevo, usuario_correo, fecha FROM bom_cambios ${
+      opciones.sku ? "WHERE sku = ?" : ""
+    } ORDER BY fecha DESC, id DESC LIMIT ${limite}`,
+    opciones.sku ? [opciones.sku] : [],
+  );
+  return filas.map((f) => ({
+    id: Number(f.id),
+    sku: String(f.sku),
+    campo: String(f.campo),
+    anterior: f.anterior === null ? null : String(f.anterior),
+    nuevo: f.nuevo === null ? null : String(f.nuevo),
+    usuarioCorreo: f.usuario_correo === null ? null : String(f.usuario_correo),
+    fecha: f.fecha as Date | string,
+  }));
+}
+
 /** Como se guarda un valor en bom_cambios: el texto tal cual, lo demas como JSON. */
 function textoDeCambio(valor: unknown): string | null {
   if (valor === null || valor === undefined) return null;

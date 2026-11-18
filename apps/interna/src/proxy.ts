@@ -40,7 +40,8 @@ import { obtenerAuth } from "@/lib/auth";
 const ARCHIVOS_DE_MARCA = new Set(["/brand/logo-mxd.svg", "/icon.svg"]);
 
 /**
- * Lo unico que se sirve sin sesion: la pagina de acceso, su CSS y la marca. La
+ * Lo unico que se sirve sin sesion: las paginas de acceso y de solicitud de
+ * acceso, su CSS y la marca. La
  * pagina es un formulario HTML que funciona sin JavaScript, asi que ningun
  * chunk .js se abre. El CSS no lleva datos del catalogo.
  *
@@ -50,7 +51,9 @@ const ARCHIVOS_DE_MARCA = new Set(["/brand/logo-mxd.svg", "/icon.svg"]);
  */
 function esRutaAbierta(ruta: string, metodo: string): boolean {
   const lectura = metodo === "GET" || metodo === "HEAD";
-  if (ruta === "/login") return lectura || metodo === "POST";
+  // /registro es la solicitud de acceso (ADR 0007): formulario publico que
+  // crea una cuenta INACTIVA; un administrador la aprueba.
+  if (ruta === "/login" || ruta === "/registro") return lectura || metodo === "POST";
   if (ruta.startsWith("/_next/static/") && ruta.endsWith(".css")) return lectura;
   if (ARCHIVOS_DE_MARCA.has(ruta)) return lectura;
   return false;
