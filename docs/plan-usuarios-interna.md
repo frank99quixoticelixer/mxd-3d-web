@@ -322,22 +322,36 @@ quedo pendiente.
 
 - Sintoma: al pulsar Salir en produccion, "This page couldn't load". En local
   no pasaba (el servidor de desarrollo no esta detras del proxy de Hostinger).
-- Causa (log de ejecucion en hPanel): `failed to get redirect response
-  TypeError: fetch failed`. Tras la accion `cerrarSesion`, Next hace un `fetch`
-  interno a su propio origen para traer /login y en Hostinger ese fetch falla;
-  la navegacion queda al cliente y la pagina se rompe. Por que falla el fetch
-  no lo dice el mensaje (probablemente el servidor no se alcanza por su dominio
-  publico). No es la IP: la sesion no se liga a ella.
-- Por que el login no falla igual: es un formulario sin JavaScript (el proxy
-  bloquea los .js de /login) y su redirect es un 303 normal.
-- Arreglo: `app/salir/route.ts` (POST, 303 a /login), `BotonSalir` es un
-  formulario HTML hacia /salir, `proxy.ts` deja pasar POST /salir sin sesion y
-  manda a /login (307) tambien las navegaciones internas de Next (cabecera
-  `rsc`) en vez de un 401 de texto. `cerrarSesion` se elimino.
-- Regla: en interna no usar `redirect()` desde una accion de servidor que llame
-  JavaScript; usar un formulario HTML hacia una ruta.
-- Pendiente: probar Salir en produccion tras el deploy, recien logueado y con
-  mas de 60 s; y con la sesion caducada.
+  Despues del primer arreglo (PR #7) seguia fallando en el navegador normal y
+  funcionaba en incognito: el problema era de `/login`, no solo de Salir.
+- Causa REAL (consola del navegador): `Refused to execute script ...
+  /_next/static/chunks/app/login/page-<hash>.js ... MIME type text/plain` y
+  `ChunkLoadError: Loading chunk 139 failed`. El HTML de /login pide 11
+  chunks .js y el proxy responde 401 a todos si no hay sesion (a proposito).
+  Un navegador que ya uso el panel tiene casi todos en cache (inmutables, un
+  anio), los ejecuta, Next intenta hidratar /login, le falta el chunk de la
+  pagina (401) y muestra el error. Incognito no tiene nada en cache, no ejecuta
+  nada y por eso cargaba. Afectaba a cualquiera que hubiera usado el panel.
+- Hallazgo secundario (log de ejecucion en hPanel): `failed to get redirect
+  response TypeError: fetch failed` tras la accion `cerrarSesion` (el fetch
+  interno con el que Next trae /login). Real, pero no era la causa de que la
+  pagina se rompiera.
+- Arreglo 1 (PR #7): `app/salir/route.ts` (POST, 303 a /login), `BotonSalir`
+  es un formulario HTML hacia /salir, `proxy.ts` deja pasar POST /salir sin
+  sesion. `cerrarSesion` se elimino. Su parte de detectar navegaciones
+  internas por la cabecera `rsc` NO funciona (Next la quita antes del proxy) y
+  se retiro en el arreglo 2.
+- Arreglo 2: `proxy.ts` manda `Content-Security-Policy: script-src 'none'` con
+  /login y /registro. El navegador no ejecuta ningun script en esas paginas,
+  haya lo que haya en cache, y se comporta siempre como incognito. No abre
+  ningun chunk: la proteccion de /_next/static no cambia.
+- Regla: /login y /registro tienen que funcionar sin JavaScript (formulario HTML,
+  sin componentes de cliente). Si algun dia necesitan JS, hay que abrir sus
+  chunks en el proxy y decidirlo en un ADR. Y en interna no usar `redirect()`
+  desde una accion de servidor que llame JavaScript.
+- Pendiente: probar en el navegador normal que /login carga, y Salir recien
+  logueado y con mas de 60 s. Falta saber como se comporta una navegacion
+  interna de Next con la sesion caducada (da 401 de texto).
 
 ### 2026-11-18: base de produccion propia y mensajes de login
 
