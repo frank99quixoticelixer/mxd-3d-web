@@ -62,18 +62,37 @@ function esRutaAbierta(ruta: string, metodo: string): boolean {
 }
 
 /**
- * true si el navegador pide una pagina (y por lo tanto se le puede mandar a
- * /login). Incluye las navegaciones internas de Next (cabecera `rsc`): con una
- * sesion caducada, un 401 de texto ahi rompe la pagina con "This page couldn't
- * load"; con una redireccion, Next recarga entera hacia /login.
+ * true si el navegador pide una pagina (y por lo tanto se le puede mandar a /login).
+ *
+ * No intenta reconocer las navegaciones internas de Next: Next quita la cabecera
+ * `rsc` y el parametro `_rsc` antes de que el proxy los vea (se probo en
+ * produccion el 2026-11-19), asi que desde aqui no se distinguen.
  */
 function pideDocumento(peticion: NextRequest): boolean {
-  if (peticion.method !== "GET") return false;
   return (
-    (peticion.headers.get("accept") ?? "").includes("text/html") ||
-    peticion.headers.has("rsc")
+    peticion.method === "GET" &&
+    (peticion.headers.get("accept") ?? "").includes("text/html")
   );
 }
+
+/**
+ * Politica que se manda con /login y /registro: ningun script, ni los de Next
+ * ni los de la pagina.
+ *
+ * POR QUE: estas paginas son formularios HTML que funcionan sin JavaScript, y
+ * el proxy responde 401 a todos los .js de /_next/static si no hay sesion. Un
+ * navegador que ya uso el panel tiene varios de esos chunks en cache (son
+ * inmutables por un anio): los ejecuta, Next intenta hidratar /login, le falta
+ * el chunk de la pagina (401) y muestra "This page couldn't load". Una ventana
+ * de incognito no tiene nada en cache, no ejecuta nada y por eso si cargaba.
+ * Con esta politica el navegador no ejecuta ningun script en estas paginas, haya
+ * lo que haya en cache, y se comporta siempre como la ventana de incognito.
+ *
+ * Es una cabecera aparte de la politica general de next.config.mjs (que solo
+ * reporta): ambas conviven y el navegador aplica la mas estricta.
+ */
+const SIN_SCRIPTS = "script-src 'none'";
+const RUTAS_SIN_SCRIPTS = new Set(["/login", "/registro"]);
 
 function sinSesion(peticion: NextRequest): NextResponse {
   if (pideDocumento(peticion)) {
@@ -112,7 +131,13 @@ export async function proxy(peticion: NextRequest) {
     );
   }
 
-  if (abierta) return NextResponse.next();
+  if (abierta) {
+    const respuesta = NextResponse.next();
+    if (RUTAS_SIN_SCRIPTS.has(ruta)) {
+      respuesta.headers.set("Content-Security-Policy", SIN_SCRIPTS);
+    }
+    return respuesta;
+  }
 
   let resultado;
   try {
