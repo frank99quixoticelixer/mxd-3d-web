@@ -151,9 +151,7 @@ export default async function PaginaInicio() {
             ))}
           </div>
           <p className="mt-4 text-xs text-mxd-gris">
-            Fuente: Manual de Usuario MX80 {MANUAL_MX80.version}. El tiempo de
-            vuelo estacionario se midió cerca del nivel del mar, con viento
-            menor a 3 m/s y 25 °C.
+            Fuente: Manual de Usuario MX80 {MANUAL_MX80.version}.
           </p>
         </div>
       </section>

@@ -1,0 +1,8 @@
+{
+ "nota": "Rejilla de alturas del terreno. Indice = j * n + i; x = -mitad + i*paso (este, three x), y = -mitad + j*paso (norte, three -z). altura = zMin + valor * escala [m].",
+ "mitad": 1200,
+ "paso": 4,
+ "n": 601,
+ "zMin": -177.2900390625,
+ "escala": 0.00583820012684062
+}

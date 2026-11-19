@@ -1,0 +1,4 @@
+# Mapas del estudio: binarios normales en git, no LFS (igual que los GLB de
+# vitrina). Tienen que ser -text: si git los trata como texto los trunca.
+*.glb !filter !diff !merge -text
+*.bin !filter !diff !merge -text

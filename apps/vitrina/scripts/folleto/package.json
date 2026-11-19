@@ -1,0 +1,4 @@
+{
+  "//": "ES module: @react-pdf/renderer no resuelve como CommonJS.",
+  "type": "module"
+}

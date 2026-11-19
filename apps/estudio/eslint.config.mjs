@@ -16,6 +16,8 @@ const eslintConfig = [
       "out/**",
       "next-env.d.ts",
       "scripts/**",
+      // Paquete del simulador (JavaScript propio, con sus pruebas en node --test).
+      "drone_sim_pkg/**",
     ],
   },
   ...next,

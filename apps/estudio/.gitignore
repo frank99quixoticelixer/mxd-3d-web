@@ -8,5 +8,9 @@ next-env.d.ts
 # no se duplica en git.
 public/models/
 
+# Fuentes de Blender de los entornos: pesan y no las lee la app (lee el GLB
+# exportado en public/campo/). Viven en Drive.
+public/blender/
+
 # Variables locales
 .env*.local

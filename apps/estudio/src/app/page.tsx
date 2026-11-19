@@ -8,17 +8,18 @@ import { Panel } from "@/estudio/Panel";
 const Escena = dynamic(() => import("@/estudio/Escena").then((m) => m.Escena), {
   ssr: false,
   loading: () => (
-    <div className="flex h-full items-center justify-center text-sm text-mxd-gris">Cargando estudio…</div>
+    <div className="rotulo flex h-full items-center justify-center text-sm text-white/50">Cargando estudio…</div>
   ),
 });
 
+/** El 3D a pantalla completa y la interfaz flotando encima. */
 export default function PaginaEstudio() {
   return (
-    <main className="flex h-dvh flex-col lg:flex-row">
-      <div className="min-h-0 flex-1">
+    <main className="relative h-dvh w-full overflow-hidden">
+      <div className="absolute inset-0">
         <Escena />
       </div>
-      <div className="max-h-[45dvh] lg:max-h-none">
+      <div className="pointer-events-none absolute inset-0 [&_a]:pointer-events-auto [&_aside]:pointer-events-auto [&_button]:pointer-events-auto [&_input]:pointer-events-auto">
         <Panel />
       </div>
     </main>
