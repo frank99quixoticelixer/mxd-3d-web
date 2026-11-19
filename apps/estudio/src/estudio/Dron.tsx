@@ -9,11 +9,10 @@ import { ARRASTRE, DOWNWASH, RAMPA_CAUDAL_S, RAMPA_GIRO_S } from "./aspersion/co
 import { detenerDiscos, girarDiscos, prepararDiscos } from "./aspersion/discos";
 import { crearGotas } from "./aspersion/gotas";
 import {
-  ACENTO,
   ANGULO_APERTURA_GIRATORIO,
   ANGULO_APERTURA_PALA,
   ANGULO_PLEGADO_BRAZO,
-  CARROCERIA,
+  AMARILLO_CARROCERIA,
   COMBINACIONES,
   DESPIECE_VERTICAL,
   ETIQUETAS,
@@ -23,6 +22,7 @@ import {
   type Acabado,
 } from "./config";
 import type { EstadoEscena } from "./estado";
+import { crearLineas, type Lineas } from "./lineas";
 
 /**
  * El MX80 del estudio: la misma coreografia del visor de la vitrina
@@ -77,7 +77,22 @@ interface PiezaPintable {
   malla: THREE.Mesh;
   original: THREE.Material | THREE.Material[];
   pintura: THREE.MeshPhysicalMaterial;
-  rol: "carroceria" | "acento";
+}
+
+/** El material es del amarillo de la carroceria (config.ts, AMARILLO_CARROCERIA). */
+function esAmarilloCarroceria(material: THREE.Material): boolean {
+  const color = (material as THREE.MeshStandardMaterial).color;
+  if (!color) return false;
+  const hsl = { h: 0, s: 0, l: 0 };
+  color.getHSL(hsl, THREE.SRGBColorSpace);
+  const { tono, saturacionMinima, luminosidad } = AMARILLO_CARROCERIA;
+  return (
+    hsl.h >= tono[0] &&
+    hsl.h <= tono[1] &&
+    hsl.s >= saturacionMinima &&
+    hsl.l >= luminosidad[0] &&
+    hsl.l <= luminosidad[1]
+  );
 }
 
 /** Una pieza del despiece vertical: cuanto sube y en que direccion local. */
@@ -115,12 +130,18 @@ export function Dron({
   escena,
   anclasRef,
   alGotas,
+  encendidoRef,
 }: {
   escena: EstadoEscena;
   /** Lo llena el dron cada cuadro: donde va cada etiqueta en el mundo. */
   anclasRef: React.RefObject<Ancla[]>;
   /** Entrega el THREE.Points de las gotas para montarlo en el mundo. */
   alGotas: (puntos: THREE.Points) => void;
+  /**
+   * Con el simulador de vuelo: empuje medio de los rotores (0..1) que manda
+   * sobre escena.encendido. null = usar escena.encendido.
+   */
+  encendidoRef?: React.RefObject<number | null>;
 }) {
   const gltf = useGLTF(GLB_DRON);
   const grupo = useRef<THREE.Group>(null);
@@ -222,14 +243,13 @@ export function Dron({
     raiz.traverse((n) => {
       const malla = n as THREE.Mesh;
       if (!malla.isMesh) return;
-      const rol = CARROCERIA.test(malla.name) ? "carroceria" : ACENTO.test(malla.name) ? "acento" : null;
-      if (!rol) return;
       const original = malla.material;
       const fuente = (Array.isArray(original) ? original[0] : original) as THREE.MeshStandardMaterial;
+      if (!esAmarilloCarroceria(fuente)) return;
       // Pintura propia por malla, nunca el material del cache de useGLTF.
       const pintura = new THREE.MeshPhysicalMaterial();
       THREE.MeshStandardMaterial.prototype.copy.call(pintura, fuente);
-      pintables.push({ malla, original, pintura, rol });
+      pintables.push({ malla, original, pintura });
     });
 
     // ---- Etiquetas ----
@@ -258,14 +278,30 @@ export function Dron({
     [modelo],
   );
 
-  // ---- Color del cliente ----
+  // ---- Color del cliente y estilo lineas ----
+  // El color se aplica primero; el estilo lineas guarda esos materiales y los
+  // devuelve al apagarse, asi que cambiar de color con lineas encendidas tambien
+  // funciona.
+  const lineas = useRef<Lineas | null>(null);
   useEffect(() => {
     const combinacion = COMBINACIONES.find((c) => c.clave === escena.color) ?? null;
+    lineas.current?.mostrar(false);
     for (const p of modelo.pintables) {
-      if (combinacion) pintar(p.pintura, p.rol === "carroceria" ? combinacion.carroceria : combinacion.acento);
+      if (combinacion) pintar(p.pintura, combinacion.pintura);
       ponerMaterial(p.malla, combinacion ? p.pintura : p.original);
     }
-  }, [escena.color, modelo]);
+    if (escena.lineas) {
+      lineas.current ??= crearLineas(modelo.raiz);
+      lineas.current.mostrar(true);
+    }
+  }, [escena.color, escena.lineas, modelo]);
+  useEffect(
+    () => () => {
+      lineas.current?.liberar();
+      lineas.current = null;
+    },
+    [modelo],
+  );
 
   // ---- Despiece vertical ----
   useEffect(() => {
@@ -275,6 +311,7 @@ export function Dron({
   }, [escena.despiece, modelo]);
 
   useFrame((_, delta) => {
+    const encendido = encendidoRef?.current ?? escena.encendido;
     const p = escena.despliegue;
     const avanceGir = tramo(p, FASES.giratorios);
     const avancePalas = tramo(p, FASES.palas);
@@ -294,7 +331,7 @@ export function Dron({
       if (b.giratorio) {
         let angulo = anguloRotor.current.get(b) ?? 0;
         if (!listo) angulo = 0;
-        else angulo += VELOCIDAD_ROTOR * escena.encendido * Math.PI * 2 * b.signoGiro * delta;
+        else angulo += VELOCIDAD_ROTOR * encendido * Math.PI * 2 * b.signoGiro * delta;
         anguloRotor.current.set(b, angulo);
         extra.setFromAxisAngle(
           EJE_Y,
@@ -322,7 +359,7 @@ export function Dron({
           caudalPorBrazo: { cw: caudal, ccw: caudal },
           rpmPorBrazo: { cw: rpm, ccw: rpm },
           arrastre: ARRASTRE.inicial,
-          downwash: DOWNWASH.inicial * escena.encendido,
+          downwash: DOWNWASH.inicial * encendido,
           sueloY: escena.follaje,
         },
         delta,

@@ -1,24 +1,109 @@
 @import "tailwindcss";
 
 @theme {
-  --color-mxd-fondo: #0b1210;
+  --color-mxd-fondo: #07090b;
   --color-mxd-panel: #121a17;
   --color-mxd-borde: #223029;
-  --color-mxd-gris: #8a9a94;
-  --color-mxd-tinta: #eef3f0;
+  --color-mxd-gris: #8f9a96;
+  --color-mxd-tinta: #f2f5f4;
   --color-mxd-verde: #0f8a4c;
   --color-mxd-verde-oscuro: #0a5f36;
   --color-mxd-verde-acento: #34d399;
+
+  --font-titulo: var(--fuente-titulo), "Arial Narrow", sans-serif;
+  --font-texto: var(--fuente-texto), system-ui, sans-serif;
 }
 
 html,
 body {
   height: 100%;
+  overflow: hidden;
   background-color: var(--color-mxd-fondo);
   color: var(--color-mxd-tinta);
+  font-family: var(--font-texto);
 }
 
 :focus-visible {
   outline: 2px solid var(--color-mxd-verde-acento);
   outline-offset: 2px;
+}
+
+/* Vidrio oscuro: los paneles flotan sobre el 3D sin taparlo. */
+@utility vidrio {
+  background-color: rgb(10 12 14 / 0.68);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  border: 1px solid rgb(255 255 255 / 0.09);
+}
+
+/* Etiqueta de menu: mayusculas condensadas y espaciadas. */
+@utility rotulo {
+  font-family: var(--font-titulo);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-weight: 600;
+}
+
+/* Deslizador fino: pista de 2 px y perilla blanca. */
+.deslizador {
+  appearance: none;
+  width: 100%;
+  height: 18px;
+  background: transparent;
+  cursor: pointer;
+}
+.deslizador:disabled {
+  cursor: not-allowed;
+}
+.deslizador::-webkit-slider-runnable-track {
+  height: 2px;
+  background: linear-gradient(
+    to right,
+    #fff 0 var(--avance, 50%),
+    rgb(255 255 255 / 0.18) var(--avance, 50%) 100%
+  );
+}
+.deslizador::-moz-range-track {
+  height: 2px;
+  background: rgb(255 255 255 / 0.18);
+}
+.deslizador::-moz-range-progress {
+  height: 2px;
+  background: #fff;
+}
+.deslizador::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -5px;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgb(255 255 255 / 0.12);
+}
+.deslizador::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 9999px;
+  background: #fff;
+}
+
+/* Entrada suave de cada pantalla. */
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.aparecer {
+  animation: aparecer 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .aparecer {
+    animation: none;
+  }
 }

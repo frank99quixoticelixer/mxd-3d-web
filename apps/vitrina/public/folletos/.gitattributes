@@ -1,0 +1,2 @@
+# PDF generados: binarios, que git nunca les cambie los finales de linea.
+*.pdf binary

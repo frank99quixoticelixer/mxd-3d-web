@@ -65,9 +65,29 @@ export const ACCESORIOS_MX80: Accesorio[] = [
     // Carcasa de la bateria (nodo BAT_Carcasa del GLB del dron).
     sku: "MX80-017-01",
   },
-  // El generador (estacion de carga en campo) se agrega cuando se revise la
-  // licencia de su modelo 3D: el repo es publico y un GLB commiteado no se
-  // puede retirar del historial.
+  {
+    id: "generador",
+    nombre: "Generador",
+    descripcion:
+      "Generador a gasolina de 14.5 kW para cargar las baterías en campo. El modelo 3D es de referencia: tiene el tamaño del equipo, no su forma exacta.",
+    // Fuente: ficha del distribuidor (fuentes/accesorios/, fuera de git). Sin
+    // marca ni precio (son de compras). El peso no se publica: el distribuidor
+    // da dos valores distintos (82 y 105 kg).
+    caracteristicas: [
+      { etiqueta: "Potencia máxima", valor: "14.5 kW" },
+      { etiqueta: "Potencia nominal", valor: "12 kW" },
+      { etiqueta: "Voltaje de salida", valor: "110 V / 220 V, 60 Hz" },
+      { etiqueta: "Salida de CD", valor: "12 V, 8.3 A" },
+      { etiqueta: "Motor", valor: "Gasolina, 4 tiempos, 20 hp, 600 cm³" },
+      { etiqueta: "Arranque", valor: "Manual y eléctrico" },
+      { etiqueta: "Tanque de combustible", valor: "45 L" },
+      { etiqueta: "Nivel de ruido", valor: "83 dB" },
+      { etiqueta: "Dimensiones", valor: "72.5 × 62.5 × 58 cm" },
+    ],
+    // Modelo generico escalado al tamano del equipo. Reintegrado a pedido del
+    // equipo (2026-11-19) con la licencia del modelo base aun sin revisar.
+    glb: "models/accesorios/generador_14kw_v2_web.glb",
+  },
   {
     id: "cargador",
     nombre: "Cargador de batería",

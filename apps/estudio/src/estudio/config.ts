@@ -8,11 +8,72 @@
 /** El mismo dron del sitio. Lo espeja scripts/sincronizar-modelo.mjs. */
 export const GLB_DRON = "/models/mx80/MX80_completo_v6_web.glb";
 
+// ---------------------------------------------------------------------------
+// Mapas (entornos de Blender)
+// ---------------------------------------------------------------------------
+
 /**
- * Campo de maiz: ruta del GLB exportado de Blender (en public/campo/), o null
- * mientras no exista. Con null se ve un piso de tierra liso.
+ * Un mapa del campo. Se exporta de Blender con scripts/exportar_entorno.py y
+ * se comprime con gltf-transform (ver README). El origen del mapa es la zona
+ * de despegue: ahi va el dron, y en los dos mapas es plana (y = 0).
  */
-export const GLB_CAMPO: string | null = null;
+export interface Entorno {
+  clave: string;
+  nombre: string;
+  etiqueta: string;
+  descripcion: string;
+  datos: { etiqueta: string; valor: string }[];
+  /** GLB del mapa, en public/campo/. */
+  glb: string;
+  /**
+   * Mapa de alturas del terreno (sin extension: <base>.json y <base>.bin), o
+   * null si el mapa es plano. El simulador de vuelo lo usa como suelo.
+   */
+  alturas: string | null;
+  /** Vista de la tarjeta, dibujada con CSS (sin imagenes). */
+  vista: { cielo: string; suelo: string; surco: string; angulo: number };
+}
+
+export const ENTORNOS: Entorno[] = [
+  {
+    clave: "agricola",
+    nombre: "Valle agrícola",
+    etiqueta: "Maizal",
+    descripcion:
+      "Plataforma de pruebas entre parcelas de maíz, alfalfa y rastrojo, con granja, pueblo, canal de riego y sierra al fondo.",
+    datos: [
+      { etiqueta: "Terreno", valor: "plano" },
+      { etiqueta: "Altura del maíz", valor: "2.4–2.7 m" },
+      { etiqueta: "Zona", valor: "2 × 2 km" },
+    ],
+    glb: "/campo/entorno_agricola_v2_web.glb",
+    alturas: null,
+    vista: { cielo: "linear-gradient(#93b6d4, #d8e6ee)", suelo: "#2f4a1c", surco: "#3b5a22", angulo: 115 },
+  },
+  {
+    clave: "montana",
+    nombre: "Claro de montaña",
+    etiqueta: "Bosque",
+    descripcion:
+      "Claro de 76 × 76 m entre pinos y encinos, con cabaña y una ladera de casi 400 m de desnivel.",
+    datos: [
+      { etiqueta: "Claro", valor: "76 × 76 m" },
+      { etiqueta: "Desnivel", valor: "−177 a +205 m" },
+      { etiqueta: "Árboles", valor: "hasta 21 m" },
+    ],
+    glb: "/campo/entorno_montana_v2_web.glb",
+    alturas: "/campo/entorno_montana_v2_web_alturas",
+    vista: { cielo: "linear-gradient(#7fa3c2, #cfdde6)", suelo: "#1f3324", surco: "#2a4430", angulo: 160 },
+  },
+];
+
+export const entornoPorClave = (clave: string): Entorno =>
+  ENTORNOS.find((e) => e.clave === clave) ?? ENTORNOS[0];
+
+/** Hasta donde se ve (m): las sierras de los mapas miden decenas de km. */
+export const DISTANCIA_VISIBLE = 10000;
+/** Neblina por distancia (m): empieza y se cierra. Da profundidad al horizonte. */
+export const NEBLINA = { desde: 250, hasta: 4500 } as const;
 
 // ---------------------------------------------------------------------------
 // Coreografia del dron (la misma del visor de la vitrina, EscenaFrame.tsx)
@@ -40,11 +101,27 @@ export const ALTURA_VUELO = { min: 0, max: 4, inicial: 2.5 } as const;
 /** Altura del follaje, en metros: ahi se reciclan las gotas. */
 export const ALTURA_FOLLAJE = { min: 0, max: 2.5, inicial: 1.8 } as const;
 
-/** Hora del dia: posicion del sol (elevacion, azimut en grados). */
+/**
+ * Hora del dia: SOLO mueve el sol (elevacion, azimut en grados), y con el las
+ * sombras. El color de la luz, el cielo y la neblina no cambian con la hora
+ * (LUZ): el dron y el campo se ven del mismo color en todas las tomas.
+ */
 export const HORAS = {
-  amanecer: { etiqueta: "Amanecer", elevacion: 8, azimut: 100, intensidad: 1.6, cielo: "#f2c79a" },
-  mediodia: { etiqueta: "Mediodía", elevacion: 62, azimut: 160, intensidad: 2.6, cielo: "#bcd8ef" },
-  atardecer: { etiqueta: "Atardecer", elevacion: 10, azimut: 255, intensidad: 1.8, cielo: "#f0a777" },
+  amanecer: { etiqueta: "Amanecer", elevacion: 14, azimut: 100 },
+  mediodia: { etiqueta: "Mediodía", elevacion: 62, azimut: 160 },
+  atardecer: { etiqueta: "Atardecer", elevacion: 16, azimut: 255 },
+} as const;
+
+/** Luz fija para todas las horas. */
+export const LUZ = {
+  /** Intensidad del sol. */
+  sol: 2.6,
+  /** Luz de cielo (hemisferica): color de arriba, de abajo e intensidad. */
+  cielo: "#bcd8ef",
+  suelo: "#5b4a35",
+  ambiente: 0.7,
+  /** Posicion del sol con la que se pinta el cielo (siempre de dia). */
+  solDelCielo: { elevacion: 62, azimut: 160 },
 } as const;
 export type Hora = keyof typeof HORAS;
 
@@ -64,15 +141,24 @@ export const DESPIECE_VERTICAL = {
 } as const;
 
 // ---------------------------------------------------------------------------
-// Personaliza tu dron
+// Personaliza tu dron (taller)
 // ---------------------------------------------------------------------------
 
 /**
- * Piezas que se pintan (carroceria) y acento. Nunca tornilleria, electronica ni
- * fibra de carbono: el cliente elige el color de lo que ve por fuera.
+ * Que se pinta: todo lo que en el modelo es del amarillo de la carroceria
+ * (cubiertas de motor, carcasa frontal, seguros de manguera). Se detecta por
+ * el color del material, no por nombre, para que una pieza amarilla nueva del
+ * GLB entre sola. Tono, saturacion y luminosidad en sRGB (0..1).
+ *
+ * Quedan fuera, a proposito, tonos parecidos que no son carroceria: las puntas
+ * de las helices (ambar de seguridad, tono 41), los insertos de laton, los
+ * conectores de la PDB y las micas de las luces.
  */
-export const CARROCERIA = /^(carcasa_drone|DRONE_CLEAN_TOPOLOGY|cubierta_motor)/i;
-export const ACENTO = /_pala_punta/i;
+export const AMARILLO_CARROCERIA = {
+  tono: [46 / 360, 58 / 360],
+  saturacionMinima: 0.85,
+  luminosidad: [0.35, 0.55],
+} as const;
 
 export interface Acabado {
   color: string;
@@ -85,30 +171,41 @@ export interface Acabado {
 export interface Combinacion {
   clave: string;
   nombre: string;
-  carroceria: Acabado;
-  acento: Acabado;
+  /** Pintura de lo que hoy es amarillo. */
+  pintura: Acabado;
 }
 
+/**
+ * Colores del cliente. Los valores son aproximados a los de cada marca de
+ * maquinaria: se ajustan aqui si el cliente da su codigo de color.
+ */
 export const COMBINACIONES: Combinacion[] = [
   {
-    clave: "verde-campo",
-    nombre: "Verde campo",
-    carroceria: { color: "#0f8a4c", rugosidad: 0.35, metalicidad: 0.1, barniz: 0.6 },
-    acento: { color: "#f2f2f2", rugosidad: 0.4, metalicidad: 0, barniz: 0.3 },
+    clave: "rojo-case",
+    nombre: "Rojo Case",
+    pintura: { color: "#b5121b", rugosidad: 0.3, metalicidad: 0.05, barniz: 0.8 },
   },
   {
-    clave: "negro-carbon",
-    nombre: "Negro carbón",
-    carroceria: { color: "#1b1f22", rugosidad: 0.3, metalicidad: 0.2, barniz: 0.8 },
-    acento: { color: "#22c55e", rugosidad: 0.35, metalicidad: 0, barniz: 0.4 },
+    clave: "azul-new-holland",
+    nombre: "Azul New Holland",
+    pintura: { color: "#004c97", rugosidad: 0.3, metalicidad: 0.05, barniz: 0.8 },
   },
   {
-    clave: "blanco-artico",
-    nombre: "Blanco ártico",
-    carroceria: { color: "#eef1f3", rugosidad: 0.32, metalicidad: 0.05, barniz: 0.7 },
-    acento: { color: "#f59e0b", rugosidad: 0.4, metalicidad: 0, barniz: 0.3 },
+    clave: "negro-new-holland",
+    nombre: "Negro New Holland",
+    pintura: { color: "#141619", rugosidad: 0.28, metalicidad: 0.1, barniz: 0.9 },
   },
 ];
+
+/** Muestra del color original (el amarillo del modelo), para el boton. */
+export const COLOR_ORIGINAL = "#e6b800";
+
+// ---------------------------------------------------------------------------
+// Taller
+// ---------------------------------------------------------------------------
+
+/** Vueltas por minuto de la plataforma giratoria del taller. */
+export const RPM_MESA = 2.5;
 
 // ---------------------------------------------------------------------------
 // Etiquetas con datos (para presentaciones y redes)

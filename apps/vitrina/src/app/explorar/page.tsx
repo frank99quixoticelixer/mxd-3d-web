@@ -16,6 +16,8 @@ import {
   seleccionTieneAlgo,
   type SeleccionPieza,
 } from "@/features/viewer/componentes";
+import { FICHA_TECNICA_MX80 } from "@/data/ficha-tecnica-mx80";
+import { FOLLETO_MX80 } from "@/data/folleto-mx80";
 import { gruposMaterialDelVisor, obtenerPiezas, obtenerTodas } from "@/lib/catalogo";
 
 export const metadata: Metadata = {
@@ -147,14 +149,30 @@ export default function PaginaExplorar() {
             <h2 className="text-2xl font-bold tracking-tight text-mxd-tinta">
               Especificaciones
             </h2>
-            {MANUAL_MX80.archivo && (
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
               <a
-                href={MANUAL_MX80.archivo}
-                className="text-sm font-semibold text-mxd-verde hover:text-mxd-verde-oscuro"
+                href={FOLLETO_MX80.archivo}
+                download={FOLLETO_MX80.nombreDescarga}
+                className="rounded-lg bg-mxd-verde px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-mxd-verde-oscuro"
               >
-                Manual de usuario {MANUAL_MX80.version} (PDF, {MANUAL_MX80.tamano}) →
+                Descargar folleto (PDF, {FOLLETO_MX80.tamano})
               </a>
-            )}
+              <a
+                href={FICHA_TECNICA_MX80.archivo}
+                download={FICHA_TECNICA_MX80.nombreDescarga}
+                className="rounded-lg border border-mxd-verde px-4 py-2 text-sm font-semibold text-mxd-verde transition-colors hover:bg-mxd-verde hover:text-white"
+              >
+                Descargar ficha técnica (PDF, {FICHA_TECNICA_MX80.tamano})
+              </a>
+              {MANUAL_MX80.archivo && (
+                <a
+                  href={MANUAL_MX80.archivo}
+                  className="text-sm font-semibold text-mxd-verde hover:text-mxd-verde-oscuro"
+                >
+                  Manual de usuario {MANUAL_MX80.version} (PDF, {MANUAL_MX80.tamano}) →
+                </a>
+              )}
+            </div>
           </div>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             {ESPECIFICACIONES_MX80.map((g) => (
@@ -182,9 +200,7 @@ export default function PaginaExplorar() {
             ))}
           </div>
           <p className="mt-4 text-xs text-mxd-gris">
-            Fuente: Manual de Usuario MX80 {MANUAL_MX80.version}. El tiempo de
-            vuelo estacionario se midió cerca del nivel del mar, con viento
-            menor a 3 m/s y 25 °C.
+            Fuente: Manual de Usuario MX80 {MANUAL_MX80.version}.
           </p>
         </div>
       </section>

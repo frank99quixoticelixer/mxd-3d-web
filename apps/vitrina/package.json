@@ -15,7 +15,9 @@
     "verificar": "npm run specs:importar && npm run typecheck && npm run lint && npm run build",
     "specs:importar": "node scripts/importar_specs.mjs",
     "logo:png": "node scripts/logo_a_png.mjs",
-    "glb:piezas": "node scripts/extraer_piezas_glb.mjs"
+    "glb:piezas": "node scripts/extraer_piezas_glb.mjs",
+    "folleto:generar": "npx --no-workspaces --yes tsx@4.23.15 --tsconfig tsconfig.json scripts/folleto/generar.tsx",
+    "ficha:generar": "npx --no-workspaces --yes tsx@4.23.15 --tsconfig tsconfig.json scripts/folleto/ficha.tsx"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.9.0",

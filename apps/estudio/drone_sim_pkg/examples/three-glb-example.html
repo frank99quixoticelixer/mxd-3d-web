@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ejemplo de integración: DroneSim + GLB</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#000;font:13px system-ui,sans-serif;color:#e8edf3}
+  canvas{display:block}
+  #hud{position:fixed;left:10px;top:10px;background:rgba(14,18,24,.85);padding:10px 12px;border-radius:8px;font:12px ui-monospace,Menlo,Consolas,monospace;min-width:240px;white-space:pre}
+  #ui{position:fixed;right:10px;top:10px;background:rgba(14,18,24,.85);padding:8px 10px;border-radius:8px}
+  select,button{font:inherit;background:#1c2330;color:#e8edf3;border:1px solid #3a4456;border-radius:5px;padding:4px 8px}
+  #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:rgba(14,18,24,.9);padding:8px 14px;border-radius:8px;opacity:0;transition:opacity .3s}
+  .armed{color:#ff6b6b;font-weight:bold}.safe{color:#57d18b}
+</style>
+</head>
+<body>
+<div id="hud"></div>
+<div id="ui">
+  <label>Perfil <select id="profile"><option value="mx80">MX80</option><option value="custom">Configurable</option></select></label>
+  <button id="bArm">Armar (Enter)</button>
+</div>
+<div id="toast"></div>
+
+<!-- three.js r128 clásico + GLTFLoader (expone THREE y THREE.GLTFLoader) -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+<script type="module">
+import { DroneSim } from '../src/drone-sim-core.js';
+import { makeConfig } from '../src/drone-profiles.js';
+import { bindThreeObject, makeChaseCamera } from '../src/three-adapter.js';
+
+// ======================= CONFIGURACIÓN DE TU MODELO =======================
+// Ajusta estos valores a tu GLB. Los nodos de hélice deben ir en el ORDEN DE ROTORES
+// del simulador (ver MATEMATICAS.md §2: rotor 1 = frente-derecha, luego en sentido horario visto desde arriba).
+const MODEL = {
+  url: '../models/mx80.glb',   // si no existe, se dibuja un modelo de reemplazo
+  yawOffsetDeg: 0,             // 180 si el frente del GLB mira a +Z
+  cgOffset: [0, 0, 0],         // origen del GLB -> CG [m, ejes locales del modelo]
+  scale: 1,
+  propNodes: [],               // p. ej. ['Prop_FR', 'Prop_BR', 'Prop_BL', 'Prop_FL']
+  propAxis: 'y',
+};
+// ==========================================================================
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xa9cbe6); scene.fog = new THREE.Fog(0xa9cbe6, 150, 1200);
+const camera = new THREE.PerspectiveCamera(60, 1, 0.05, 3000);
+scene.add(new THREE.HemisphereLight(0xdfefff, 0x4b5a3a, 0.8));
+const sun = new THREE.DirectionalLight(0xffffff, 0.8); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -20, right: 20, top: 20, bottom: -20, far: 300 });
+scene.add(sun, sun.target);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.MeshLambertMaterial({ color: 0x6d8a55 }));
+ground.rotation.x = -Math.PI/2; ground.receiveShadow = true; scene.add(ground);
+scene.add(new THREE.GridHelper(400, 400, 0xffffff, 0x88a070));
+
+let sim, binding, chase, model;
+const $ = id => document.getElementById(id);
+function toast(t) { const el = $('toast'); el.textContent = t; el.style.opacity = 1; clearTimeout(toast.h); toast.h = setTimeout(() => (el.style.opacity = 0), 2200); }
+
+const REASONS = { 'land-hold': 'Motores apagados: S sostenida en tierra', gesture: 'Desarmado por gesto', 'auto-land': 'Desarme automático tras aterrizar',
+                  'preflight-timeout': 'Desarmado: no despegó a tiempo', crash: 'Desarmado por choque', manual: 'Desarmado' };
+function onEvent(ev) {
+  if (ev.type === 'armed') toast('ARMADO');
+  else if (ev.type === 'disarmed') toast(REASONS[ev.reason] || 'Desarmado');
+  else if (ev.type === 'landed') toast('Aterrizado');
+  else if (ev.type === 'takeoff') toast('Despegue');
+  else if (ev.type === 'crash') toast('CHOQUE: ' + ev.message);
+}
+
+function placeholderModel(P) {   // modelo simple a escala a partir de los parámetros
+  const g = new THREE.Group(), mat = new THREE.MeshStandardMaterial({ color: 0x2a2f37 }), red = new THREE.MeshStandardMaterial({ color: 0xd8342c });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(P.bodyS*0.9, P.bodyH, P.bodyS*1.15), mat); body.castShadow = true; g.add(body);
+  const props = [];
+  for (let i = 0; i < P.N; i++) {
+    const X = P.ry[i], Z = -P.rx[i], L = Math.hypot(X, Z);
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.03*P.wb, 0.03*P.wb, L), P.rx[i] > 0 ? red : mat);
+    arm.position.set(X/2, 0, Z/2); arm.rotation.y = Math.atan2(X, Z); arm.castShadow = true; g.add(arm);
+    const prop = new THREE.Group(); prop.position.set(X, 0.04*P.wb, Z);
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(P.D, 0.01*P.D, 0.07*P.D), mat); blade.castShadow = true; prop.add(blade);
+    prop.name = `Prop_${i+1}`; g.add(prop); props.push(prop.name);
+  }
+  return { root: g, propNodes: props };
+}
+
+async function loadModel(P) {
+  if (model) scene.remove(model);
+  try {
+    const gltf = await new Promise((res, rej) => new THREE.GLTFLoader().load(MODEL.url, res, undefined, rej));
+    gltf.scene.traverse(o => { if (o.isMesh) o.castShadow = true; });
+    return { root: gltf.scene, propNodes: MODEL.propNodes, fromGlb: true };
+  } catch (e) {
+    console.info('GLB no encontrado, uso modelo de reemplazo:', MODEL.url);
+    return { ...placeholderModel(P), fromGlb: false };
+  }
+}
+
+async function start(profile) {
+  sim = new DroneSim(makeConfig(profile), { onEvent });
+  sim.setMode('pos');
+  const m = await loadModel(sim.P);
+  model = m.root; scene.add(model);
+  binding = bindThreeObject(THREE, sim, model, m.fromGlb ? MODEL : { propNodes: m.propNodes });
+  chase = makeChaseCamera(THREE, camera, sim);
+  for (const w of sim.P.warns) console.warn(w);
+  toast(`${sim.P.name}: T/W ${sim.P.TW.toFixed(2)} · hover ${(100*sim.P.hoverThr).toFixed(0)} %`);
+}
+
+// ----------------------------- entradas -----------------------------
+const keys = {}; let thr = 0;
+addEventListener('keydown', e => {
+  if (e.target.tagName === 'SELECT') return;
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
+  if (keys[e.code]) return; keys[e.code] = true;
+  if (!sim) return;
+  if (e.code === 'Enter') sim.armed ? sim.disarm('manual') : (sim.arm() || toast('Solo se puede armar en tierra'));
+  if (e.code === 'Digit1') sim.setMode('acro');
+  if (e.code === 'Digit2') sim.setMode('angle');
+  if (e.code === 'Digit3') sim.setMode('pos');
+  if (e.code === 'KeyF') sim.failMotor(0);
+  if (e.code === 'KeyR') { sim.reset(); thr = 0; }
+  if (e.code === 'Space') thr = sim.P.hoverThr;
+});
+addEventListener('keyup', e => { keys[e.code] = false; });
+const k = c => (keys[c] ? 1 : 0);
+function readInput(dt) {
+  thr = Math.min(1, Math.max(0, thr + (k('KeyW') - k('KeyS'))*0.45*dt));
+  sim.setInput({
+    thr: sim.mode === 'pos' ? 0 : thr,
+    climb: k('KeyW') - k('KeyS'),
+    yaw: k('KeyD') - k('KeyA'),
+    pitch: k('ArrowUp') - k('ArrowDown'),
+    roll: k('ArrowRight') - k('ArrowLeft'),
+  });
+}
+
+// ----------------------------- bucle -----------------------------
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min((now - last)/1000, 0.05); last = now;
+  if (sim && binding) {
+    readInput(dt);
+    sim.step(dt);
+    binding.update(dt);
+    chase(dt);
+    sun.position.copy(model.position).add(new THREE.Vector3(30, 60, 20)); sun.target.position.copy(model.position);
+    const s = sim.getState();
+    $('hud').innerHTML =
+`${sim.P.name}
+Estado   : <span class="${s.armed ? 'armed' : 'safe'}">${s.armed ? 'ARMADO' : 'DESARMADO'}</span>${s.landed ? ' · en tierra' : ''}
+Modo     : ${s.mode.toUpperCase()}
+Altura   : ${s.agl.toFixed(1)} m AGL
+Vel. h/v : ${Math.hypot(s.velNed.n, s.velNed.e).toFixed(1)} / ${(-s.velNed.d).toFixed(1)} m/s
+RPM      : ${s.rotorRpm.map(r => r.toFixed(0)).join(' ')}
+Empuje % : ${s.rotorThrustFrac.map(f => (100*f).toFixed(0)).join(' ')}
+${s.crashed ? 'CHOQUE — R para reiniciar' : ''}
+Enter armar/desarmar · W/S subir/bajar · A/D yaw
+Flechas mover · 1/2/3 modo · F falla · R reinicio`;
+    $('bArm').textContent = s.armed ? 'Desarmar (Enter)' : 'Armar (Enter)';
+  }
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+function resize() { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); }
+addEventListener('resize', resize); resize();
+$('profile').onchange = e => start(e.target.value);
+$('bArm').onclick = () => { if (sim) sim.armed ? sim.disarm('manual') : sim.arm(); $('bArm').blur(); };
+start('mx80');
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

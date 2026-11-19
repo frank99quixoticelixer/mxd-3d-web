@@ -67,12 +67,16 @@ export const CARACTERISTICAS_MX80: { titulo: string; texto: string }[] = [
   {
     titulo: "Aspersión de alto caudal",
     texto:
-      "Dos bombas peristálticas dosificadoras de 20 L/min y cuatro boquillas centrífugas, con gota de 30 a 500 μm.",
+      // Gota de 50 a 500 µm y recirculacion de 30 L/min: datos del equipo
+      // (2026-11-14); el manual dice 30 a 500 µm y no menciona la recirculacion.
+      "Dos bombas peristálticas dosificadoras de 20 L/min (40 L/min en total), bomba de recirculación de 30 L/min y cuatro atomizadores centrífugos con gota seleccionable de 50 a 500 μm.",
   },
   {
     titulo: "Batería de cambio rápido",
     texto:
-      "Batería inteligente de 34 000 mAh a 68.4 V, de conexión directa y hasta 1500 ciclos. Una batería de respaldo mantiene el control de vuelo 5 minutos durante el cambio.",
+      // Bateria de 30 Ah (confirmado por el equipo, 2026-11-18; ficha del
+      // proveedor: 600 ciclos). El manual describe una de 34 Ah.
+      "Batería inteligente de 30 000 mAh a 68.4 V, de conexión directa y hasta 600 ciclos. Una batería de respaldo mantiene el control de vuelo 5 minutos durante el cambio.",
   },
 ];
 
@@ -83,7 +87,9 @@ export const ESPECIFICACIONES_MX80: { grupo: string; datos: Dato[] }[] = [
     datos: [
       { etiqueta: "En operación", valor: "3577 × 3384 × 873 mm" },
       { etiqueta: "Distancia entre ejes de motores", valor: "2640 mm" },
-      { etiqueta: "Peso en vacío", valor: "66.2 kg" },
+      // Equipo (2026-11-14): 61.2 kg en vacio + 80 L de mezcla = 141.2 kg de
+      // despegue. El manual dice 66.2 kg (pag. 63).
+      { etiqueta: "Peso en vacío", valor: "61.2 kg" },
       { etiqueta: "Peso máximo de despegue", valor: "141.2 kg" },
     ],
   },
@@ -92,7 +98,9 @@ export const ESPECIFICACIONES_MX80: { grupo: string; datos: Dato[] }[] = [
     datos: [
       { etiqueta: "Velocidad máxima de operación", valor: "10 m/s" },
       { etiqueta: "Velocidad máxima de vuelo", valor: "13.8 m/s" },
-      { etiqueta: "Vuelo estacionario (carga completa)", valor: "≥ 5.5 min" },
+      // El tiempo de vuelo estacionario del manual (5.5 min con carga) se midio
+      // con la bateria de 34 Ah: no aplica a la de 30 Ah. Se publica cuando se
+      // mida con la bateria actual.
       { etiqueta: "Altitud máxima de despegue", valor: "2000 m" },
     ],
   },
@@ -101,10 +109,10 @@ export const ESPECIFICACIONES_MX80: { grupo: string; datos: Dato[] }[] = [
     datos: [
       { etiqueta: "Temperatura", valor: "0 a 40 °C" },
       { etiqueta: "Viento máximo recomendado", valor: "8 m/s" },
-      // El manual dice 10 km en la pag. 18 y 15 km en la 63. Se publica el
-      // menor hasta que se corrija el manual.
-      { etiqueta: "Alcance del control remoto", valor: "hasta 10 km" },
-      { etiqueta: "Transmisión de imagen", valor: "3 km" },
+      // Datos del equipo (2026-11-14). El manual dice 10 km (pag. 18) o 15 km
+      // (pag. 63) de comunicacion y 3 km de imagen: no son los reales.
+      { etiqueta: "Telemetría", valor: "5 km" },
+      { etiqueta: "Transmisión de imagen", valor: "1 km" },
     ],
   },
 ];

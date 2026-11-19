@@ -6,6 +6,8 @@ import {
   CARACTERISTICAS_MX80,
   CIFRAS_MX80,
 } from "@/data/manual-mx80";
+import { FICHA_TECNICA_MX80 } from "@/data/ficha-tecnica-mx80";
+import { FOLLETO_MX80 } from "@/data/folleto-mx80";
 import { VisorFondo } from "@/features/viewer/VisorFondo";
 
 /**
@@ -81,6 +83,22 @@ export default function PaginaInicio() {
                 className="rounded-lg border border-mxd-borde px-6 py-3 text-sm font-semibold text-mxd-tinta transition-colors hover:border-mxd-verde hover:text-mxd-verde"
               >
                 Cotizar el MX80
+              </a>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+              <a
+                href={FOLLETO_MX80.archivo}
+                download={FOLLETO_MX80.nombreDescarga}
+                className="text-sm font-semibold text-mxd-verde hover:text-mxd-verde-oscuro"
+              >
+                Descargar folleto (PDF, {FOLLETO_MX80.tamano})
+              </a>
+              <a
+                href={FICHA_TECNICA_MX80.archivo}
+                download={FICHA_TECNICA_MX80.nombreDescarga}
+                className="text-sm font-semibold text-mxd-verde hover:text-mxd-verde-oscuro"
+              >
+                Descargar ficha técnica (PDF, {FICHA_TECNICA_MX80.tamano})
               </a>
             </div>
           </div>
