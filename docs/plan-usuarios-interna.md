@@ -318,6 +318,27 @@ Con `npm run dev` ya corriendo, y sin levantar otro servidor:
 Una entrada por sesion, la mas reciente arriba. Formato: fecha, que se hizo, que
 quedo pendiente.
 
+### 2026-11-19: "Salir" rompia la pagina en produccion
+
+- Sintoma: al pulsar Salir en produccion, "This page couldn't load". En local
+  no pasaba (el servidor de desarrollo no esta detras del proxy de Hostinger).
+- Causa (log de ejecucion en hPanel): `failed to get redirect response
+  TypeError: fetch failed`. Tras la accion `cerrarSesion`, Next hace un `fetch`
+  interno a su propio origen para traer /login y en Hostinger ese fetch falla;
+  la navegacion queda al cliente y la pagina se rompe. Por que falla el fetch
+  no lo dice el mensaje (probablemente el servidor no se alcanza por su dominio
+  publico). No es la IP: la sesion no se liga a ella.
+- Por que el login no falla igual: es un formulario sin JavaScript (el proxy
+  bloquea los .js de /login) y su redirect es un 303 normal.
+- Arreglo: `app/salir/route.ts` (POST, 303 a /login), `BotonSalir` es un
+  formulario HTML hacia /salir, `proxy.ts` deja pasar POST /salir sin sesion y
+  manda a /login (307) tambien las navegaciones internas de Next (cabecera
+  `rsc`) en vez de un 401 de texto. `cerrarSesion` se elimino.
+- Regla: en interna no usar `redirect()` desde una accion de servidor que llame
+  JavaScript; usar un formulario HTML hacia una ruta.
+- Pendiente: probar Salir en produccion tras el deploy, recien logueado y con
+  mas de 60 s; y con la sesion caducada.
+
 ### 2026-11-18: base de produccion propia y mensajes de login
 
 - El login de produccion fallaba con "contrasena incorrecta" y luego con el
