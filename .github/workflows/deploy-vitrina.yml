@@ -97,13 +97,10 @@ jobs:
           echo "::error::Timeout esperando el build"
           exit 1
 
-      # La vitrina esta detras de autenticacion basica (src/proxy.ts), asi que sin
-      # credenciales la portada responde 401, no 200. Eso es el sitio sano: el
-      # proxy esta arriba y pidiendo contrasena. Se exige el encabezado
-      # WWW-Authenticate con el realm de la vitrina para no confundirlo con un
-      # 401 generico de otro lado. Un 503 (faltan VITRINA_USUARIO/VITRINA_CLAVE),
-      # un 502 o un 404 siguen fallando. Si algun dia se quita la contrasena, un
-      # 200 tambien pasa.
+      # Desde el ADR 0008 la vitrina no tiene contrasena: la portada responde 200.
+      # Un 502, un 503 o un 404 fallan. El 401 con el realm "MXD vitrina" era de la
+      # autenticacion basica que se quito; se deja aceptado para que un deploy de
+      # una version anterior no se marque como roto.
       - name: Verificar que el sitio responde
         run: |
           sleep 5

@@ -20,5 +20,6 @@ Se escribe un ADR cuando la decision:
 | [0005](0005-glb-y-renders-fuera-de-public.md) | Los GLB y renders se entregan por una ruta de la app, no desde `public/` | Aceptada |
 | [0006](0006-cuentas-individuales-en-interna.md) | Interna pasa de una contrasena compartida a cuentas individuales | Propuesta |
 | [0007](0007-solicitud-de-acceso-con-aprobacion.md) | El acceso a interna se solicita en la pagina y lo aprueba un administrador | Propuesta |
+| [0008](0008-vitrina-sin-contrasena.md) | La vitrina se abre sin contrasena | Aceptada |
 
 Plantilla: [plantilla.md](plantilla.md).
