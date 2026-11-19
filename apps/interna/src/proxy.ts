@@ -54,16 +54,24 @@ function esRutaAbierta(ruta: string, metodo: string): boolean {
   // /registro es la solicitud de acceso (ADR 0007): formulario publico que
   // crea una cuenta INACTIVA; un administrador la aprueba.
   if (ruta === "/login" || ruta === "/registro") return lectura || metodo === "POST";
+  // Salir tiene que funcionar tambien con la sesion ya caducada.
+  if (ruta === "/salir") return metodo === "POST";
   if (ruta.startsWith("/_next/static/") && ruta.endsWith(".css")) return lectura;
   if (ARCHIVOS_DE_MARCA.has(ruta)) return lectura;
   return false;
 }
 
-/** true si el navegador pide una pagina (y por lo tanto se le puede mandar a /login). */
+/**
+ * true si el navegador pide una pagina (y por lo tanto se le puede mandar a
+ * /login). Incluye las navegaciones internas de Next (cabecera `rsc`): con una
+ * sesion caducada, un 401 de texto ahi rompe la pagina con "This page couldn't
+ * load"; con una redireccion, Next recarga entera hacia /login.
+ */
 function pideDocumento(peticion: NextRequest): boolean {
+  if (peticion.method !== "GET") return false;
   return (
-    peticion.method === "GET" &&
-    (peticion.headers.get("accept") ?? "").includes("text/html")
+    (peticion.headers.get("accept") ?? "").includes("text/html") ||
+    peticion.headers.has("rsc")
   );
 }
 

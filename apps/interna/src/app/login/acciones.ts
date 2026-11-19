@@ -81,16 +81,3 @@ export async function iniciarSesion(formData: FormData): Promise<void> {
   registrarAcierto(correo);
   redirect(siguiente);
 }
-
-/** Cierra la sesion de este navegador y vuelve al formulario. */
-export async function cerrarSesion(): Promise<void> {
-  const auth = obtenerAuth();
-  if (auth) {
-    try {
-      await auth.api.signOut({ headers: await headers() });
-    } catch {
-      // Sin sesion valida no hay nada que cerrar.
-    }
-  }
-  redirect("/login");
-}
