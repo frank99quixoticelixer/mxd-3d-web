@@ -12,8 +12,8 @@ export const runtime = "nodejs";
  *
  * La URL publica no cambia: next.config.mjs reescribe /models/* hacia esta
  * ruta. Los archivos viven en apps/vitrina/protegido/models/ y no en public/,
- * porque Hostinger entrega los de public/ sin pasar por proxy.ts (ver
- * lib/protegido.ts).
+ * porque Hostinger entrega los de public/ sin pasar por la app, y asi no se les
+ * puede poner limite ni cabeceras (ver lib/protegido.ts).
  *
  * Por IP: 30 GLB por minuto. Una visita normal pide de 1 a 3.
  */

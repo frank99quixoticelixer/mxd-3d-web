@@ -75,12 +75,11 @@ const nextConfig = {
    * Los GLB y los renders ya no son estaticos de public/: los entregan las
    * rutas /api/modelos y /api/renders desde protegido/ (ver lib/protegido.ts).
    * Se reescriben para que las URLs que ya usa todo el codigo sigan siendo
-   * /models/... y /renders/.... proxy.ts corre antes de las reescrituras y ve la
-   * URL original, asi que las protege igual.
+   * /models/... y /renders/....
    *
    * Aqui estaba la cabecera "public, max-age=0" de /models/*. Se quito: "public"
-   * permite que un CDN o proxy guarde el GLB y lo sirva sin pasar por la
-   * contrasena. Las rutas mandan "private" por su cuenta.
+   * permite que un CDN o proxy guarde el GLB y lo sirva sin pasar por el
+   * limite de peticiones de la ruta. Las rutas mandan "private" por su cuenta.
    */
   async rewrites() {
     return [

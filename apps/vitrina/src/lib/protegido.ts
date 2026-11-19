@@ -7,9 +7,10 @@ import { Readable } from "node:stream";
  * Entrega de los archivos de apps/vitrina/protegido/ (GLB y renders).
  *
  * POR QUE NO SON ESTATICOS DE public/: en Hostinger los archivos de public/ los
- * entrega su servidor estatico sin pasar por la app, asi que proxy.ts no los
- * protege. Aqui los sirve una ruta de la app, que si pasa por proxy.ts (la
- * contrasena), y sobre ella se montan el limite de peticiones y la cache.
+ * entrega su servidor estatico sin pasar por la app, y asi no se les puede
+ * poner limite ni cabeceras. Aqui los sirve una ruta de la app, y sobre ella se
+ * montan el limite de peticiones y la cache. (La vitrina ya no tiene
+ * contrasena, ADR 0008; interna si, y alla estas rutas tambien pasan por ella.)
  *
  * Solo corre en servidor (rutas /api). No importar desde componentes de cliente.
  */

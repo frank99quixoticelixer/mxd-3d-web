@@ -398,7 +398,10 @@ usa sesiones.
 > `INTERNA_USUARIO` e `INTERNA_CLAVE` en hPanel **antes** de que interna
 > redespliegue, porque si faltan el sitio responde 503.
 
-- **vitrina**: en linea. El recorte de datos y la baja de las rutas de ficha PDF
+- **vitrina**: en linea y **sin contrasena** desde 2026-11-19 (ADR 0008): ya no
+  hay `proxy.ts`, lo que separa lo publico de lo interno es solo el recorte de
+  datos, y el GLB lo puede bajar cualquiera (con limite por IP). El recorte de
+  datos y la baja de las rutas de ficha PDF
   estan hechos en la rama, pendientes de desplegar. En la rama
   `vitrina-visor-catalogo` se retiro la pagina `/explorador` (redirige a `/`):
   el visor de la portada es el unico visor del dron. Ese visor ya tiene la
