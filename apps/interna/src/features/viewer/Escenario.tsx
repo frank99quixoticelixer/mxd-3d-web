@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { useStore } from "@react-three/fiber";
+import { useEffect, useRef, useState } from "react";
+import { useFrame, useStore } from "@react-three/fiber";
 import { ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
@@ -40,6 +40,106 @@ function EntornoEstudio() {
   }, [store]);
 
   return null;
+}
+
+/**
+ * Una cifra que cambia cuando algo de la escena se mueve, aparece o desaparece:
+ * suma, por cada objeto visible, un trozo de su matriz de mundo. No hace falta
+ * que sea exacta, solo que dos escenas distintas casi nunca den lo mismo. La
+ * camara no cuenta (no cuelga de la escena): orbitar no cambia la sombra, que
+ * se proyecta desde abajo.
+ */
+function firmaDeEscena(escena: THREE.Object3D): number {
+  let firma = 0;
+  let n = 0;
+  escena.traverseVisible((objeto) => {
+    n++;
+    const e = objeto.matrixWorld.elements;
+    firma +=
+      (e[0] + e[1] + e[2] + e[4] + e[5] + e[6] + e[8] + e[9] + e[10] + 3 * e[12] + 5 * e[13] + 7 * e[14]) *
+      (1 + (n % 97) * 0.01);
+  });
+  return firma + n * 1013;
+}
+
+/** Cada cuantos cuadros se compara la escena, y cada cuantos segundos se redibuja la sombra como maximo. */
+const CUADROS_ENTRE_REVISIONES = 3;
+const SEGUNDOS_ENTRE_SOMBRAS = 0.08;
+
+/**
+ * Sombra de contacto que solo se redibuja cuando cambia la escena.
+ *
+ * ContactShadows de drei vuelve a renderizar la escena completa a un render
+ * target (mas el blur) EN CADA CUADRO si no se le limita "frames". Con el dron
+ * completo (~1,200 objetos y ~4.5 M de triangulos) eso es un segundo render del
+ * dron 60 veces por segundo, aunque no se mueva nada: con el dron quieto la
+ * pagina gastaba un tercio de su trabajo en una sombra que no cambiaba.
+ *
+ * Aqui `frames={1}` y se vuelve a pedir un dibujo solo cuando la firma de la
+ * escena cambia (el despliegue, el despiece, el giro de los rotores, aislar una
+ * pieza, terminar de cargar el modelo...). drei cuenta los cuadros dentro del
+ * render del componente, asi que volver a renderizarlo reinicia la cuenta y la
+ * sombra se redibuja una vez. Durante un movimiento se actualiza a unos 12 Hz
+ * en vez de 60: es una sombra difusa y no se nota. El ultimo cambio siempre se
+ * alcanza, porque la firma solo se da por vista cuando se pide el dibujo.
+ *
+ * Lo mismo vale para el mapa de sombras de la luz principal (2048 x 2048),
+ * que es otro render completo del dron por cuadro: tampoco depende de la
+ * camara, solo de la luz y de lo que se mueve. Se apaga su actualizacion
+ * automatica y se pide una nueva con la misma firma. Medido con visor-glb.html:
+ * quitar esa sombra mejora la fluidez; asi se conserva y orbitar o acercarse ya
+ * no la recalcula.
+ */
+function SombraDeContacto({
+  position,
+  scale,
+  far,
+  radio,
+}: {
+  position: [number, number, number];
+  scale: number;
+  far: number;
+  /** Tamano del modelo: si cambia, la luz se recoloca y su sombra hay que recalcularla. */
+  radio: number;
+}) {
+  const [, redibujar] = useState(0);
+  const estado = useRef({ firma: Number.NaN, cuadros: 0, ultimo: -Infinity });
+  const store = useStore();
+
+  useEffect(() => {
+    const { gl } = store.getState();
+    gl.shadowMap.autoUpdate = false;
+    gl.shadowMap.needsUpdate = true;
+    return () => {
+      gl.shadowMap.autoUpdate = true;
+    };
+  }, [store, radio]);
+
+  useFrame(({ scene, clock, gl }) => {
+    const s = estado.current;
+    if (++s.cuadros % CUADROS_ENTRE_REVISIONES !== 0) return;
+    const firma = firmaDeEscena(scene);
+    if (firma === s.firma) return;
+    if (clock.elapsedTime - s.ultimo < SEGUNDOS_ENTRE_SOMBRAS) return;
+    s.firma = firma;
+    s.ultimo = clock.elapsedTime;
+    gl.shadowMap.needsUpdate = true;
+    redibujar((n) => n + 1);
+  });
+
+  return (
+    <ContactShadows
+      position={position}
+      frames={1}
+      opacity={0.38}
+      scale={scale}
+      blur={2.6}
+      far={far}
+      resolution={512}
+      smooth={false}
+      color="#0d1512"
+    />
+  );
 }
 
 export function Escenario({ sombraY }: { sombraY?: number } = {}) {
@@ -84,30 +184,8 @@ export function Escenario({ sombraY }: { sombraY?: number } = {}) {
         color="#eaf6ef"
       />
 
-      {/*
-        Sombra de contacto: da la sensacion de que la pieza se apoya.
-
-        ContactShadows renderiza la escena completa a un render target aparte
-        (mas un pase de blur, dos si smooth) EN CADA CUADRO, para siempre, por
-        defecto (su prop "frames" default es Infinity). Con un GLB de ~350
-        nodos eso es un segundo render completo de la escena 60 veces por
-        segundo sin que nada se mueva. No se limita "frames" a un numero fijo
-        porque el despliegue, el despiece y el giro del rotor si cambian la
-        silueta y necesitan que la sombra los siga en vivo — se corta el pase
-        de blur extra (smooth) y se baja la resolucion, que reduce el costo
-        sin arriesgar que la sombra se quede desactualizada a medio de una
-        animacion.
-      */}
-      <ContactShadows
-        position={[0, sombraY ?? -d * 1.02, 0]}
-        opacity={0.38}
-        scale={d * 7}
-        blur={2.6}
-        far={d * 3}
-        resolution={512}
-        smooth={false}
-        color="#0d1512"
-      />
+      {/* Sombra de contacto: da la sensacion de que la pieza se apoya. */}
+      <SombraDeContacto position={[0, sombraY ?? -d * 1.02, 0]} scale={d * 7} far={d * 3} radio={d} />
     </>
   );
 }
