@@ -11,6 +11,8 @@ import {
   type CambiosFilaBom,
 } from "@/lib/bom";
 import { obtenerPiezaPorSku } from "@/lib/catalogo";
+import { errorDeFormato } from "@/lib/numero-parte";
+import { numerosEnUso, SIN_DUENO } from "@/lib/numeros-en-uso";
 import { exigirSesion } from "@/lib/sesion";
 
 /**
@@ -88,6 +90,10 @@ export async function guardarEspecificaciones(formData: FormData): Promise<Resul
  * Suma al BOM una pieza del catalogo del 3D que el maestro no traia. La fila
  * nace con los datos que el catalogo ya tiene, marcada como "agregada" (quien y
  * cuando), y asi sale en la ficha y en el Excel. Si ya estaba, no hace nada.
+ *
+ * Recibe el numero de parte MXD (opcional) que la persona escribio o acepto de la
+ * sugerencia. Debe seguir la nomenclatura del maestro y no puede ser el de otra
+ * pieza; el de una partida del maestro que nadie ha tomado si se acepta.
  */
 export async function agregarAlBom(formData: FormData): Promise<ResultadoGuardado> {
   const sesion = await exigirSesion();
@@ -100,8 +106,19 @@ export async function agregarAlBom(formData: FormData): Promise<ResultadoGuardad
   const pieza = obtenerPiezaPorSku(sku);
   if (!pieza) return { ok: false, error: "Esa pieza no esta en el catalogo." };
 
+  const numero = String(formData.get("numero_parte_mxd") ?? "").trim();
+  const errorNumero = errorDeFormato(numero);
+  if (errorNumero) return { ok: false, error: errorNumero };
+  if (numero !== "") {
+    const dueno = (await numerosEnUso()).get(numero);
+    if (dueno !== undefined && dueno !== SIN_DUENO && dueno !== sku) {
+      return { ok: false, error: `El número ${numero} ya lo tiene la pieza ${dueno}. Elige otro.` };
+    }
+  }
+
   if (!(await leerEstadoBom(sku)).enBom) {
     const { sku: _sku, nombre: _nombre, ...datos } = filaDesdePieza(pieza);
+    if (numero !== "") datos.numero_parte_mxd = numero;
     try {
       await escribirPieza(
         sku,

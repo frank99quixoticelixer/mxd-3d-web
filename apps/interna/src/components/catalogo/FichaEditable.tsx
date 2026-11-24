@@ -17,6 +17,12 @@ import {
 } from "@/lib/campos-ficha";
 import { costoMaterial, costoProduccionTotal } from "@/lib/costos";
 import type { Pieza } from "@/lib/esquema";
+import {
+  errorDeFormato,
+  siguienteNumeroDeParte,
+  sistemasEnUso,
+  TIPOS_DE_PARTE,
+} from "@/lib/numero-parte";
 
 /**
  * NO importar nada de "@/lib/bom" aqui: usa exceljs (node:fs), rompe en el
@@ -156,16 +162,49 @@ export interface EstadoBomFicha {
  * ofrece sumarla; una sumada a mano lo dice, porque no viene del maestro de
  * partes original y quien lea el BOM debe saberlo.
  */
-function AvisoOrigen({ estado, sku, slug }: { estado: EstadoBomFicha; sku: string; slug: string }) {
+function AvisoOrigen({
+  estado,
+  sku,
+  slug,
+  numeroInicial,
+  numerosUsados,
+}: {
+  estado: EstadoBomFicha;
+  sku: string;
+  slug: string;
+  /** El numero que la pieza ya trae del cruce con el maestro, si lo tiene. */
+  numeroInicial: string | null;
+  /** Los numeros de parte MXD que ya existen (maestro y BOM), para sugerir el siguiente libre. */
+  numerosUsados: string[];
+}) {
   const [confirmando, setConfirmando] = useState(false);
   const [agregando, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [numero, setNumero] = useState(numeroInicial ?? "");
+  const [sistema, setSistema] = useState("");
+  const [tipo, setTipo] = useState("");
   const router = useRouter();
 
+  const sistemas = sistemasEnUso(numerosUsados);
+  const errorNumero = errorDeFormato(numero);
+  const repetido = numero.trim() !== "" && numero.trim() !== numeroInicial && numerosUsados.includes(numero.trim());
+
+  // Con sistema y tipo elegidos se sugiere el siguiente consecutivo libre; la
+  // persona puede corregirlo a mano despues.
+  function sugerir(nuevoSistema: string, nuevoTipo: string) {
+    setSistema(nuevoSistema);
+    setTipo(nuevoTipo);
+    if (nuevoSistema && nuevoTipo) {
+      setNumero(siguienteNumeroDeParte(numerosUsados, nuevoSistema, nuevoTipo));
+    }
+  }
+
   function agregar() {
+    if (errorNumero || repetido) return;
     const datos = new FormData();
     datos.set("sku", sku);
     datos.set("slug", slug);
+    datos.set("numero_parte_mxd", numero.trim());
     startTransition(async () => {
       const resultado = await agregarAlBom(datos);
       if (!resultado.ok) {
@@ -199,11 +238,73 @@ function AvisoOrigen({ estado, sku, slug }: { estado: EstadoBomFicha; sku: strin
             Excel.
           </p>
           {confirmando ? (
-            <div className="mt-3 flex flex-wrap items-center gap-2">
+            <div className="mt-3 space-y-3">
+              <div className="rounded-lg border border-amber-300 bg-white/60 p-3">
+                <label htmlFor="numero-parte-nuevo" className="text-xs font-semibold">
+                  Número de parte MXD
+                </label>
+                <p className="mt-0.5 text-[11px] leading-relaxed">
+                  El BOM maestro identifica cada pieza con este número, y esta no lo tiene. Elige el
+                  sistema y el tipo para proponer el siguiente libre, o escríbelo tú. Un ensamble de
+                  varias piezas lleva tipo ENS (por ejemplo el balanceador es PRO-ENS-001).
+                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <select
+                    aria-label="Sistema"
+                    value={sistema}
+                    onChange={(e) => sugerir(e.target.value, tipo)}
+                    className="rounded-md border border-amber-300 bg-white px-2 py-1 text-xs"
+                  >
+                    <option value="">Sistema…</option>
+                    {sistemas.map((s) => (
+                      <option key={s.sistema} value={s.sistema}>
+                        {s.sistema} ({s.cantidad})
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    aria-label="Tipo"
+                    value={tipo}
+                    onChange={(e) => sugerir(sistema, e.target.value)}
+                    className="rounded-md border border-amber-300 bg-white px-2 py-1 text-xs"
+                  >
+                    <option value="">Tipo…</option>
+                    {TIPOS_DE_PARTE.map((t) => (
+                      <option key={t.codigo} value={t.codigo}>
+                        {t.codigo} · {t.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <input
+                  id="numero-parte-nuevo"
+                  type="text"
+                  value={numero}
+                  onChange={(e) => setNumero(e.target.value)}
+                  placeholder="MXD-MX80-PRO-ENS-001-R00"
+                  autoComplete="off"
+                  spellCheck={false}
+                  aria-invalid={Boolean(errorNumero || repetido)}
+                  className="mt-2 w-full rounded-md border border-amber-300 bg-white px-2 py-1 font-mono text-xs"
+                />
+                {errorNumero && <p className="mt-1 text-[11px] font-medium text-red-800">{errorNumero}</p>}
+                {repetido && !errorNumero && (
+                  <p className="mt-1 text-[11px] font-medium text-red-800">
+                    Ese número ya existe en el maestro o en otra pieza. Elige otro.
+                  </p>
+                )}
+                {numero.trim() === "" && (
+                  <p className="mt-1 text-[11px]">
+                    Si lo dejas vacío, la pieza entra al BOM sin número y puedes ponerlo después al
+                    editar «Compras».
+                  </p>
+                )}
+              </div>
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-medium">¿Agregar {sku} al BOM maestro?</span>
               <button
                 type="button"
-                disabled={agregando}
+                disabled={agregando || Boolean(errorNumero) || repetido}
                 onClick={agregar}
                 className="rounded-md bg-amber-700 px-3 py-1 text-xs font-semibold text-white hover:bg-amber-800 disabled:opacity-60"
               >
@@ -217,6 +318,7 @@ function AvisoOrigen({ estado, sku, slug }: { estado: EstadoBomFicha; sku: strin
               >
                 Cancelar
               </button>
+            </div>
             </div>
           ) : (
             <button
@@ -238,11 +340,14 @@ export function FichaEditable({
   pieza,
   slug,
   estadoBom,
+  numerosUsados = [],
   filasFijas = [],
 }: {
   pieza: Pieza;
   slug: string;
   estadoBom: EstadoBomFicha;
+  /** Numeros de parte MXD ya existentes; solo llegan si la pieza aun no esta en el BOM. */
+  numerosUsados?: string[];
   /** Filas de solo lectura (no viven en el BOM: secciones/cantidad vienen de mx80.ts). */
   filasFijas?: { etiqueta: string; valor: string }[];
 }) {
@@ -280,7 +385,13 @@ export function FichaEditable({
   if (!editando) {
     return (
       <>
-        <AvisoOrigen estado={estadoBom} sku={pieza.sku} slug={slug} />
+        <AvisoOrigen
+          estado={estadoBom}
+          sku={pieza.sku}
+          slug={slug}
+          numeroInicial={pieza.numeroBom}
+          numerosUsados={numerosUsados}
+        />
         <section className="mt-8">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
