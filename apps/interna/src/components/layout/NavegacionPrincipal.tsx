@@ -8,6 +8,7 @@ const ENLACES = [
   { href: "/catalogo", texto: "Catálogo", textoCorto: "Catálogo" },
   { href: "/maestro", texto: "Maestro de partes", textoCorto: "Maestro" },
   { href: "/historial", texto: "Historial", textoCorto: "Historial" },
+  { href: "/cortes", texto: "Cortes del BOM", textoCorto: "Cortes" },
 ];
 
 /** Solo lo ven los administradores (ADR 0007). La pagina se protege aparte. */

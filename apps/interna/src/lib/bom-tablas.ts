@@ -42,8 +42,27 @@ CREATE TABLE IF NOT EXISTS bom_cambios (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 `;
 
+/**
+ * Cortes del BOM (lib/bom-cortes.ts): una foto con nombre del BOM completo.
+ * `datos` es LONGTEXT con el JSON de todas las filas; no se consulta por dentro.
+ */
+export const DDL_BOM_CORTES = `
+CREATE TABLE IF NOT EXISTS bom_cortes (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  nombre VARCHAR(120) NOT NULL,
+  piezas INT UNSIGNED NOT NULL,
+  datos LONGTEXT NOT NULL,
+  creado_por VARCHAR(36) NULL,
+  creado_por_correo VARCHAR(255) NULL,
+  fecha DATETIME(3) NOT NULL,
+  PRIMARY KEY (id),
+  KEY idx_bom_cortes_fecha (fecha)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+`;
+
 /** Nombre de la tabla y su sentencia, en el orden en que se crean. */
 export const TABLAS_BOM: { tabla: string; ddl: string }[] = [
   { tabla: "bom_piezas", ddl: DDL_BOM_PIEZAS },
   { tabla: "bom_cambios", ddl: DDL_BOM_CAMBIOS },
+  { tabla: "bom_cortes", ddl: DDL_BOM_CORTES },
 ];

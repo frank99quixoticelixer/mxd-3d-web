@@ -2,7 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 
-import { COLUMNAS_BOM, ConflictoBom, escribirPieza, type CambiosFilaBom } from "@/lib/bom";
+import {
+  COLUMNAS_BOM,
+  ConflictoBom,
+  escribirPieza,
+  filaDesdePieza,
+  leerEstadoBom,
+  type CambiosFilaBom,
+} from "@/lib/bom";
+import { obtenerPiezaPorSku } from "@/lib/catalogo";
 import { exigirSesion } from "@/lib/sesion";
 
 /**
@@ -71,6 +79,42 @@ export async function guardarEspecificaciones(formData: FormData): Promise<Resul
 
   // El BOM se ve en la ficha, en el catalogo y en las fichas PDF: se refrescan
   // todas, no solo esta pagina.
+  revalidatePath(`/catalogo/${slug}`);
+  revalidatePath("/catalogo", "layout");
+  return { ok: true };
+}
+
+/**
+ * Suma al BOM una pieza del catalogo del 3D que el maestro no traia. La fila
+ * nace con los datos que el catalogo ya tiene, marcada como "agregada" (quien y
+ * cuando), y asi sale en la ficha y en el Excel. Si ya estaba, no hace nada.
+ */
+export async function agregarAlBom(formData: FormData): Promise<ResultadoGuardado> {
+  const sesion = await exigirSesion();
+
+  const sku = formData.get("sku");
+  const slug = formData.get("slug");
+  if (typeof sku !== "string" || typeof slug !== "string") {
+    throw new Error("Formulario sin sku/slug.");
+  }
+  const pieza = obtenerPiezaPorSku(sku);
+  if (!pieza) return { ok: false, error: "Esa pieza no esta en el catalogo." };
+
+  if (!(await leerEstadoBom(sku)).enBom) {
+    const { sku: _sku, nombre: _nombre, ...datos } = filaDesdePieza(pieza);
+    try {
+      await escribirPieza(
+        sku,
+        datos,
+        { id: sesion.user.id, correo: sesion.user.email },
+        { nombreSiEsNueva: pieza.nombre },
+      );
+    } catch (error) {
+      // Dos personas la agregaron a la vez: la otra gano y la pieza ya esta.
+      if ((error as { code?: string }).code !== "ER_DUP_ENTRY") throw error;
+    }
+  }
+
   revalidatePath(`/catalogo/${slug}`);
   revalidatePath("/catalogo", "layout");
   return { ok: true };

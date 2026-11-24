@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
 
-import { guardarEspecificaciones } from "@/app/catalogo/[slug]/acciones";
+import { agregarAlBom, guardarEspecificaciones } from "@/app/catalogo/[slug]/acciones";
 import {
   CAMPOS_COMPRAS,
   CAMPOS_COSTOS,
@@ -142,16 +142,107 @@ function FilaInput({ campo, valor }: { campo: CampoFicha; valor: string | number
   );
 }
 
+/** Lo que la ficha sabe de la pieza en el BOM (ver EstadoBom en lib/bom.ts, que no se importa aqui). */
+export interface EstadoBomFicha {
+  enBom: boolean;
+  /** Version del BOM que vio quien abrio la ficha; se manda al guardar para no pisar cambios ajenos. */
+  version: number;
+  origen: string | null;
+  origenNota: string | null;
+}
+
+/**
+ * Aviso de la ficha sobre el origen de la pieza en el BOM. Una pieza sin fila
+ * ofrece sumarla; una sumada a mano lo dice, porque no viene del maestro de
+ * partes original y quien lea el BOM debe saberlo.
+ */
+function AvisoOrigen({ estado, sku, slug }: { estado: EstadoBomFicha; sku: string; slug: string }) {
+  const [confirmando, setConfirmando] = useState(false);
+  const [agregando, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  function agregar() {
+    const datos = new FormData();
+    datos.set("sku", sku);
+    datos.set("slug", slug);
+    startTransition(async () => {
+      const resultado = await agregarAlBom(datos);
+      if (!resultado.ok) {
+        setError(resultado.error);
+        return;
+      }
+      setError(null);
+      setConfirmando(false);
+      router.refresh();
+    });
+  }
+
+  if (estado.enBom && estado.origen !== "agregada") return null;
+
+  return (
+    <div role="status" className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+      {estado.enBom ? (
+        <>
+          <p className="font-semibold">Agregada al BOM a mano</p>
+          <p className="mt-1 text-xs leading-relaxed">
+            {estado.origenNota ?? "No viene del maestro de partes original."} En el Excel del BOM
+            sale marcada con el origen «agregada».
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="font-semibold">Esta pieza no está en el BOM maestro</p>
+          <p className="mt-1 text-xs leading-relaxed">
+            Lo que ves viene del catálogo del 3D y no se guarda en ningún BOM. Si la agregas (o si
+            la editas), queda marcada como agregada a mano, con quién y cuándo, y sale así en el
+            Excel.
+          </p>
+          {confirmando ? (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="text-xs font-medium">¿Agregar {sku} al BOM maestro?</span>
+              <button
+                type="button"
+                disabled={agregando}
+                onClick={agregar}
+                className="rounded-md bg-amber-700 px-3 py-1 text-xs font-semibold text-white hover:bg-amber-800 disabled:opacity-60"
+              >
+                {agregando ? "Agregando…" : "Sí, agregar"}
+              </button>
+              <button
+                type="button"
+                disabled={agregando}
+                onClick={() => setConfirmando(false)}
+                className="rounded-md border border-amber-400 px-3 py-1 text-xs font-semibold hover:bg-amber-100"
+              >
+                Cancelar
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmando(true)}
+              className="mt-3 rounded-md border border-amber-500 px-3 py-1 text-xs font-semibold hover:bg-amber-100"
+            >
+              Agregar al BOM maestro
+            </button>
+          )}
+          {error && <p className="mt-2 text-xs font-medium text-red-800">{error}</p>}
+        </>
+      )}
+    </div>
+  );
+}
+
 export function FichaEditable({
   pieza,
   slug,
-  version,
+  estadoBom,
   filasFijas = [],
 }: {
   pieza: Pieza;
   slug: string;
-  /** Version del BOM que vio quien abrio la ficha; se manda al guardar para no pisar cambios ajenos. */
-  version: number;
+  estadoBom: EstadoBomFicha;
   /** Filas de solo lectura (no viven en el BOM: secciones/cantidad vienen de mx80.ts). */
   filasFijas?: { etiqueta: string; valor: string }[];
 }) {
@@ -189,6 +280,7 @@ export function FichaEditable({
   if (!editando) {
     return (
       <>
+        <AvisoOrigen estado={estadoBom} sku={pieza.sku} slug={slug} />
         <section className="mt-8">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
@@ -265,7 +357,7 @@ export function FichaEditable({
     <form onSubmit={onGuardar}>
       <input type="hidden" name="sku" value={pieza.sku} />
       <input type="hidden" name="slug" value={slug} />
-      <input type="hidden" name="version" value={version} />
+      <input type="hidden" name="version" value={estadoBom.version} />
 
       <section className="mt-8">
         <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">

@@ -18,7 +18,7 @@
  * Antes hay que crear las tablas: npm run db:migrar -- --aplicar
  */
 import { PIEZAS_MX80 } from "../src/data/mx80";
-import { cargarFilasIniciales, filaDesdePieza, type FilaBom } from "../src/lib/bom";
+import { cargarFilasIniciales, filaDesdePieza, marcaDeAgregada, type FilaBom } from "../src/lib/bom";
 import { RUTA_BOM, leerFilasDeExcel } from "../src/lib/bom-excel";
 import { obtenerPool } from "../src/lib/db";
 
@@ -36,7 +36,9 @@ async function main() {
 
   let filas: FilaBom[];
   if (agregarFaltantes) {
-    filas = PIEZAS_MX80.map((p) => filaDesdePieza(p));
+    // Son piezas del 3D que el maestro no trae: quedan marcadas como agregadas.
+    const marca = marcaDeAgregada("el script bom:agregar");
+    filas = PIEZAS_MX80.map((p) => ({ ...filaDesdePieza(p), ...marca }));
     console.log(`Catalogo: ${filas.length} piezas.`);
   } else {
     filas = await leerFilasDeExcel(archivo);
