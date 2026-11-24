@@ -6,9 +6,11 @@ import { notFound } from "next/navigation";
 import { DescargasMalla } from "@/components/catalogo/DescargasMalla";
 import { EtiquetaWeb } from "@/components/catalogo/EtiquetaWeb";
 import { FichaEditable } from "@/components/catalogo/FichaEditable";
+import { PartidaMaestro } from "@/components/catalogo/PartidaMaestro";
 import { VersionesPieza } from "@/components/catalogo/VersionesPieza";
 import { BotonAtras } from "@/components/layout/BotonAtras";
 import { MODELO_PREDETERMINADO } from "@/config/modelos3d";
+import { CRUCE_MAESTRO } from "@/data/cruce-maestro";
 import { MANUAL_MX80, MANUAL_POR_PIEZA } from "@/data/manual-mx80";
 import {
   seleccionDePieza,
@@ -18,6 +20,7 @@ import {
 import { VisorPieza } from "@/features/viewer/VisorPieza";
 import { leerEstadoBom } from "@/lib/bom";
 import { numerosEnUso } from "@/lib/numeros-en-uso";
+import { partidasDeLaPieza } from "@/lib/partida-maestro";
 import {
   obtenerPiezaConBomPorSlug,
   obtenerPiezaPorSlug,
@@ -136,6 +139,9 @@ export default async function PaginaPieza({
   // Solo una pieza que aun no esta en el BOM ofrece sumarse, y para sugerirle un
   // numero de parte MXD libre la ficha necesita saber cuales ya existen.
   const numerosUsados = estadoBom.enBom ? [] : [...(await numerosEnUso()).keys()];
+  // Lo que el maestro de partes dice de esta pieza: su partida, el ensamble del
+  // que forma parte y las partidas que la componen.
+  const partidas = await partidasDeLaPieza(pieza);
 
   // El visor recibe tambien las subpiezas: son los objetos que trae el GLB.
   const catalogo = obtenerTodas(MODELO_PREDETERMINADO);
@@ -292,6 +298,8 @@ export default async function PaginaPieza({
             ]}
           />
 
+          <PartidaMaestro partidas={partidas} tieneNumero={Boolean(pieza.numeroBom)} />
+
           {delManual && delManual.datos.length > 0 && (
             <section className="mt-8">
               <h2 className="text-sm font-bold uppercase tracking-widest text-mxd-gris">
@@ -413,6 +421,11 @@ export default async function PaginaPieza({
                   </span>
                   <span className="mt-0.5 text-sm font-medium text-mxd-tinta">
                     {p.nombre}
+                  </span>
+                  {/* El numero de parte MXD es la llave del BOM: de la subpieza se
+                      ve aqui sin abrir su ficha. */}
+                  <span className="mt-1 font-mono text-[10px] text-mxd-gris">
+                    {p.numeroBom ?? CRUCE_MAESTRO[p.sku]?.numero ?? "sin número de parte"}
                   </span>
                 </Link>
               </li>
