@@ -10,6 +10,8 @@ import {
   CAMPOS_ESPECIFICACIONES,
   CAMPOS_TRAZABILIDAD,
   ETIQUETAS_GRUPO_MATERIAL,
+  aUnidadBase,
+  deUnidadBase,
   monedaTexto,
   textoValor,
   valorInicial,
@@ -48,6 +50,78 @@ function FilaValor({ etiqueta, valor }: { etiqueta: string; valor: string }) {
   );
 }
 
+/**
+ * Un campo numerico que se captura en la unidad que mas convenga (g o kg) y se
+ * guarda siempre en la del BOM: el campo que se envia es un input oculto con el
+ * valor ya convertido, asi el servidor no cambia y la persona no hace cuentas.
+ */
+function FilaConUnidad({
+  campo,
+  valor,
+  sugerido,
+}: {
+  campo: CampoFicha;
+  valor: string | number | boolean | null;
+  sugerido?: string;
+}) {
+  const unidades = campo.unidades ?? [];
+  const [indice, setIndice] = useState(0);
+  const [texto, setTexto] = useState(typeof valor === "number" ? String(valor) : "");
+  const unidad = unidades[indice];
+  const numero = texto.trim() === "" ? null : Number(texto);
+  const enBase = numero !== null && Number.isFinite(numero) ? aUnidadBase(numero, unidad.factor) : null;
+  const sugeridoBase = sugerido !== undefined && Number.isFinite(Number(sugerido)) ? Number(sugerido) : null;
+
+  // Al cambiar de unidad se convierte lo escrito: el mismo peso, en otra unidad.
+  function cambiarUnidad(nuevo: number) {
+    if (enBase !== null) setTexto(String(deUnidadBase(enBase, unidades[nuevo].factor)));
+    setIndice(nuevo);
+  }
+
+  return (
+    <div className="border-b border-mxd-borde py-2 last:border-0">
+      <div className="flex items-center justify-between gap-4">
+        <label htmlFor={campo.clave} className="text-sm text-mxd-gris">
+          {campo.etiqueta}
+        </label>
+        <div className="flex items-center gap-1.5">
+          {/* Lo que se envia: siempre en la unidad del BOM. */}
+          <input type="hidden" name={campo.clave} value={enBase === null ? "" : String(enBase)} />
+          <input
+            id={campo.clave}
+            type="number"
+            step="any"
+            min="0"
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            placeholder={
+              sugeridoBase !== null ? `Maestro: ${deUnidadBase(sugeridoBase, unidad.factor)}` : undefined
+            }
+            className="w-32 rounded-md border border-mxd-borde bg-mxd-hueso px-2 py-1 text-sm text-mxd-tinta placeholder:text-mxd-gris/70"
+          />
+          <select
+            aria-label={`Unidad de ${campo.etiqueta}`}
+            value={indice}
+            onChange={(e) => cambiarUnidad(Number(e.target.value))}
+            className="rounded-md border border-mxd-borde bg-mxd-hueso px-2 py-1 text-sm text-mxd-tinta"
+          >
+            {unidades.map((u, i) => (
+              <option key={u.etiqueta} value={i}>
+                {u.etiqueta}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      {enBase !== null && indice !== 0 && (
+        <p className="mt-1 text-right text-[11px] text-mxd-gris">
+          Se guarda como {enBase} {campo.unidad}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function FilaInput({
   campo,
   valor,
@@ -58,6 +132,7 @@ function FilaInput({
   /** Lo que dice el maestro de partes para este campo, si la ficha aun no tiene dato. */
   sugerido?: string;
 }) {
+  if (campo.unidades) return <FilaConUnidad campo={campo} valor={valor} sugerido={sugerido} />;
   if (campo.tipo === "seleccionGiro") {
     return (
       <div className="flex items-center justify-between gap-4 border-b border-mxd-borde py-2 last:border-0">
