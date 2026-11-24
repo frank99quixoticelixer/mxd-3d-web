@@ -17,6 +17,7 @@ import {
 } from "@/features/viewer/componentes";
 import { VisorPieza } from "@/features/viewer/VisorPieza";
 import { leerEstadoBom } from "@/lib/bom";
+import { numerosEnUso } from "@/lib/numeros-en-uso";
 import {
   obtenerPiezaConBomPorSlug,
   obtenerPiezaPorSlug,
@@ -132,6 +133,9 @@ export default async function PaginaPieza({
   // Version del BOM que ve esta persona (el formulario la manda al guardar) y
   // si la pieza viene del maestro o fue agregada a mano.
   const estadoBom = await leerEstadoBom(pieza.sku);
+  // Solo una pieza que aun no esta en el BOM ofrece sumarse, y para sugerirle un
+  // numero de parte MXD libre la ficha necesita saber cuales ya existen.
+  const numerosUsados = estadoBom.enBom ? [] : [...(await numerosEnUso()).keys()];
 
   // El visor recibe tambien las subpiezas: son los objetos que trae el GLB.
   const catalogo = obtenerTodas(MODELO_PREDETERMINADO);
@@ -270,6 +274,7 @@ export default async function PaginaPieza({
             pieza={pieza}
             slug={slug}
             estadoBom={estadoBom}
+            numerosUsados={numerosUsados}
             filasFijas={[
               // Solo las subpiezas: de que ensamble forman parte, de lo general
               // a lo especifico, con el SKU del inmediato (p. ej. "Balanceador >
