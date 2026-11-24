@@ -114,6 +114,8 @@ function conBom(pieza: Pieza, fila: FilaBom | null): Pieza {
     trazabilidad_archivo_stl,
     cruce_estado,
     numeros_variantes,
+    origen_bom: _origenBom,
+    origen_nota: _origenNota,
     ...especificaciones
   } = fila;
   // Numero de cada version (CW/CCW...) y estado del cruce, capturados en la

@@ -16,7 +16,7 @@ import {
   ubicacionDeSku,
 } from "@/features/viewer/componentes";
 import { VisorPieza } from "@/features/viewer/VisorPieza";
-import { leerVersionBom } from "@/lib/bom";
+import { leerEstadoBom } from "@/lib/bom";
 import {
   obtenerPiezaConBomPorSlug,
   obtenerPiezaPorSlug,
@@ -129,8 +129,9 @@ export default async function PaginaPieza({
   // edicion reciente se vea de inmediato (ver comentario en lib/catalogo.ts).
   const pieza = await obtenerPiezaConBomPorSlug(slug);
   if (!pieza) notFound();
-  // La version del BOM que ve esta persona; el formulario la manda al guardar.
-  const versionBom = await leerVersionBom(pieza.sku);
+  // Version del BOM que ve esta persona (el formulario la manda al guardar) y
+  // si la pieza viene del maestro o fue agregada a mano.
+  const estadoBom = await leerEstadoBom(pieza.sku);
 
   // El visor recibe tambien las subpiezas: son los objetos que trae el GLB.
   const catalogo = obtenerTodas(MODELO_PREDETERMINADO);
@@ -268,7 +269,7 @@ export default async function PaginaPieza({
           <FichaEditable
             pieza={pieza}
             slug={slug}
-            version={versionBom}
+            estadoBom={estadoBom}
             filasFijas={[
               // Solo las subpiezas: de que ensamble forman parte, de lo general
               // a lo especifico, con el SKU del inmediato (p. ej. "Balanceador >

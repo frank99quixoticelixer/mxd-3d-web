@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { leerCambios, nombreDeCampo } from "@/lib/bom";
+import { leerCambios, nombreDeCampo, puedeRestaurarse } from "@/lib/bom";
 import { obtenerTodas } from "@/lib/catalogo";
+
+import { BotonRestaurar } from "./BotonRestaurar";
 
 export const metadata: Metadata = {
   title: "Historial del BOM",
@@ -44,6 +46,16 @@ export default async function PaginaHistorial({
 
   const cambios = await leerCambios({ sku, limite: LIMITE });
   const piezas = new Map(obtenerTodas().map((p) => [p.sku, p]));
+  // Solo el cambio mas reciente de cada campo de cada pieza se puede restaurar:
+  // los demas dejaron de ser lo vigente (la accion lo vuelve a comprobar).
+  const vistos = new Set<string>();
+  const restaurables = new Set<number>();
+  for (const c of cambios) {
+    const llave = `${c.sku}\u0000${c.campo}`;
+    if (vistos.has(llave)) continue;
+    vistos.add(llave);
+    if (puedeRestaurarse(c.campo) && c.anterior !== c.nuevo) restaurables.add(c.id);
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-10">
@@ -76,6 +88,9 @@ export default async function PaginaHistorial({
                 <th scope="col" className="px-3 py-2 font-semibold">Campo</th>
                 <th scope="col" className="px-3 py-2 font-semibold">Antes</th>
                 <th scope="col" className="px-3 py-2 font-semibold">Después</th>
+                <th scope="col" className="px-3 py-2 font-semibold">
+                  <span className="sr-only">Restaurar</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -100,6 +115,9 @@ export default async function PaginaHistorial({
                     <td className="px-3 py-2 text-mxd-tinta">{nombreDeCampo(c.campo)}</td>
                     <td className="px-3 py-2 text-mxd-gris"><Valor texto={c.anterior} /></td>
                     <td className="px-3 py-2 text-mxd-tinta"><Valor texto={c.nuevo} /></td>
+                    <td className="px-3 py-2">
+                      {restaurables.has(c.id) && <BotonRestaurar idCambio={c.id} />}
+                    </td>
                   </tr>
                 );
               })}

@@ -157,12 +157,14 @@ medio. No conectar los sitios al builder de Git en hPanel.
 | `HOSTINGER_API_TOKEN` | GitHub, Settings > Secrets and variables > Actions | autentica al workflow contra la API de Hostinger |
 | `NEXT_PUBLIC_SITIO_URL` | hPanel, variables de entorno del sitio | URL publica en metadatos y Open Graph |
 | `NEXT_PUBLIC_DIAGNOSTICO_3D` | hPanel, variables de entorno del sitio | panel de piezas del GLB sin coincidencia en el catalogo. `false` en vitrina, `true` en interna |
-| `INTERNA_USUARIO` | hPanel, variables de entorno del sitio de interna | usuario del acceso al panel interno. **Sin el, interna responde 503 a todo** |
-| `INTERNA_CLAVE` | hPanel, variables de entorno del sitio de interna | contrasena del acceso al panel interno. Idem |
+| `DB_HOST`, `DB_PUERTO`, `DB_NOMBRE`, `DB_USUARIO`, `DB_CLAVE` | hPanel, variables de entorno del sitio de interna | base de datos de cuentas y BOM. En produccion `DB_HOST` es `127.0.0.1`. **Sin ellas, interna responde 503 a todo** |
+| `BETTER_AUTH_SECRET` | hPanel, variables de entorno del sitio de interna | firma las cookies de sesion (32+ caracteres). Cambiarlo cierra todas las sesiones. Idem 503 |
+| `BETTER_AUTH_URL` | hPanel, variables de entorno del sitio de interna | URL publica de interna, sin barra final. Idem 503 |
 
-A diferencia de las `NEXT_PUBLIC_*`, `INTERNA_USUARIO` e `INTERNA_CLAVE` se leen
-en cada peticion y no se hornean en el bundle: cambiarlas surte efecto al
-reiniciar el sitio, sin reconstruir.
+A diferencia de las `NEXT_PUBLIC_*`, las variables de interna se leen al arrancar
+y no se hornean en el bundle: cambiarlas surte efecto al reiniciar el sitio, sin
+reconstruir. Por la API de Hostinger, reemplazar las variables manda el juego
+completo y oculta los valores: para cambiar una hay que mandar todas.
 
 Las variables `NEXT_PUBLIC_*` se hornean en el bundle durante el build, no se
 leen en tiempo de ejecucion. **Cambiar una en hPanel no surte efecto hasta

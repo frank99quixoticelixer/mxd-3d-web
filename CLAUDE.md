@@ -131,24 +131,36 @@ grep -rl CENTINELA .next/static .next/server/app
 
 ### Como se protege interna
 
-`apps/interna/src/proxy.ts`: autenticacion HTTP basica sobre **todo**, incluidas
-las rutas `/api`, los GLB de `public/` y los chunks de `/_next/static`. Los
-chunks importan porque son estaticos que se piden por URL y en esta app pueden
-llevar dentro el catalogo interno.
+`apps/interna/src/proxy.ts`: exige una sesion abierta en **todo**, incluidas las
+rutas `/api`, las rutas que entregan GLB y renders y los chunks de
+`/_next/static`. Los chunks importan porque son estaticos que se piden por URL y
+en esta app pueden llevar dentro el catalogo interno. Sin sesion, un navegador
+que pide una pagina va a `/login` (307) y todo lo demas recibe 401. Solo se abren
+`/login`, `/registro` (solicitud de acceso, ADR 0007), `POST /salir`, el CSS de
+`/_next/static` y el logo.
 
-- Necesita `INTERNA_USUARIO` e `INTERNA_CLAVE`. **Sin ellas responde 503 a
-  todo**, a proposito: un olvido de configuracion no debe publicar el panel.
-  Si interna devuelve 503, falta configurar esas variables en hPanel.
-- Se leen en cada peticion y no se hornean en el bundle: cambiar la contrasena
-  solo exige reiniciar el sitio, no reconstruir.
-- En local van en `apps/interna/.env.local` (gitignored).
+Cada persona entra con su cuenta (correo y contrasena, Better Auth sobre la
+MariaDB de Hostinger; ADR 0006). Las cuentas nuevas nacen inactivas y las aprueba
+un administrador en `/usuarios`. Cada edicion del BOM queda en `/historial` con
+quien la hizo.
+
+- Necesita `DB_*`, `BETTER_AUTH_SECRET` (32+ caracteres) y `BETTER_AUTH_URL`.
+  **Sin ellas responde 503 a todo**, a proposito: un olvido de configuracion no
+  debe publicar el panel. Si interna devuelve 503, faltan en hPanel.
+- Se leen en cada arranque y no se hornean en el bundle: cambiarlas exige
+  reiniciar el sitio, no reconstruir. Cambiar `BETTER_AUTH_SECRET` cierra todas
+  las sesiones.
+- En local van en `apps/interna/.env.local` (gitignored); la plantilla es
+  `.env.example`. Para conectar desde la maquina local hay que autorizar la IP
+  en la base de Hostinger.
+- **No usar `instanceof` con clases de Better Auth** (`APIError`): en produccion
+  el paquete queda en dos copias y da false. Usar `esErrorDeApi` de
+  `lib/error-auth.ts`.
 - El archivo se llama `proxy.ts` y no `middleware.ts` porque Next 16 renombro
   la convencion; el export tiene que llamarse `proxy`.
 
-No es un sistema de cuentas, a proposito: para tres personas detras de HTTPS,
-una contrasena compartida es la proteccion correcta por el esfuerzo que cuesta.
-Cuando haya que saber QUIEN cambio cada dato, se reemplaza por cuentas de
-verdad.
+Antes de tocar `proxy.ts`, `lib/auth.ts`, `lib/db.ts` o `lib/bom.ts`, lee
+[docs/plan-usuarios-interna.md](docs/plan-usuarios-interna.md).
 
 ## Equipo
 
@@ -376,27 +388,21 @@ zip de interna y las sirve `/api/descargas`; no hay que subir nada por FTP.
 
 ## Estado y pendientes
 
-### Cuentas de usuario en interna (en curso)
+### Cuentas de usuario en interna (en produccion)
 
-Trabajo en la rama `interna-cuentas`: login con cuentas individuales (Better Auth
-+ MySQL de Hostinger) y el BOM pasando a la base de datos. **Antes de tocar
-`apps/interna/src/proxy.ts`, `lib/auth.ts`, `lib/db.ts` o `lib/bom.ts`, lee
-[docs/plan-usuarios-interna.md](docs/plan-usuarios-interna.md)**: trae el
-checklist, la ubicacion de la base, las trampas ya encontradas y el
-"Siguiente paso". Al terminar una sesion de este trabajo, actualiza ese
-documento (checklist, registro de avance y siguiente paso). La descripcion de
-`proxy.ts` mas abajo (autenticacion HTTP basica) es la de `main`; en esa rama ya
-usa sesiones.
+El login con cuentas individuales (Better Auth + MariaDB de Hostinger), el
+registro con aprobacion y el BOM en la base de datos ya estan en `main` y
+desplegados (ver "Como se protege interna"). Lo que sigue pendiente (pruebas en
+produccion, correo, respaldo del BOM) esta en
+[docs/plan-usuarios-interna.md](docs/plan-usuarios-interna.md), junto con el
+checklist, la ubicacion de la base y las trampas ya encontradas. Al terminar una
+sesion de este trabajo, actualiza ese documento (checklist, registro de avance y
+siguiente paso).
 
 ### Donde esta cada cosa
 
-> **El recorte de la vitrina y la contrasena de interna estan en la rama
-> `separacion-vitrina-interna`, sin merge a `main` y por lo tanto sin
-> desplegar.** Hasta que ese PR entre, mxddrone.com sigue publicando
-> especificaciones e interno.mxddrone.com sigue abierto a cualquiera. Si lo que
-> importa es cerrar eso, lo primero es mergear, y definir
-> `INTERNA_USUARIO` e `INTERNA_CLAVE` en hPanel **antes** de que interna
-> redespliegue, porque si faltan el sitio responde 503.
+> El recorte de la vitrina (`lib/publico.ts`) y la puerta con cuentas de interna
+> ya estan en `main` y desplegados.
 
 - **vitrina**: en linea. El recorte de datos y la baja de las rutas de ficha PDF
   estan hechos en la rama, pendientes de desplegar. En la rama
@@ -405,7 +411,7 @@ usa sesiones.
   descomposicion del brazo de interna (`features/viewer/componentes.ts`) y, al
   aislar una pieza, una tarjeta con "Ver ficha" que lleva a su pagina del
   catalogo.
-- **interna**: en linea, **todavia sin contrasena** hasta el merge. En
+- **interna**: en linea, detras de login con cuentas individuales. En
   `vitrina-visor-catalogo` usa el mismo visor que vitrina (`features/viewer/`
   es una copia exacta; un cambio al visor se hace en vitrina y se copia) y su
   ficha agrega lo interno: especificaciones, numero de parte, proveedor,

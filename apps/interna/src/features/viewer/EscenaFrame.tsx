@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { OrbitControls, useGLTF } from "@react-three/drei";
+import { OrbitControls, PerformanceMonitor, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 
 import { COLORES } from "@/config/marca";
@@ -131,6 +131,9 @@ function tramosAtomicos(t: number) {
 
 /** Margen del encuadre sobre la esfera de lo que se ve. */
 const MARGEN_ENCUADRE = 1.35;
+
+/** Resolucion de dibujo maxima del visor (1 = un pixel de pantalla por pixel de dibujo). */
+const DPR_MAXIMO = 1.5;
 /** Rapidez con que la camara acompania al despiece (mas alto = mas rapido). */
 const AMORTIGUACION_ENCUADRE = 5;
 
@@ -1541,12 +1544,15 @@ export function EscenaFrame({
   const [radioVisible, setRadioVisible] = useState<number | null>(null);
   const [cargado, setCargado] = useState(false);
   const [fallo, setFallo] = useState(false);
+  // Resolucion de dibujo: hasta 1.5 (con 2 en una pantalla retina son 4 veces
+  // los pixeles de 1) y baja sola hacia 1 si el equipo no sostiene los cuadros.
+  const [dpr, setDpr] = useState(DPR_MAXIMO);
 
   return (
     <>
     <Canvas
       shadows
-      dpr={[1, 2]}
+      dpr={dpr}
       frameloop={activo ? "always" : "never"}
       gl={{ antialias: true, alpha: true }}
       camera={{ fov: 35, position: [1.4, 1.1, 1.8], near: 0.01, far: 300 }}
@@ -1555,6 +1561,9 @@ export function EscenaFrame({
         gl.toneMappingExposure = 1.05;
       }}
     >
+      <PerformanceMonitor
+        onChange={({ factor }) => setDpr(Math.round((1 + (DPR_MAXIMO - 1) * factor) * 10) / 10)}
+      />
       <Escenario sombraY={medidas ? -medidas.semialto * 1.02 : undefined} />
       {/* El aviso de carga y el de error van fuera del lienzo (AvisoCarga). */}
       <LimiteError respaldo={null} alFallar={() => setFallo(true)}>

@@ -1,10 +1,10 @@
 "use server";
 
-import { APIError } from "better-auth/api";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { obtenerAuth } from "@/lib/auth";
+import { esErrorDeApi } from "@/lib/error-auth";
 import { accesoBloqueado, registrarAcierto, registrarFallo } from "@/lib/limite-acceso";
 import { ipDelCliente } from "@/lib/protegido";
 import { exigirSesion } from "@/lib/sesion";
@@ -51,7 +51,7 @@ export async function cambiarClave(formData: FormData): Promise<void> {
       headers: peticion.headers,
     });
   } catch (e) {
-    if (e instanceof APIError) {
+    if (esErrorDeApi(e)) {
       // La contrasena actual no coincide (los largos ya se validaron arriba).
       registrarFallo(ip, correo);
       resultado = "actual";

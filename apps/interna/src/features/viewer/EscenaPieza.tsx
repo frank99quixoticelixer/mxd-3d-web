@@ -568,7 +568,7 @@ export function EscenaPieza({
     <>
     <Canvas
       shadows
-      dpr={[1, 2]}
+      dpr={[1, 1.5]}
       gl={{ antialias: true, alpha: true }}
       camera={{ fov: 35, position: [1.8, 1.0, 2.3], near: 0.01, far: 200 }}
       onCreated={({ gl }) => {

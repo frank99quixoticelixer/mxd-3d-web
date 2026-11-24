@@ -9,6 +9,9 @@ final y corrige "Siguiente paso". Es lo primero que se lee al retomar.
   (`u352406053_interno_prod`). Lo que falta para el uso real esta marcado con
   `[ ]` y resumido en "Siguiente paso". La rama `interna-cuentas` ya no tiene
   trabajo propio: todo lo suyo esta en `main`.
+- **Relevo mas reciente: [relevo-2026-11-23.md](relevo-2026-11-23.md)**: lo
+  hecho el 2026-11-23 sin desplegar (rama `interna-bom-origen`) y lo que falta,
+  en orden. Leerlo antes de seguir.
 - Decision de fondo: [ADR 0006](lineamientos/decisiones/0006-cuentas-individuales-en-interna.md).
 - interna es el banco de pruebas. Si funciona aqui, vitrina y pedidos pueden
   reutilizarlo despues.
@@ -139,8 +142,7 @@ probado contra la base**.
       y que el numero de filas coincida con el Excel original.
 - [x] Vista del historial de cambios (quien, cuando, campo, antes y despues):
       `/historial`, con enlace a la ficha de cada pieza.
-- [ ] Retirar o actualizar `scripts/migrar-a-bom.ts` (`bom:migrar`), que genera el
-      Excel desde el catalogo y ya no es el camino normal.
+- [x] Retirado `scripts/migrar-a-bom.ts` y `bom:migrar` (2026-11-23).
 
 ### Produccion
 
@@ -173,9 +175,13 @@ probado contra la base**.
 
 ### Cierre
 
-- [ ] Actualizar `CLAUDE.md` (la seccion "Como se protege interna" aun describe la
-      autenticacion HTTP basica) y `apps/vitrina/AGENTS.md`.
-- [ ] Commit por archivos (nunca `git add -A`) y PR a `main`.
+- [x] Actualizar `CLAUDE.md` y `README.md` (2026-11-24): describen el login con
+      cuentas y las variables `DB_*` y `BETTER_AUTH_*`. `apps/vitrina/AGENTS.md`
+      no habla de esto (es el bloque que genera `next dev`): no necesita cambio.
+- [ ] `.github/workflows/deploy-interna.yml` (lineas ~117-126) todavia avisa que un
+      503 es por `INTERNA_USUARIO`/`INTERNA_CLAVE`. Ya no aplica: ahora son `DB_*`
+      y `BETTER_AUTH_*`. Solo cambia el texto del aviso; no se toco.
+- [ ] PR a `main` de la rama `interna-bom-origen` (commits ya hechos, sin subir).
 
 ## Esquema del BOM en la base (decidido)
 
@@ -200,7 +206,16 @@ Por eso la fuente de verdad pasa a MySQL.
 Trabajo por hacer para dejarlo listo para uso real. Hay un respaldo del Excel
 original en `contenido/BOM_MX80.respaldo-antes-de-migrar-2026-11-09.xlsx`.
 
-**Lo primero: registro con aprobacion (decision 7).** `/registro` (formulario
+> **Actualizacion 2026-11-24.** Ya estan en `main` y desplegados el registro con
+> aprobacion, `/usuarios`, `/historial` y el BOM en la base. Lo de la rama
+> `interna-bom-origen` esta commiteado (3 commits: arreglo del login, origen del
+> BOM con Excel/Restaurar/cortes, visor mas ligero) pero **sin subir**. Lo que
+> falta de verdad esta en [relevo-2026-11-23.md](relevo-2026-11-23.md), seccion
+> "Pendientes": probar en local, migrar `_prod` (`bom_cortes`), PR y probar en
+> produccion. Los puntos 1 a 3 de abajo y el "registro con aprobacion" son
+> historia de antes de ese merge.
+
+**Registro con aprobacion (decision 7), ya hecho.** `/registro` (formulario
 publico: nombre, empresa, correo, contrasena; crea la cuenta con `activo = 0`),
 `/usuarios` (solo administradores: pendientes, aprobar, rechazar, desactivar),
 la marca `es_admin` en `user`, y que `proxy.ts` deje pasar `/registro` sin
@@ -317,6 +332,53 @@ Con `npm run dev` ya corriendo, y sin levantar otro servidor:
 
 Una entrada por sesion, la mas reciente arriba. Formato: fecha, que se hizo, que
 quedo pendiente.
+
+
+### 2026-11-23: origen de las piezas del BOM, sesion unica por navegador, Excel legible
+
+- Rama `interna-bom-origen`, sin commitear ni desplegar. `tsc` y `eslint` limpios;
+  sin probar contra la base ni en el navegador.
+- **Origen en el BOM:** dos columnas nuevas al final (`origen_bom`, `origen_nota`).
+  Vacio o `maestro` = viene del maestro original; `agregada` = alguien la sumo a
+  mano. Una fila nueva (por el boton, por editar una pieza sin fila, por
+  `guardarCruces` o por `bom:agregar`) nace `agregada` con quien y cuando, y el
+  cambio queda en `bom_cambios`. La ficha muestra un aviso ambar: en una pieza sin
+  fila ofrece "Agregar al BOM maestro" (`agregarAlBom`); en una agregada dice que
+  no viene del maestro. En el Excel sale la columna "Origen en el BOM" y la fila
+  va en ambar. Las 66 filas existentes cuentan como maestro sin tocar la base.
+- **Sesion unica por navegador:** `iniciarSesion` mira la sesion antes de crear
+  otra. Misma cuenta: pasa de largo; otra cuenta: error `otra-sesion` (hay que
+  Salir). Era una pestana con /login abierto desde antes. No limita sesiones en
+  varios dispositivos.
+- **Limite de intentos:** la logica pasa la prueba directa (el 6.o intento queda
+  bloqueado), asi que no se encontro el fallo; los contadores ahora viven en
+  `globalThis` por si Next evaluaba el modulo mas de una vez. Falta repetir la
+  prueba en el navegador. Si en produccion sigue sin frenar, el siguiente paso es
+  llevar el conteo a la base.
+- **Excel:** ajuste de texto en todas las celdas, ancho segun el contenido (20 a
+  60), filas altas segun el texto, primeras dos columnas inmovilizadas.
+- Limpieza: retirado `bom:migrar`; `leerVersionBom` paso a `leerEstadoBom`.
+- **Versionado basico** (no un git: `bom_cambios` ya es el registro):
+  - `/historial` tiene "Restaurar" en el cambio mas reciente de cada campo
+    (`restaurarCambio` en `lib/bom.ts`). Escribe un cambio nuevo a nombre de
+    quien restaura; se rechaza si alguien toco el campo despues. No restaura
+    `sku`, `nombre` ni el origen.
+  - `/cortes` guarda una foto con nombre del BOM completo y la baja como Excel
+    (`lib/bom-cortes.ts`, tabla `bom_cortes`, `/api/bom/cortes/<id>`).
+  - **Antes de desplegar:** `npm run db:migrar -- --aplicar` en `_prod` crea
+    `bom_cortes`. Sin ella `/cortes` avisa en vez de romperse.
+- **Login en produccion (2026-11-23), causa encontrada:** una contrasena mala
+  salia como "No pudimos comprobar tu acceso" (caso `servicio`) y no contaba para
+  el limite de intentos. El log de ejecucion lo mostro: `Fallo al iniciar sesion
+  (no es de credenciales): APIError: Invalid email or password`. Era un `APIError`
+  legitimo, pero `e instanceof APIError` daba false en el build de produccion
+  (dos copias del paquete); en desarrollo si funcionaba. Tambien afectaba a la
+  cuenta inactiva (salia como falla del servidor en vez de "pendiente") y al
+  cambio de contrasena. Arreglo: `lib/error-auth.ts` (`esErrorDeApi`, por nombre
+  y estado), usado en `login/acciones.ts` y `cuenta/acciones.ts`. Regla: no usar
+  `instanceof` con clases de Better Auth. Sin desplegar; repetir la prueba de 6
+  contrasenas malas en produccion despues. Ya no hace falta el cambio a
+  `globalThis` de `limite-acceso.ts` para esto, pero se deja: no estorba.
 
 ### 2026-11-19: "Salir" rompia la pagina en produccion
 

@@ -101,6 +101,12 @@ const COLUMNAS: { clave: string; encabezado: string; tipo: TipoColumna }[] = [
   // derecha/izquierda) cada una puede llevar el suyo: "cw=MXD-...; ccw=MXD-...".
   { clave: "cruce_estado", encabezado: "Estado del cruce con el maestro", tipo: "texto" },
   { clave: "numeros_variantes", encabezado: "No. parte MXD por versión", tipo: "texto" },
+  // -- De donde salio la fila. Vacio o "maestro" = viene del maestro de partes
+  // original (el Excel que se importo); "agregada" = alguien la sumo al BOM a
+  // mano despues, porque la pieza no tenia partida. Va al final para que un
+  // Excel anterior, sin estas dos columnas, se siga importando.
+  { clave: "origen_bom", encabezado: "Origen en el BOM", tipo: "texto" },
+  { clave: "origen_nota", encabezado: "Nota de origen", tipo: "texto" },
 ];
 
 /** Una fila del BOM ya tipada: especificaciones + compras/inventario + metadatos. */
@@ -132,6 +138,9 @@ export type FilaBom = Pick<Especificaciones, Exclude<keyof Especificaciones, "fu
   trazabilidad_archivo_stl: boolean | null;
   cruce_estado: string | null;
   numeros_variantes: string | null;
+  /** "maestro" (o vacio) = del maestro original; "agregada" = sumada a mano despues. */
+  origen_bom: string | null;
+  origen_nota: string | null;
 };
 
 /** Campos editables desde la UI (todo menos sku/nombre, que no se tocan aqui). */
@@ -174,6 +183,8 @@ export function normalizarFila(obj: Record<string, unknown>): FilaBom {
     trazabilidad_archivo_stl: (obj.trazabilidad_archivo_stl as boolean | null) ?? null,
     cruce_estado: (obj.cruce_estado as string | null) ?? null,
     numeros_variantes: (obj.numeros_variantes as string | null) ?? null,
+    origen_bom: (obj.origen_bom as string | null) ?? null,
+    origen_nota: (obj.origen_nota as string | null) ?? null,
   } as FilaBom;
 }
 
@@ -235,17 +246,51 @@ export async function leerPieza(sku: string): Promise<FilaBom | null> {
   return registros[0] ? filaDeRegistro(registros[0]) : null;
 }
 
-/**
- * La version actual de una pieza (sube en uno con cada cambio), o 0 si todavia
- * no tiene fila. El formulario de la ficha la manda de vuelta al guardar para
- * que escribirPieza detecte si alguien cambio la pieza mientras se editaba.
- */
-export async function leerVersionBom(sku: string): Promise<number> {
+/** Lo que la ficha necesita saber de una pieza respecto al BOM. */
+export interface EstadoBom {
+  /** false si la pieza todavia no tiene fila en el BOM. */
+  enBom: boolean;
+  /**
+   * Version actual (sube en uno con cada cambio), 0 si no tiene fila. El
+   * formulario de la ficha la manda de vuelta al guardar para que
+   * escribirPieza detecte si alguien cambio la pieza mientras se editaba.
+   */
+  version: number;
+  /** Ver COLUMNAS: "agregada" si no viene del maestro original. */
+  origen: string | null;
+  origenNota: string | null;
+}
+
+export async function leerEstadoBom(sku: string): Promise<EstadoBom> {
   const [registros] = await poolBom().query<RowDataPacket[]>(
-    "SELECT version FROM bom_piezas WHERE sku = ? LIMIT 1",
+    "SELECT datos, version FROM bom_piezas WHERE sku = ? LIMIT 1",
     [sku],
   );
-  return registros[0] ? Number(registros[0].version) : 0;
+  const registro = registros[0];
+  if (!registro) return { enBom: false, version: 0, origen: null, origenNota: null };
+  const datos = leerDatos(registro.datos);
+  return {
+    enBom: true,
+    version: Number(registro.version),
+    origen: typeof datos.origen_bom === "string" ? datos.origen_bom : null,
+    origenNota: typeof datos.origen_nota === "string" ? datos.origen_nota : null,
+  };
+}
+
+/** true si la fila no viene del maestro original sino que alguien la sumo despues. */
+export function esAgregada(origen: string | null | undefined): boolean {
+  return origen === "agregada";
+}
+
+/**
+ * La marca de una pieza sumada al BOM a mano: de donde sale y quien la agrego,
+ * para la ficha y para el Excel. `quien` es el correo, o el nombre del script.
+ */
+export function marcaDeAgregada(quien: string | null, ahora: Date = new Date()) {
+  return {
+    origen_bom: "agregada",
+    origen_nota: `Agregada a mano por ${quien ?? "un script"} el ${ahora.toISOString().slice(0, 10)}. No viene del maestro de partes original.`,
+  };
 }
 
 /** Una fila del historial del BOM (tabla bom_cambios). */
@@ -366,6 +411,17 @@ async function escribirDentro(
     if (Number(existente.version) !== opciones.versionEsperada) throw new ConflictoBom(sku);
   }
 
+  // Una fila nueva es una pieza que el maestro original no traia: queda
+  // marcada, con quien y cuando, salvo que quien llama ya la haya marcado.
+  if (!existente) {
+    const marca = marcaDeAgregada(autor.correo, ahora);
+    cambios = {
+      ...cambios,
+      origen_bom: cambios.origen_bom ?? marca.origen_bom,
+      origen_nota: cambios.origen_nota ?? marca.origen_nota,
+    };
+  }
+
   const antes: FilaBom = existente
     ? normalizarFila({ ...leerDatos(existente.datos), sku })
     : normalizarFila({ sku, nombre: opciones.nombreSiEsNueva ?? "" });
@@ -414,6 +470,77 @@ async function escribirDentro(
     );
   }
   return cambiados.length;
+}
+
+/** Campos que "Restaurar" no toca: la identidad de la fila y su marca de origen. */
+const CAMPOS_NO_RESTAURABLES = new Set(["sku", "nombre", "origen_bom", "origen_nota"]);
+
+/** true si el cambio de este campo se puede deshacer desde el historial. */
+export function puedeRestaurarse(campo: string): boolean {
+  return !CAMPOS_NO_RESTAURABLES.has(campo) && COLUMNAS.some((c) => c.clave === campo);
+}
+
+/** Lo contrario de textoDeCambio: el valor tipado que se guardo como texto. */
+function valorDeCambio(tipo: TipoColumna, texto: string | null): unknown {
+  if (texto === null) return tipo === "lista" || tipo === "listaCorta" ? [] : null;
+  return tipo === "texto" ? texto : JSON.parse(texto);
+}
+
+/**
+ * Deshace un cambio del historial: devuelve el campo a como estaba antes de ese
+ * cambio. No borra nada: escribe un cambio nuevo, a nombre de quien restaura,
+ * asi que el historial sigue completo.
+ *
+ * Solo si el campo sigue como lo dejo ese cambio. Si alguien lo cambio despues,
+ * no se pisa: hay que restaurar primero el cambio mas reciente.
+ */
+export async function restaurarCambio(
+  idCambio: number,
+  autor: AutorBom,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const [registros] = await poolBom().query<RowDataPacket[]>(
+    "SELECT sku, campo, anterior, nuevo FROM bom_cambios WHERE id = ? LIMIT 1",
+    [idCambio],
+  );
+  const cambio = registros[0];
+  if (!cambio) return { ok: false, error: "Ese cambio ya no existe." };
+
+  const sku = String(cambio.sku);
+  const campo = String(cambio.campo);
+  const columna = COLUMNAS.find((c) => c.clave === campo);
+  if (!columna || !puedeRestaurarse(campo)) {
+    return { ok: false, error: "Este campo no se puede restaurar." };
+  }
+
+  // La version se lee antes que la fila: si alguien guarda entre las dos
+  // lecturas, escribirPieza ve otra version y lanza ConflictoBom.
+  const { version } = await leerEstadoBom(sku);
+  const fila = await leerPieza(sku);
+  if (!fila) return { ok: false, error: "La pieza ya no esta en el BOM." };
+
+  const nuevo = cambio.nuevo === null ? null : String(cambio.nuevo);
+  if (!iguales(textoDeCambio(fila[campo as keyof FilaBom]), nuevo)) {
+    return {
+      ok: false,
+      error: "Alguien cambió este campo después. Restaura primero el cambio más reciente.",
+    };
+  }
+
+  const anterior = cambio.anterior === null ? null : String(cambio.anterior);
+  try {
+    await escribirPieza(sku, { [campo]: valorDeCambio(columna.tipo, anterior) } as CambiosFilaBom, autor, {
+      versionEsperada: version,
+    });
+  } catch (error) {
+    if (error instanceof ConflictoBom) {
+      return { ok: false, error: "Alguien guardó esta pieza hace un momento. Recarga e inténtalo de nuevo." };
+    }
+    if (error instanceof Error && error.name === "ZodError") {
+      return { ok: false, error: "El valor anterior ya no es válido para este campo." };
+    }
+    throw error;
+  }
+  return { ok: true };
 }
 
 /**
@@ -518,6 +645,8 @@ export function filaDesdePieza(pieza: Pieza): FilaBom {
     trazabilidad_archivo_stl: pieza.trazabilidad.archivoStl,
     cruce_estado: pieza.cruceBom?.estado ?? null,
     numeros_variantes: escribirNumerosVariantes(porVersion),
+    origen_bom: null,
+    origen_nota: null,
   };
 }
 
