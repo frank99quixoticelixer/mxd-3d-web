@@ -5,6 +5,7 @@ import { PIEZAS_MX80 } from "@/data/mx80";
 import { leerBom, leerNumerosVariantes, leerPieza, type FilaBom } from "@/lib/bom";
 import {
   CatalogoEsquema,
+  conCamposPorTipo,
   ORDEN_SECCIONES,
   type ModeloDron,
   type Pieza,
@@ -34,7 +35,7 @@ function conRender(pieza: Pieza): Pieza {
     : pieza;
 }
 
-const CATALOGO: Pieza[] = CatalogoEsquema.parse([...PIEZAS_MX80]).map(conRender);
+const CATALOGO: Pieza[] = CatalogoEsquema.parse([...PIEZAS_MX80]).map(conRender).map(conCamposPorTipo);
 
 /**
  * Piezas de CATALOGO: las que se cotizan, se listan y ocupan una celda en la
@@ -130,7 +131,7 @@ function conBom(pieza: Pieza, fila: FilaBom | null): Pieza {
   const cruceBom = estadoValido
     ? { estado: estadoValido, nota: pieza.cruceBom?.nota ?? null }
     : pieza.cruceBom;
-  return {
+  return conCamposPorTipo({
     ...pieza,
     categoria,
     proceso_fabricacion,
@@ -163,7 +164,7 @@ function conBom(pieza: Pieza, fila: FilaBom | null): Pieza {
       archivoStep: trazabilidad_archivo_step,
       archivoStl: trazabilidad_archivo_stl,
     },
-  };
+  });
 }
 
 /**

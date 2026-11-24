@@ -143,6 +143,27 @@ probado contra la base**.
 - [x] Vista del historial de cambios (quien, cuando, campo, antes y despues):
       `/historial`, con enlace a la ficha de cada pieza.
 - [x] Retirado `scripts/migrar-a-bom.ts` y `bom:migrar` (2026-11-23).
+- [x] Origen de las piezas (`maestro` / `agregada`), Restaurar en `/historial` y
+      `/cortes` (fotos del BOM descargables), en produccion desde el 2026-11-24
+      (PR #10).
+- [x] **El maestro de partes en la base** (2026-11-24, PR #11): tabla
+      `maestro_partidas` con las 113 partidas y sus 39 columnas
+      (`lib/maestro-base.ts`, `npm run maestro:a-base`). Vive en la base y no en
+      el repo porque el repo es publico.
+- [x] **El Excel del BOM en el formato del maestro** (`lib/bom-maestro-excel.ts`):
+      Tabla de Excel con orden y filtro en todas las columnas, numero de parte MXD
+      como llave, columnas azules (maestro), verdes (ficha) y grises (sistema), SKU
+      al final, hoja `Catalogo de Codigos` y menus desplegables. Un dato editado en
+      la web gana; si no, el del maestro; si el maestro dice PENDIENTE, el de la
+      web. Las piezas sin partida van al final (`SIN NUMERO` si no tienen numero).
+- [x] Catalogo de codigos (`data/catalogo-codigos.ts`) y numero de parte al
+      agregar una pieza al BOM, con sugerencia del siguiente consecutivo libre.
+- [ ] Probar en produccion con una sesion abierta: abrir el Excel en Excel de
+      verdad, crear un corte, agregar una pieza con numero de parte, Restaurar.
+- [ ] Cruces con el maestro (`/maestro`): confirmar los `propuesto` y cruzar el
+      resto (hoy muchas piezas salen `SIN NUMERO`).
+- [ ] Importar el Excel de vuelta con el formato nuevo (hoy `bom:importar` lee el
+      formato viejo; el flujo actual es base -> Excel).
 
 ### Produccion
 
@@ -170,8 +191,12 @@ probado contra la base**.
       si el cliente pide HTML), GLB, descargas, ficha PDF, BOM y `/api/auth/*`
       401, chunks JS 401, `/login`, su CSS y el logo 200, y la contrasena vieja
       ya no entra. (El inicio de sesion real se probo el 2026-11-18.)
+- [x] `_prod` migrada el 2026-11-24: tablas `bom_cortes` y `maestro_partidas`
+      (113 partidas importadas). `bom_piezas` (67), `bom_cambios` (16) y `user`
+      (3) no cambiaron. La IP se autorizo solo para eso y se quito.
 - [ ] Respaldo: los respaldos de hPanel mas una exportacion periodica del BOM a
-      Excel guardada fuera del servidor.
+      Excel guardada fuera del servidor. Guardar tambien una copia del Excel del
+      maestro (`Maestro_Partes_MX80-ah.xlsx`, fuera de git).
 
 ### Cierre
 
@@ -181,7 +206,8 @@ probado contra la base**.
 - [ ] `.github/workflows/deploy-interna.yml` (lineas ~117-126) todavia avisa que un
       503 es por `INTERNA_USUARIO`/`INTERNA_CLAVE`. Ya no aplica: ahora son `DB_*`
       y `BETTER_AUTH_*`. Solo cambia el texto del aviso; no se toco.
-- [ ] PR a `main` de la rama `interna-bom-origen` (commits ya hechos, sin subir).
+- [x] PR #10 (`interna-bom-origen`) y PR #11 (`interna-maestro-en-base`)
+      mergeados y desplegados el 2026-11-24.
 
 ## Esquema del BOM en la base (decidido)
 
@@ -206,14 +232,15 @@ Por eso la fuente de verdad pasa a MySQL.
 Trabajo por hacer para dejarlo listo para uso real. Hay un respaldo del Excel
 original en `contenido/BOM_MX80.respaldo-antes-de-migrar-2026-11-09.xlsx`.
 
-> **Actualizacion 2026-11-24.** Ya estan en `main` y desplegados el registro con
-> aprobacion, `/usuarios`, `/historial` y el BOM en la base. Lo de la rama
-> `interna-bom-origen` esta commiteado (3 commits: arreglo del login, origen del
-> BOM con Excel/Restaurar/cortes, visor mas ligero) pero **sin subir**. Lo que
-> falta de verdad esta en [relevo-2026-11-23.md](relevo-2026-11-23.md), seccion
-> "Pendientes": probar en local, migrar `_prod` (`bom_cortes`), PR y probar en
-> produccion. Los puntos 1 a 3 de abajo y el "registro con aprobacion" son
-> historia de antes de ese merge.
+> **Actualizacion 2026-11-24 (cierre del dia).** Ya estan en `main` y desplegados
+> el registro con aprobacion, `/usuarios`, `/historial`, el BOM en la base, el
+> arreglo del login, `/cortes`, el maestro en la base y el Excel en el formato
+> del maestro (PR #10 y #11). Lo que falta esta en
+> [relevo-2026-11-23.md](relevo-2026-11-23.md), seccion "Pendientes": probar todo
+> eso en produccion con una sesion abierta, decidir el merge del visor sin sombra
+> de luz (`interna-visor-sin-sombra-de-luz`), confirmar cruces en `/maestro`, y
+> las cuentas (Axel, correo, respaldo). Los puntos 1 a 3 de abajo y el "registro
+> con aprobacion" son historia de antes de ese merge.
 
 **Registro con aprobacion (decision 7), ya hecho.** `/registro` (formulario
 publico: nombre, empresa, correo, contrasena; crea la cuenta con `activo = 0`),
@@ -294,6 +321,10 @@ npm run db:migrar                      # muestra que haria
 npm run db:migrar -- --aplicar         # lo aplica (solo agrega, no borra)
 npm run usuarios -- crear <correo> "<Nombre>"   # pide la contrasena en terminal
 npm run usuarios -- listar | desactivar <correo> | activar <correo>
+npm run usuarios -- admin <correo> | quitar-admin <correo>
+npm run maestro:a-base -- ruta/al/Maestro.xlsx           # maestro -> base, en seco
+npm run maestro:a-base -- ruta/al/Maestro.xlsx --aplicar # lo aplica (reemplaza la tabla)
+npm run maestro:importar -- ruta/al/Maestro.xlsx         # regenera data/maestro-mx80.json
 npm run dev                            # lo arranca Axel, no Claude (puerto 3002)
 ```
 
@@ -327,12 +358,37 @@ Con `npm run dev` ya corriendo, y sin levantar otro servidor:
   `localhost`. Si hace falta abrirlo desde otro equipo, cambiar esa variable.
 - Los chunks `.js` devuelven 401 en `/login` (a proposito): el formulario funciona
   sin JavaScript y la consola muestra esos errores.
+- **Tablas nuevas: primero la base, despues el merge.** Si se despliega antes de
+  `db:migrar --aplicar` (y de `maestro:a-base --aplicar`), la descarga del Excel
+  falla porque consulta una tabla que no existe.
+- **El maestro no va al repo.** `Maestro_Partes_MX80*.xlsx` esta en `.gitignore`: el
+  repo es publico y el archivo trae numeros OEM, proveedores y notas de calidad.
 
 ## Registro de avance
 
 Una entrada por sesion, la mas reciente arriba. Formato: fecha, que se hizo, que
 quedo pendiente.
 
+
+### 2026-11-24: Excel en el formato del maestro, maestro en la base, a produccion
+
+- Limpieza: se quito el worktree `MXD-WEB-login` y 8 ramas locales ya mergeadas.
+  Se aclaro que `MXD-WEB` (rama vieja) y `MXD-WEB-commit` son carpetas distintas.
+- Desplegado el PR #10: arreglo del login (`esErrorDeApi`, contadores en
+  `globalThis`), origen del BOM, Excel legible, Restaurar, `/cortes`, visor mas
+  ligero. Se migro `_prod` (`bom_cortes`).
+- Desplegado el PR #11: numero de parte al agregar una pieza al BOM, catalogo de
+  codigos completo, maestro en la base (`maestro_partidas`, 113 partidas) y el
+  Excel del BOM en el formato del maestro. Se migro e importo en `_prod` antes
+  del merge.
+- Verificado: `tsc` y `eslint` limpios; el Excel generado se comparo con el
+  original celda por celda (openpyxl); en produccion, sin sesion, `/` y `/cortes`
+  dan 307, `/login` 200 y `/api/bom/descargar` 401; los logs no muestran errores.
+- **NO verificado:** nada con una sesion abierta en produccion, ni el Excel abierto
+  en Excel, ni el visor sin sombra de luz en produccion (esa rama no esta
+  mergeada; en local se vio mas fluido).
+- Pendiente: lo de "Siguiente paso" y el relevo. La IP de esta maquina sigue
+  autorizada en `_dev`.
 
 ### 2026-11-23: origen de las piezas del BOM, sesion unica por navegador, Excel legible
 

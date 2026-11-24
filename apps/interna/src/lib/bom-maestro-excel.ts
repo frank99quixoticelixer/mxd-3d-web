@@ -34,8 +34,11 @@ import {
 import { CRUCE_MAESTRO } from "@/data/cruce-maestro";
 
 import { COLUMNAS_BOM, leerNumerosVariantes, type FilaBom } from "./bom";
+import { obtenerPiezaPorSku, obtenerSubpiezas } from "./catalogo";
 import type { PartidaMaestro, ValorMaestro } from "./maestro-base";
 import { leerNumeroDeParte } from "./numero-parte";
+import { resumirEnsamble, type ResumenEnsamble } from "./pesos";
+import { crearPesoPropio } from "./pesos-ensamble";
 
 export const SIN_NUMERO = "SIN NÚMERO";
 const HOJA_MAESTRO = "Maestro Partes MX80";
@@ -51,6 +54,8 @@ interface Contexto {
   numero: string;
   /** true si una persona edito ese campo de la pieza (consta en el historial). */
   editado: (clave: string) => boolean;
+  /** Peso calculado del ensamble de la pieza (suma de sus componentes), si se desarma en el 3D. */
+  ensamble: ResumenEnsamble | null;
 }
 
 interface Columna {
@@ -294,6 +299,20 @@ export function columnasDelExcel(): Columna[] {
   return [
     ...columnasDelMaestro(),
     ...columnasExtraDeLaWeb(),
+    {
+      titulo: "Peso del ensamble (kg)",
+      grupo: "gris",
+      ancho: 16,
+      // 0 con piezas sin peso es "sin dato", no un ensamble que no pesa nada.
+      valor: (c) =>
+        c.ensamble && (c.ensamble.sumaKg > 0 || c.ensamble.completo) ? Math.round(c.ensamble.sumaKg * 1000) / 1000 : null,
+    },
+    {
+      titulo: "Piezas sin peso en el ensamble",
+      grupo: "gris",
+      ancho: 16,
+      valor: (c) => (c.ensamble ? c.ensamble.faltantes : null),
+    },
     { titulo: "SKU (catálogo 3D)", grupo: "gris", ancho: 20, valor: (c) => c.b?.sku ?? null },
   ];
 }
@@ -318,6 +337,13 @@ export function armarFilas(
   editados: ReadonlySet<string> = new Set(),
 ): FilaArmada[] {
   const deLaPieza = (b: FilaBom | null) => (k: string) => (b ? editados.has(`${b.sku}|${k}`) : false);
+  // Peso del ensamble: suma de los componentes del 3D, con el peso de cada uno
+  // de la ficha o del maestro.
+  const pesoPropio = crearPesoPropio(new Map(bom.map((f) => [f.sku, f])), maestroPartidas);
+  const ensambleDe = (b: FilaBom | null): ResumenEnsamble | null => {
+    const pieza = b ? obtenerPiezaPorSku(b.sku) : undefined;
+    return pieza && obtenerSubpiezas(pieza.sku).length > 0 ? resumirEnsamble(pieza, obtenerSubpiezas, pesoPropio) : null;
+  };
   const porSku = new Map(bom.map((f) => [f.sku, f]));
   const porNumero = new Map<string, FilaBom>();
   const ligar = (numero: string | null | undefined, fila: FilaBom | undefined) => {
@@ -335,7 +361,7 @@ export function armarFilas(
   const filas: FilaArmada[] = maestroPartidas.map((p) => {
     const b = porNumero.get(p.numero) ?? null;
     if (b) usados.add(b.sku);
-    return { contexto: { m: p.datos, b, numero: p.numero, editado: deLaPieza(b) } };
+    return { contexto: { m: p.datos, b, numero: p.numero, editado: deLaPieza(b), ensamble: ensambleDe(b) } };
   });
 
   const numerosDelMaestro = new Set(maestroPartidas.map((p) => p.numero));
@@ -345,7 +371,9 @@ export function armarFilas(
     .sort((a, b) => (a.numero_parte_mxd ?? "").localeCompare(b.numero_parte_mxd ?? ""));
   const sinNumero = sueltas.filter((f) => !f.numero_parte_mxd).sort((a, b) => a.sku.localeCompare(b.sku));
   for (const b of [...conNumero, ...sinNumero]) {
-    filas.push({ contexto: { m: null, b, numero: b.numero_parte_mxd ?? SIN_NUMERO, editado: deLaPieza(b) } });
+    filas.push({
+      contexto: { m: null, b, numero: b.numero_parte_mxd ?? SIN_NUMERO, editado: deLaPieza(b), ensamble: ensambleDe(b) },
+    });
   }
   return filas;
 }

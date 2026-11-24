@@ -27,13 +27,52 @@ export const ETIQUETAS_GRUPO_MATERIAL: Record<string, string> = {
   otros: "Otro (carbono, hule, manguera)",
 };
 
-export type CampoFicha = { clave: string; etiqueta: string; tipo: TipoCampo; unidad?: string };
+/** Una unidad en la que se puede capturar un campo: cuantas unidades base (las del BOM) vale una. */
+export type UnidadCaptura = { etiqueta: string; factor: number };
+
+/** Gramos o kilogramos: el BOM guarda en gramos, la persona captura en la que le quede mas facil. */
+export const UNIDADES_PESO: UnidadCaptura[] = [
+  { etiqueta: "g", factor: 1 },
+  { etiqueta: "kg", factor: 1000 },
+];
+
+/** Milimetros, centimetros o metros: el BOM guarda en milimetros. */
+export const UNIDADES_LONGITUD: UnidadCaptura[] = [
+  { etiqueta: "mm", factor: 1 },
+  { etiqueta: "cm", factor: 10 },
+  { etiqueta: "m", factor: 1000 },
+];
+
+export type CampoFicha = {
+  clave: string;
+  etiqueta: string;
+  tipo: TipoCampo;
+  unidad?: string;
+  /** Si el campo se puede capturar en varias unidades. `unidad` es la del BOM y el primer `factor` es 1. */
+  unidades?: UnidadCaptura[];
+};
+
+/** Pasa un numero capturado en una unidad a la unidad del BOM, sin arrastrar decimales de punto flotante. */
+export function aUnidadBase(valor: number, factor: number): number {
+  return Math.round(valor * factor * 1e6) / 1e6;
+}
+
+/** Pasa un numero en la unidad del BOM a otra unidad de captura. */
+export function deUnidadBase(valor: number, factor: number): number {
+  return Math.round((valor / factor) * 1e6) / 1e6;
+}
+
+/** "3.12 kg (3120 g)" desde gramos; por debajo de 1 kg, solo "850 g". */
+export function textoPeso(gramos: number): string {
+  return gramos >= 1000 ? `${deUnidadBase(gramos, 1000)} kg (${gramos} g)` : `${gramos} g`;
+}
 
 export const CAMPOS_ESPECIFICACIONES: CampoFicha[] = [
-  { clave: "masa_g", etiqueta: "Masa", tipo: "numero", unidad: "g" },
-  { clave: "largo_mm", etiqueta: "Largo", tipo: "numero", unidad: "mm" },
-  { clave: "ancho_mm", etiqueta: "Ancho", tipo: "numero", unidad: "mm" },
-  { clave: "alto_mm", etiqueta: "Alto", tipo: "numero", unidad: "mm" },
+  { clave: "masa_g", etiqueta: "Peso unitario", tipo: "numero", unidad: "g", unidades: UNIDADES_PESO },
+  { clave: "largo_mm", etiqueta: "Largo", tipo: "numero", unidad: "mm", unidades: UNIDADES_LONGITUD },
+  { clave: "ancho_mm", etiqueta: "Ancho", tipo: "numero", unidad: "mm", unidades: UNIDADES_LONGITUD },
+  { clave: "alto_mm", etiqueta: "Alto", tipo: "numero", unidad: "mm", unidades: UNIDADES_LONGITUD },
+  { clave: "profundidad_mm", etiqueta: "Profundidad", tipo: "numero", unidad: "mm", unidades: UNIDADES_LONGITUD },
   { clave: "tolerancia_mm", etiqueta: "Tolerancia general", tipo: "numero", unidad: "mm" },
   { clave: "par_apriete_nm", etiqueta: "Par de apriete", tipo: "numero", unidad: "N·m" },
   { clave: "numero_tornillos", etiqueta: "No. de tornillos", tipo: "numero" },
@@ -46,6 +85,8 @@ export const CAMPOS_ESPECIFICACIONES: CampoFicha[] = [
   { clave: "sentido_giro", etiqueta: "Sentido de giro", tipo: "seleccionGiro" },
   { clave: "modulo_conectado", etiqueta: "Módulo al que conecta", tipo: "texto" },
   { clave: "volumen_ml", etiqueta: "Volumen", tipo: "numero", unidad: "mL" },
+  { clave: "capacidad_l", etiqueta: "Capacidad", tipo: "numero", unidad: "L" },
+  { clave: "capacidad_carga_kg", etiqueta: "Capacidad máxima de carga", tipo: "numero", unidad: "kg" },
   { clave: "diametro_tubo_mm", etiqueta: "Diámetro de tubo", tipo: "numero", unidad: "mm" },
   { clave: "grosor_pared_mm", etiqueta: "Grosor de pared", tipo: "numero", unidad: "mm" },
   { clave: "diametro_barreno_mm", etiqueta: "Diámetro de barreno", tipo: "numero", unidad: "mm" },
@@ -71,7 +112,7 @@ export const CAMPOS_COSTOS: CampoFicha[] = [
   { clave: "costo_fabricado_inhouse", etiqueta: "Fabricado in-house", tipo: "seleccionBooleano" },
   { clave: "costo_equipo", etiqueta: "Equipo de producción", tipo: "texto" },
   { clave: "costo_material", etiqueta: "Material de producción", tipo: "texto" },
-  { clave: "costo_masa_g", etiqueta: "Masa de producción", tipo: "numero", unidad: "g" },
+  { clave: "costo_masa_g", etiqueta: "Masa de producción", tipo: "numero", unidad: "g", unidades: UNIDADES_PESO },
   { clave: "costo_horas_produccion", etiqueta: "Horas de producción", tipo: "numero", unidad: "h" },
   { clave: "costo_pintura_mxn", etiqueta: "Costo de pintura", tipo: "numero", unidad: "MXN" },
   { clave: "costo_mano_obra_mxn", etiqueta: "Costo de mano de obra", tipo: "numero", unidad: "MXN" },
@@ -127,7 +168,12 @@ export function monedaTexto(valor: number | null): string {
     : valor.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
 }
 
-export function textoValor(pieza: Pieza, campo: CampoFicha): string {
+export function textoValor(
+  pieza: Pieza,
+  campo: CampoFicha,
+  /** Lo que el maestro de partes dice de esta pieza, por clave del BOM (lib/partida-maestro.ts). */
+  delMaestro?: Record<string, string>,
+): string {
   if (pieza.camposNoAplican.includes(campo.clave)) return "N/A";
   const valor = valorInicial(pieza, campo.clave);
   // Un tornillo sin par documentado no es un dato faltante: es que no hace
@@ -135,10 +181,21 @@ export function textoValor(pieza: Pieza, campo: CampoFicha): string {
   if (campo.clave === "par_apriete_nm" && valor === null && pieza.especificaciones.numero_tornillos) {
     return "Apriete manual";
   }
-  if (valor === null || valor === "") return "Pendiente";
+  if (valor === null || valor === "") {
+    // Sin dato en la ficha pero con dato en el maestro: se muestra, marcado como suyo.
+    const sugerido = delMaestro?.[campo.clave];
+    if (sugerido) {
+      const n = Number(sugerido);
+      if (campo.unidad === "g" && Number.isFinite(n)) return `${textoPeso(n)} (del maestro)`;
+      return `${sugerido}${campo.unidad && campo.unidad !== "MXN" ? ` ${campo.unidad}` : ""} (del maestro)`;
+    }
+    return "Pendiente";
+  }
   if (campo.tipo === "seleccionBooleano") return valor ? "In-house (MXD)" : "Maquilado afuera";
   if (campo.tipo === "seleccionSiNo") return valor ? "Sí" : "No";
   if (campo.tipo === "seleccionMaterial") return ETIQUETAS_GRUPO_MATERIAL[valor as string] ?? String(valor);
   if (campo.unidad === "MXN") return monedaTexto(valor as number);
+  // Un peso de 1 kg o mas se lee mejor en kg; las medidas se quedan en mm, como en el BOM.
+  if (campo.unidad === "g" && typeof valor === "number") return textoPeso(valor);
   return campo.unidad ? `${valor} ${campo.unidad}` : String(valor);
 }

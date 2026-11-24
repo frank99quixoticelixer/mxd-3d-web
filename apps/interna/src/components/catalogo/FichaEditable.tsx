@@ -10,6 +10,8 @@ import {
   CAMPOS_ESPECIFICACIONES,
   CAMPOS_TRAZABILIDAD,
   ETIQUETAS_GRUPO_MATERIAL,
+  aUnidadBase,
+  deUnidadBase,
   monedaTexto,
   textoValor,
   valorInicial,
@@ -48,7 +50,89 @@ function FilaValor({ etiqueta, valor }: { etiqueta: string; valor: string }) {
   );
 }
 
-function FilaInput({ campo, valor }: { campo: CampoFicha; valor: string | number | boolean | null }) {
+/**
+ * Un campo numerico que se captura en la unidad que mas convenga (g o kg) y se
+ * guarda siempre en la del BOM: el campo que se envia es un input oculto con el
+ * valor ya convertido, asi el servidor no cambia y la persona no hace cuentas.
+ */
+function FilaConUnidad({
+  campo,
+  valor,
+  sugerido,
+}: {
+  campo: CampoFicha;
+  valor: string | number | boolean | null;
+  sugerido?: string;
+}) {
+  const unidades = campo.unidades ?? [];
+  const [indice, setIndice] = useState(0);
+  const [texto, setTexto] = useState(typeof valor === "number" ? String(valor) : "");
+  const unidad = unidades[indice];
+  const numero = texto.trim() === "" ? null : Number(texto);
+  const enBase = numero !== null && Number.isFinite(numero) ? aUnidadBase(numero, unidad.factor) : null;
+  const sugeridoBase = sugerido !== undefined && Number.isFinite(Number(sugerido)) ? Number(sugerido) : null;
+
+  // Al cambiar de unidad se convierte lo escrito: el mismo peso, en otra unidad.
+  function cambiarUnidad(nuevo: number) {
+    if (enBase !== null) setTexto(String(deUnidadBase(enBase, unidades[nuevo].factor)));
+    setIndice(nuevo);
+  }
+
+  return (
+    <div className="border-b border-mxd-borde py-2 last:border-0">
+      <div className="flex items-center justify-between gap-4">
+        <label htmlFor={campo.clave} className="text-sm text-mxd-gris">
+          {campo.etiqueta}
+        </label>
+        <div className="flex items-center gap-1.5">
+          {/* Lo que se envia: siempre en la unidad del BOM. */}
+          <input type="hidden" name={campo.clave} value={enBase === null ? "" : String(enBase)} />
+          <input
+            id={campo.clave}
+            type="number"
+            step="any"
+            min="0"
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            placeholder={
+              sugeridoBase !== null ? `Maestro: ${deUnidadBase(sugeridoBase, unidad.factor)}` : undefined
+            }
+            className="w-32 rounded-md border border-mxd-borde bg-mxd-hueso px-2 py-1 text-sm text-mxd-tinta placeholder:text-mxd-gris/70"
+          />
+          <select
+            aria-label={`Unidad de ${campo.etiqueta}`}
+            value={indice}
+            onChange={(e) => cambiarUnidad(Number(e.target.value))}
+            className="rounded-md border border-mxd-borde bg-mxd-hueso px-2 py-1 text-sm text-mxd-tinta"
+          >
+            {unidades.map((u, i) => (
+              <option key={u.etiqueta} value={i}>
+                {u.etiqueta}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      {enBase !== null && indice !== 0 && (
+        <p className="mt-1 text-right text-[11px] text-mxd-gris">
+          Se guarda como {enBase} {campo.unidad}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function FilaInput({
+  campo,
+  valor,
+  sugerido,
+}: {
+  campo: CampoFicha;
+  valor: string | number | boolean | null;
+  /** Lo que dice el maestro de partes para este campo, si la ficha aun no tiene dato. */
+  sugerido?: string;
+}) {
+  if (campo.unidades) return <FilaConUnidad campo={campo} valor={valor} sugerido={sugerido} />;
   if (campo.tipo === "seleccionGiro") {
     return (
       <div className="flex items-center justify-between gap-4 border-b border-mxd-borde py-2 last:border-0">
@@ -142,7 +226,8 @@ function FilaInput({ campo, valor }: { campo: CampoFicha; valor: string | number
         type={campo.tipo === "numero" ? "number" : "text"}
         step={campo.tipo === "numero" ? "any" : undefined}
         defaultValue={(valor as string | number | null) ?? ""}
-        className="w-48 rounded-md border border-mxd-borde bg-mxd-hueso px-2 py-1 text-sm text-mxd-tinta"
+        placeholder={sugerido ? `Maestro: ${sugerido}` : undefined}
+        className="w-48 rounded-md border border-mxd-borde bg-mxd-hueso px-2 py-1 text-sm text-mxd-tinta placeholder:text-mxd-gris/70"
       />
     </div>
   );
@@ -168,6 +253,7 @@ function AvisoOrigen({
   slug,
   numeroInicial,
   numerosUsados,
+  partidaDelMaestro,
 }: {
   estado: EstadoBomFicha;
   sku: string;
@@ -176,6 +262,8 @@ function AvisoOrigen({
   numeroInicial: string | null;
   /** Los numeros de parte MXD que ya existen (maestro y BOM), para sugerir el siguiente libre. */
   numerosUsados: string[];
+  /** Numero de la partida del maestro de partes que le corresponde a la pieza, si tiene una. */
+  partidaDelMaestro: string | null;
 }) {
   const [confirmando, setConfirmando] = useState(false);
   const [agregando, startTransition] = useTransition();
@@ -231,12 +319,26 @@ function AvisoOrigen({
         </>
       ) : (
         <>
-          <p className="font-semibold">Esta pieza no está en el BOM maestro</p>
-          <p className="mt-1 text-xs leading-relaxed">
-            Lo que ves viene del catálogo del 3D y no se guarda en ningún BOM. Si la agregas (o si
-            la editas), queda marcada como agregada a mano, con quién y cuándo, y sale así en el
-            Excel.
-          </p>
+          {partidaDelMaestro ? (
+            <>
+              <p className="font-semibold">Tiene partida en el maestro, pero aún no tiene fila en el BOM</p>
+              <p className="mt-1 text-xs leading-relaxed">
+                Su número de parte es <span className="font-mono">{partidaDelMaestro}</span>, por el
+                cruce con el maestro de partes. Lo que ves viene del catálogo del 3D y todavía no se
+                guarda en el BOM de la base de datos. Al agregarla (o al editarla) se crea su fila,
+                como pieza del maestro.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="font-semibold">Sin partida en el maestro y sin fila en el BOM</p>
+              <p className="mt-1 text-xs leading-relaxed">
+                Lo que ves viene del catálogo del 3D y no se guarda en ningún BOM. Si la agregas (o
+                si la editas), queda marcada como agregada a mano, con quién y cuándo, y sale así en
+                el Excel.
+              </p>
+            </>
+          )}
           {confirmando ? (
             <div className="mt-3 space-y-3">
               <div className="rounded-lg border border-amber-300 bg-white/60 p-3">
@@ -244,10 +346,9 @@ function AvisoOrigen({
                   Número de parte MXD
                 </label>
                 <p className="mt-0.5 text-[11px] leading-relaxed">
-                  El BOM maestro identifica cada pieza con este número, y esta no lo tiene. Elige el
-                  sistema y el tipo para proponer el siguiente libre, o escríbelo tú. Un ensamble de
-                  varias piezas lleva tipo ENS (por ejemplo el balanceador es PRO-ENS-001); un
-                  motor o ESC que se compra armado, SUB.
+                  {partidaDelMaestro
+                    ? "Viene del cruce con el maestro de partes. Cámbialo solo si el cruce está mal; para proponer otro, elige el sistema y el tipo."
+                    : "El BOM maestro identifica cada pieza con este número, y esta no lo tiene. Elige el sistema y el tipo para proponer el siguiente libre, o escríbelo tú. Un ensamble de varias piezas lleva tipo ENS (por ejemplo el balanceador es PRO-ENS-001); un motor o ESC que se compra armado, SUB."}
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <select
@@ -342,6 +443,8 @@ export function FichaEditable({
   slug,
   estadoBom,
   numerosUsados = [],
+  partidaDelMaestro = null,
+  delMaestro = {},
   filasFijas = [],
 }: {
   pieza: Pieza;
@@ -349,6 +452,10 @@ export function FichaEditable({
   estadoBom: EstadoBomFicha;
   /** Numeros de parte MXD ya existentes; solo llegan si la pieza aun no esta en el BOM. */
   numerosUsados?: string[];
+  /** Partida del maestro de partes de la pieza (numero), si la tiene. */
+  partidaDelMaestro?: string | null;
+  /** Lo que el maestro de partes dice de esta pieza, por clave del BOM: se ofrece donde la ficha esta vacia. */
+  delMaestro?: Record<string, string>;
   /** Filas de solo lectura (no viven en el BOM: secciones/cantidad vienen de mx80.ts). */
   filasFijas?: { etiqueta: string; valor: string }[];
 }) {
@@ -392,6 +499,7 @@ export function FichaEditable({
           slug={slug}
           numeroInicial={pieza.numeroBom}
           numerosUsados={numerosUsados}
+          partidaDelMaestro={partidaDelMaestro}
         />
         <section className="mt-8">
           <div className="flex items-center justify-between">
@@ -411,7 +519,7 @@ export function FichaEditable({
               <FilaValor key={f.etiqueta} etiqueta={f.etiqueta} valor={f.valor} />
             ))}
             {camposEspecVisibles.map((c) => (
-              <FilaValor key={c.clave} etiqueta={c.etiqueta} valor={textoValor(pieza, c)} />
+              <FilaValor key={c.clave} etiqueta={c.etiqueta} valor={textoValor(pieza, c, delMaestro)} />
             ))}
           </dl>
           <p className="mt-2 text-[11px] leading-relaxed text-mxd-gris">
@@ -426,7 +534,7 @@ export function FichaEditable({
           </h2>
           <dl className="mt-3 rounded-xl border border-mxd-borde bg-mxd-fondo px-4">
             {camposComprasVisibles.map((c) => (
-              <FilaValor key={c.clave} etiqueta={c.etiqueta} valor={textoValor(pieza, c)} />
+              <FilaValor key={c.clave} etiqueta={c.etiqueta} valor={textoValor(pieza, c, delMaestro)} />
             ))}
           </dl>
         </section>
@@ -437,7 +545,7 @@ export function FichaEditable({
           </h2>
           <dl className="mt-3 rounded-xl border border-mxd-borde bg-mxd-fondo px-4">
             {camposCostosVisibles.map((c) => (
-              <FilaValor key={c.clave} etiqueta={c.etiqueta} valor={textoValor(pieza, c)} />
+              <FilaValor key={c.clave} etiqueta={c.etiqueta} valor={textoValor(pieza, c, delMaestro)} />
             ))}
             {/* Calculados, no editables: salen de costo_masa_g + costo_material
                 (lib/costos.ts). Se muestran aqui para no perder el total que ya
@@ -457,7 +565,7 @@ export function FichaEditable({
           </h2>
           <dl className="mt-3 rounded-xl border border-mxd-borde bg-mxd-fondo px-4">
             {camposTrazabilidadVisibles.map((c) => (
-              <FilaValor key={c.clave} etiqueta={c.etiqueta} valor={textoValor(pieza, c)} />
+              <FilaValor key={c.clave} etiqueta={c.etiqueta} valor={textoValor(pieza, c, delMaestro)} />
             ))}
           </dl>
         </section>
@@ -480,7 +588,7 @@ export function FichaEditable({
             <FilaValor key={f.etiqueta} etiqueta={f.etiqueta} valor={f.valor} />
           ))}
           {camposEspecVisibles.map((c) => (
-            <FilaInput key={c.clave} campo={c} valor={valorInicial(pieza, c.clave)} />
+            <FilaInput key={c.clave} campo={c} valor={valorInicial(pieza, c.clave)} sugerido={delMaestro[c.clave]} />
           ))}
         </div>
       </section>
@@ -491,7 +599,7 @@ export function FichaEditable({
         </h2>
         <div className="mt-3 rounded-xl border border-mxd-borde bg-mxd-fondo px-4">
           {camposComprasVisibles.map((c) => (
-            <FilaInput key={c.clave} campo={c} valor={valorInicial(pieza, c.clave)} />
+            <FilaInput key={c.clave} campo={c} valor={valorInicial(pieza, c.clave)} sugerido={delMaestro[c.clave]} />
           ))}
         </div>
       </section>
@@ -502,7 +610,7 @@ export function FichaEditable({
         </h2>
         <div className="mt-3 rounded-xl border border-mxd-borde bg-mxd-fondo px-4">
           {camposCostosVisibles.map((c) => (
-            <FilaInput key={c.clave} campo={c} valor={valorInicial(pieza, c.clave)} />
+            <FilaInput key={c.clave} campo={c} valor={valorInicial(pieza, c.clave)} sugerido={delMaestro[c.clave]} />
           ))}
         </div>
         <p className="mt-2 text-[11px] leading-relaxed text-mxd-gris">
@@ -517,7 +625,7 @@ export function FichaEditable({
         </h2>
         <div className="mt-3 rounded-xl border border-mxd-borde bg-mxd-fondo px-4">
           {camposTrazabilidadVisibles.map((c) => (
-            <FilaInput key={c.clave} campo={c} valor={valorInicial(pieza, c.clave)} />
+            <FilaInput key={c.clave} campo={c} valor={valorInicial(pieza, c.clave)} sugerido={delMaestro[c.clave]} />
           ))}
         </div>
       </section>

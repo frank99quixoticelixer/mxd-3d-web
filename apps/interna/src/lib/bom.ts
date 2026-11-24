@@ -17,6 +17,8 @@
  */
 import type { PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 
+import MAESTRO from "@/data/maestro-mx80.json";
+
 import { obtenerPool } from "./db";
 import { EspecificacionesEsquema, type Especificaciones, type Pieza } from "./esquema";
 
@@ -34,6 +36,9 @@ import { EspecificacionesEsquema, type Especificaciones, type Pieza } from "./es
  *   listaCorta   -> array de string, unido con "," en la celda (nombres de
  *                   campo sin espacios, para camposNoAplican)
  */
+/** Los numeros de parte que son una partida del maestro de partes. */
+const NUMEROS_DEL_MAESTRO = new Set<string>(MAESTRO.partidas.map((p) => p.numero));
+
 export type TipoColumna = "texto" | "numero" | "lista" | "listaCorta" | "booleano";
 const COLUMNAS: { clave: string; encabezado: string; tipo: TipoColumna }[] = [
   { clave: "sku", encabezado: "SKU", tipo: "texto" },
@@ -43,6 +48,7 @@ const COLUMNAS: { clave: string; encabezado: string; tipo: TipoColumna }[] = [
   { clave: "largo_mm", encabezado: "Largo (mm)", tipo: "numero" },
   { clave: "ancho_mm", encabezado: "Ancho (mm)", tipo: "numero" },
   { clave: "alto_mm", encabezado: "Alto (mm)", tipo: "numero" },
+  { clave: "profundidad_mm", encabezado: "Profundidad (mm)", tipo: "numero" },
   { clave: "material", encabezado: "Material", tipo: "texto" },
   { clave: "grupo_material", encabezado: "Tipo de material (filtro del visor)", tipo: "texto" },
   { clave: "acabado", encabezado: "Acabado", tipo: "texto" },
@@ -54,6 +60,8 @@ const COLUMNAS: { clave: string; encabezado: string; tipo: TipoColumna }[] = [
   { clave: "sentido_giro", encabezado: "Sentido de giro", tipo: "texto" },
   { clave: "modulo_conectado", encabezado: "Modulo al que conecta", tipo: "texto" },
   { clave: "volumen_ml", encabezado: "Volumen (mL)", tipo: "numero" },
+  { clave: "capacidad_l", encabezado: "Capacidad (L)", tipo: "numero" },
+  { clave: "capacidad_carga_kg", encabezado: "Capacidad máxima de carga (kg)", tipo: "numero" },
   { clave: "diametro_tubo_mm", encabezado: "Diametro de tubo (mm)", tipo: "numero" },
   { clave: "grosor_pared_mm", encabezado: "Grosor de pared (mm)", tipo: "numero" },
   { clave: "diametro_barreno_mm", encabezado: "Diametro de barreno (mm)", tipo: "numero" },
@@ -412,13 +420,18 @@ async function escribirDentro(
   }
 
   // Una fila nueva es una pieza que el maestro original no traia: queda
-  // marcada, con quien y cuando, salvo que quien llama ya la haya marcado.
+  // marcada, con quien y cuando, salvo que quien llama ya la haya marcado. Si su
+  // numero de parte ya es una partida del maestro (por el cruce, o porque la
+  // persona lo escribio), la pieza SI viene del maestro y no se marca como
+  // agregada a mano.
   if (!existente) {
     const marca = marcaDeAgregada(autor.correo, ahora);
+    const numero = cambios.numero_parte_mxd ?? null;
+    const delMaestro = numero !== null && NUMEROS_DEL_MAESTRO.has(numero);
     cambios = {
       ...cambios,
-      origen_bom: cambios.origen_bom ?? marca.origen_bom,
-      origen_nota: cambios.origen_nota ?? marca.origen_nota,
+      origen_bom: cambios.origen_bom ?? (delMaestro ? "maestro" : marca.origen_bom),
+      origen_nota: cambios.origen_nota ?? (delMaestro ? null : marca.origen_nota),
     };
   }
 
