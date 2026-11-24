@@ -246,7 +246,8 @@ function AvisoOrigen({
                 <p className="mt-0.5 text-[11px] leading-relaxed">
                   El BOM maestro identifica cada pieza con este número, y esta no lo tiene. Elige el
                   sistema y el tipo para proponer el siguiente libre, o escríbelo tú. Un ensamble de
-                  varias piezas lleva tipo ENS (por ejemplo el balanceador es PRO-ENS-001).
+                  varias piezas lleva tipo ENS (por ejemplo el balanceador es PRO-ENS-001); un
+                  motor o ESC que se compra armado, SUB.
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <select
@@ -258,7 +259,7 @@ function AvisoOrigen({
                     <option value="">Sistema…</option>
                     {sistemas.map((s) => (
                       <option key={s.sistema} value={s.sistema}>
-                        {s.sistema} ({s.cantidad})
+                        {s.sistema} – {s.nombre}
                       </option>
                     ))}
                   </select>
@@ -271,7 +272,7 @@ function AvisoOrigen({
                     <option value="">Tipo…</option>
                     {TIPOS_DE_PARTE.map((t) => (
                       <option key={t.codigo} value={t.codigo}>
-                        {t.codigo} · {t.nombre}
+                        {t.codigo} – {t.nombre}
                       </option>
                     ))}
                   </select>

@@ -4,12 +4,13 @@
  *   MXD-MX80-<SISTEMA>-<TIPO>-<CONSECUTIVO>-R<REVISION>
  *   MXD-MX80-PRO-ENS-001-R00   (ensamble de propulsion, el primero)
  *
- * - SISTEMA: tres letras (PRO, EST, ASP, BAT...). Los que existan los dicta el
- *   maestro; aqui no se inventa una lista.
- * - TIPO: PZA pieza, SUB conjunto que se compra como una sola partida (motor,
- *   ESC, bateria), ENS ensamble de varias piezas, MAT material.
- * - CONSECUTIVO: tres digitos por sistema y tipo. El 000 queda para el ensamble
- *   padre del sistema (p. ej. MXD-MX80-PRO-ENS-000-R00) y no se sugiere.
+ * - SISTEMA, TIPO: los codigos del catalogo (data/catalogo-codigos.ts), que sale
+ *   de la hoja "Catalogo de Codigos" del maestro: 20 sistemas (PRO, EST, ASP...)
+ *   y 9 tipos (PZA pieza, SUB subconjunto comprado armado, ENS ensamble con BOM
+ *   de nivel inferior, KIT, CON, REF, ACC, DOC, MAT).
+ * - CONSECUTIVO: tres digitos, irrepetible por sistema y tipo. El 000 queda
+ *   para el ensamble de nivel 1 del sistema (MXD-MX80-PRO-ENS-000-R00) y no se
+ *   sugiere.
  * - REVISION: R00, R01...
  *
  * Modulo sin dependencias de servidor ni de datos: lo usan el formulario de la
@@ -17,16 +18,14 @@
  * validen lo mismo.
  */
 
-export const TIPOS_DE_PARTE = [
-  { codigo: "PZA", nombre: "Pieza" },
-  { codigo: "SUB", nombre: "Conjunto que se compra completo (motor, ESC, batería)" },
-  { codigo: "ENS", nombre: "Ensamble de varias piezas" },
-  { codigo: "MAT", nombre: "Material" },
-] as const;
+import { SISTEMAS_DE_PARTE, TIPOS_DE_PARTE_CATALOGO } from "@/data/catalogo-codigos";
 
-export type CodigoTipo = (typeof TIPOS_DE_PARTE)[number]["codigo"];
+export const TIPOS_DE_PARTE = TIPOS_DE_PARTE_CATALOGO;
 
-const FORMATO = /^MXD-MX80-([A-Z]{3})-(PZA|SUB|ENS|MAT)-(\d{3})-R(\d{2})$/;
+export type CodigoTipo = string;
+
+const TIPOS_REGEX = TIPOS_DE_PARTE_CATALOGO.map((t) => t.codigo).join("|");
+const FORMATO = new RegExp(String.raw`^MXD-MX80-([A-Z]{3})-(${TIPOS_REGEX})-(\d{3})-R(\d{2})$`);
 
 export interface NumeroDeParte {
   sistema: string;
@@ -41,7 +40,7 @@ export function leerNumeroDeParte(numero: string): NumeroDeParte | null {
   if (!m) return null;
   return {
     sistema: m[1],
-    tipo: m[2] as CodigoTipo,
+    tipo: m[2],
     consecutivo: Number(m[3]),
     revision: Number(m[4]),
   };
@@ -65,24 +64,30 @@ export function siguienteNumeroDeParte(usados: Iterable<string>, sistema: string
   return armarNumeroDeParte(sistema, tipo, mayor + 1);
 }
 
-/** Los sistemas que aparecen en una lista de numeros, con cuantos hay de cada uno. */
-export function sistemasEnUso(usados: Iterable<string>): { sistema: string; cantidad: number }[] {
+/** Los sistemas del catalogo, cada uno con cuantos numeros de la lista le pertenecen. */
+export function sistemasEnUso(usados: Iterable<string>): { sistema: string; nombre: string; cantidad: number }[] {
   const cuenta = new Map<string, number>();
   for (const numero of usados) {
     const n = leerNumeroDeParte(numero);
     if (n) cuenta.set(n.sistema, (cuenta.get(n.sistema) ?? 0) + 1);
   }
-  return [...cuenta.entries()]
-    .map(([sistema, cantidad]) => ({ sistema, cantidad }))
-    .sort((a, b) => a.sistema.localeCompare(b.sistema));
+  return SISTEMAS_DE_PARTE.map((s) => ({
+    sistema: s.codigo,
+    nombre: s.nombre,
+    cantidad: cuenta.get(s.codigo) ?? 0,
+  })).sort((a, b) => a.sistema.localeCompare(b.sistema));
 }
 
 /** Mensaje de error si el numero no sigue la nomenclatura; null si esta bien. Un numero vacio no es error. */
 export function errorDeFormato(numero: string): string | null {
   const limpio = numero.trim();
   if (limpio === "") return null;
-  if (!FORMATO.test(limpio)) {
-    return "No sigue la nomenclatura. Ejemplo: MXD-MX80-PRO-ENS-001-R00 (sistema de 3 letras, tipo PZA, SUB, ENS o MAT, consecutivo de 3 dígitos y revisión R00).";
+  const partes = FORMATO.exec(limpio);
+  if (!partes) {
+    return `No sigue la nomenclatura. Ejemplo: MXD-MX80-PRO-ENS-001-R00 (sistema de 3 letras, tipo ${TIPOS_REGEX.replaceAll("|", ", ")}, consecutivo de 3 dígitos y revisión R00).`;
+  }
+  if (!SISTEMAS_DE_PARTE.some((s) => s.codigo === partes[1])) {
+    return `El sistema ${partes[1]} no está en el catálogo de códigos del maestro.`;
   }
   return null;
 }
