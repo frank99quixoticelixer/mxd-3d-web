@@ -1,5 +1,6 @@
-import { generarExcel } from "@/lib/bom-excel";
 import { leerCorte } from "@/lib/bom-cortes";
+import { generarExcelMaestro } from "@/lib/bom-maestro-excel";
+import { leerCamposEditados, leerMaestro } from "@/lib/maestro-base";
 
 /** Genera el Excel con exceljs (usa Buffer de Node): no corre en el runtime Edge. */
 export const runtime = "nodejs";
@@ -18,7 +19,9 @@ export async function GET(_peticion: Request, { params }: { params: Promise<{ id
     return new Response("No existe ese corte.", { status: 404, headers: { "Cache-Control": "no-store" } });
   }
 
-  const bytes = await generarExcel(corte.filas);
+  // Las filas del BOM son las del corte; el maestro es el vigente (casi no cambia).
+  const [maestro, editados] = await Promise.all([leerMaestro(), leerCamposEditados()]);
+  const bytes = await generarExcelMaestro(maestro, corte.filas, editados);
   const dia = (corte.fecha instanceof Date ? corte.fecha : new Date(corte.fecha)).toISOString().slice(0, 10);
   return new Response(new Uint8Array(bytes), {
     headers: {

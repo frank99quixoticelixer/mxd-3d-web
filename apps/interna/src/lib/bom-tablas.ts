@@ -60,9 +60,28 @@ CREATE TABLE IF NOT EXISTS bom_cortes (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 `;
 
+/**
+ * Maestro de partes (lib/maestro-base.ts): las partidas del Excel oficial con
+ * todas sus columnas. Vive en la base y no en el repo porque el repo es publico
+ * y el maestro trae numeros OEM, proveedores y notas de calidad. `datos` es el
+ * JSON de la fila por el titulo de cada columna; `orden` conserva el orden del
+ * Excel.
+ */
+export const DDL_MAESTRO_PARTIDAS = `
+CREATE TABLE IF NOT EXISTS maestro_partidas (
+  numero VARCHAR(64) NOT NULL,
+  orden INT UNSIGNED NOT NULL,
+  datos LONGTEXT NOT NULL,
+  actualizado_en DATETIME(3) NOT NULL,
+  PRIMARY KEY (numero),
+  KEY idx_maestro_orden (orden)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+`;
+
 /** Nombre de la tabla y su sentencia, en el orden en que se crean. */
 export const TABLAS_BOM: { tabla: string; ddl: string }[] = [
   { tabla: "bom_piezas", ddl: DDL_BOM_PIEZAS },
   { tabla: "bom_cambios", ddl: DDL_BOM_CAMBIOS },
   { tabla: "bom_cortes", ddl: DDL_BOM_CORTES },
+  { tabla: "maestro_partidas", ddl: DDL_MAESTRO_PARTIDAS },
 ];

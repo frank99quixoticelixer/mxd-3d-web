@@ -41,19 +41,6 @@
       "padre": "MXD-MX80-AGR-ENS-000-R00"
     },
     {
-      "partida": 70,
-      "numero": "MXD-MX80-AGR-PZA-004-R00",
-      "nombreOem": "Filter Screen",
-      "nombre": "Malla de filtro",
-      "sistema": "AGR",
-      "tipo": "PZA",
-      "cantidad": 1,
-      "unidad": "pza",
-      "posicion": "PENDIENTE",
-      "nivel": 2,
-      "padre": "MXD-MX80-AGR-ENS-000-R00"
-    },
-    {
       "partida": 71,
       "numero": "MXD-MX80-AGR-PZA-005-R00",
       "nombreOem": "Sealing Ring",
