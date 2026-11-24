@@ -83,39 +83,24 @@ const SEGUNDOS_ENTRE_SOMBRAS = 0.08;
  * en vez de 60: es una sombra difusa y no se nota. El ultimo cambio siempre se
  * alcanza, porque la firma solo se da por vista cuando se pide el dibujo.
  *
- * Lo mismo vale para el mapa de sombras de la luz principal (2048 x 2048),
- * que es otro render completo del dron por cuadro: tampoco depende de la
- * camara, solo de la luz y de lo que se mueve. Se apaga su actualizacion
- * automatica y se pide una nueva con la misma firma. Medido con visor-glb.html:
- * quitar esa sombra mejora la fluidez; asi se conserva y orbitar o acercarse ya
- * no la recalcula.
+ * La luz principal NO proyecta sombra: su mapa (2048 x 2048) era otro render
+ * completo del dron, y medido con visor-glb.html quitarlo mejora la fluidez. Se
+ * pierde la sombra del dron sobre si mismo; la sombra de contacto del piso se
+ * conserva.
  */
 function SombraDeContacto({
   position,
   scale,
   far,
-  radio,
 }: {
   position: [number, number, number];
   scale: number;
   far: number;
-  /** Tamano del modelo: si cambia, la luz se recoloca y su sombra hay que recalcularla. */
-  radio: number;
 }) {
   const [, redibujar] = useState(0);
   const estado = useRef({ firma: Number.NaN, cuadros: 0, ultimo: -Infinity });
-  const store = useStore();
 
-  useEffect(() => {
-    const { gl } = store.getState();
-    gl.shadowMap.autoUpdate = false;
-    gl.shadowMap.needsUpdate = true;
-    return () => {
-      gl.shadowMap.autoUpdate = true;
-    };
-  }, [store, radio]);
-
-  useFrame(({ scene, clock, gl }) => {
+  useFrame(({ scene, clock }) => {
     const s = estado.current;
     if (++s.cuadros % CUADROS_ENTRE_REVISIONES !== 0) return;
     const firma = firmaDeEscena(scene);
@@ -123,7 +108,6 @@ function SombraDeContacto({
     if (clock.elapsedTime - s.ultimo < SEGUNDOS_ENTRE_SOMBRAS) return;
     s.firma = firma;
     s.ultimo = clock.elapsedTime;
-    gl.shadowMap.needsUpdate = true;
     redibujar((n) => n + 1);
   });
 
@@ -156,20 +140,8 @@ export function Escenario({ sombraY }: { sombraY?: number } = {}) {
       {/* Luz ambiental muy suave: evita negros absolutos en las sombras. */}
       <hemisphereLight args={["#ffffff", "#dfe7e3", 0.55]} />
 
-      {/* Luz principal: define la forma y proyecta la sombra. */}
-      <directionalLight
-        position={[d * 2.2, d * 3.2, d * 2.0]}
-        intensity={2.1}
-        castShadow
-        shadow-mapSize={[2048, 2048]}
-        shadow-bias={-0.0006}
-        shadow-camera-near={0.1}
-        shadow-camera-far={d * 14}
-        shadow-camera-left={-d * 3}
-        shadow-camera-right={d * 3}
-        shadow-camera-top={d * 3}
-        shadow-camera-bottom={-d * 3}
-      />
+      {/* Luz principal: define la forma. No proyecta sombra (cuesta un render completo del dron). */}
+      <directionalLight position={[d * 2.2, d * 3.2, d * 2.0]} intensity={2.1} />
 
       {/* Relleno: abre las sombras del lado opuesto. */}
       <directionalLight
@@ -185,7 +157,7 @@ export function Escenario({ sombraY }: { sombraY?: number } = {}) {
       />
 
       {/* Sombra de contacto: da la sensacion de que la pieza se apoya. */}
-      <SombraDeContacto position={[0, sombraY ?? -d * 1.02, 0]} scale={d * 7} far={d * 3} radio={d} />
+      <SombraDeContacto position={[0, sombraY ?? -d * 1.02, 0]} scale={d * 7} far={d * 3} />
     </>
   );
 }
