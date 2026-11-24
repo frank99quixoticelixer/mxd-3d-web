@@ -105,6 +105,8 @@ export const EspecificacionesEsquema = z.object({
   largo_mm: z.number().positive().nullable().default(null),
   ancho_mm: z.number().positive().nullable().default(null),
   alto_mm: z.number().positive().nullable().default(null),
+  /** Profundidad (fondo), en milimetros: la tercera dimension cuando Largo/Ancho/Alto no bastan. */
+  profundidad_mm: z.number().positive().nullable().default(null),
   /** Material principal, tal como lo declara el proveedor. */
   material: z.string().nullable().default(null),
   /**
@@ -154,6 +156,10 @@ export const EspecificacionesEsquema = z.object({
 
   /** Volumen util, en mililitros. Solo el tanque de aspersion. */
   volumen_ml: z.number().positive().nullable().default(null),
+  /** Capacidad de un tanque, en litros. Solo tanques (ver CAMPOS_SOLO_TANQUE). */
+  capacidad_l: z.number().positive().nullable().default(null),
+  /** Capacidad maxima de carga de un tanque, en kilogramos (peso del liquido). Solo tanques. */
+  capacidad_carga_kg: z.number().positive().nullable().default(null),
 
   /** Diametro exterior del tubo, en milimetros. Tubos redondos (brazo, patines, travesanos). */
   diametro_tubo_mm: z.number().positive().nullable().default(null),
@@ -480,6 +486,24 @@ export type Pieza = z.infer<typeof PiezaEsquema>;
  */
 export function cantidadPorDron(pieza: Pieza): number {
   return pieza.secciones.length * pieza.cantidadPorSeccion;
+}
+
+/**
+ * Campos que solo tienen sentido en un tanque. Para cualquier otra pieza se
+ * agregan solos a `camposNoAplican`, asi no hace falta listarlos en cada pieza
+ * de data/mx80.ts.
+ */
+export const CAMPOS_SOLO_TANQUE = ["capacidad_l", "capacidad_carga_kg"];
+
+export function esTanque(pieza: Pick<Pieza, "nombre">): boolean {
+  return /^tanque\b/i.test(pieza.nombre);
+}
+
+/** Marca como "no aplica" lo que es propio de otro tipo de pieza (hoy: los campos de tanque). */
+export function conCamposPorTipo(pieza: Pieza): Pieza {
+  if (esTanque(pieza)) return pieza;
+  const faltan = CAMPOS_SOLO_TANQUE.filter((c) => !pieza.camposNoAplican.includes(c));
+  return faltan.length > 0 ? { ...pieza, camposNoAplican: [...pieza.camposNoAplican, ...faltan] } : pieza;
 }
 
 export const CatalogoEsquema = z.array(PiezaEsquema);

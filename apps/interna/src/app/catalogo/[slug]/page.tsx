@@ -7,6 +7,7 @@ import { DescargasMalla } from "@/components/catalogo/DescargasMalla";
 import { EtiquetaWeb } from "@/components/catalogo/EtiquetaWeb";
 import { FichaEditable } from "@/components/catalogo/FichaEditable";
 import { PartidaMaestro } from "@/components/catalogo/PartidaMaestro";
+import { PesoPieza } from "@/components/catalogo/PesoPieza";
 import { VersionesPieza } from "@/components/catalogo/VersionesPieza";
 import { BotonAtras } from "@/components/layout/BotonAtras";
 import { MODELO_PREDETERMINADO } from "@/config/modelos3d";
@@ -21,6 +22,7 @@ import { VisorPieza } from "@/features/viewer/VisorPieza";
 import { leerEstadoBom } from "@/lib/bom";
 import { numerosEnUso } from "@/lib/numeros-en-uso";
 import { partidasDeLaPieza } from "@/lib/partida-maestro";
+import { pesosDeLaFicha } from "@/lib/pesos-ensamble";
 import {
   obtenerPiezaConBomPorSlug,
   obtenerPiezaPorSlug,
@@ -142,6 +144,8 @@ export default async function PaginaPieza({
   // Lo que el maestro de partes dice de esta pieza: su partida, el ensamble del
   // que forma parte y las partidas que la componen.
   const partidas = await partidasDeLaPieza(pieza);
+  // Peso unitario (de la ficha o del maestro) y, si se desarma, el peso del ensamble.
+  const pesos = await pesosDeLaFicha(pieza);
 
   // El visor recibe tambien las subpiezas: son los objetos que trae el GLB.
   const catalogo = obtenerTodas(MODELO_PREDETERMINADO);
@@ -298,6 +302,8 @@ export default async function PaginaPieza({
               { etiqueta: "Cantidad por dron", valor: cantidadTexto(pieza) },
             ]}
           />
+
+          <PesoPieza propio={pesos.propio} ensamble={pesos.ensamble} />
 
           <PartidaMaestro partidas={partidas} tieneNumero={Boolean(pieza.numeroBom)} />
 
