@@ -27,6 +27,8 @@ const MENSAJES: Record<string, string> = {
     "Tu solicitud de acceso fue rechazada. Si crees que fue un error, o quieres intentarlo de nuevo, vuelve a solicitar acceso.",
   baja: "Tu cuenta fue dada de baja. Si necesitas volver a entrar, avisa a un administrador.",
   servicio: "No pudimos comprobar tu acceso en este momento. Inténtalo de nuevo en unos minutos.",
+  "otra-sesion":
+    "Ya hay una sesión abierta con otra cuenta en este navegador. Pulsa Salir antes de entrar con otra.",
   limite: "Demasiados intentos. Espera unos minutos e inténtalo de nuevo.",
   config: "El acceso no está configurado en este servidor. Avisa al equipo.",
 };

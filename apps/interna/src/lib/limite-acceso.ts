@@ -18,7 +18,17 @@ const MAXIMO_ENTRADAS = 5000;
 
 type Ventana = { inicio: number; fallos: number };
 
-const ventanas = new Map<string, Ventana>();
+/**
+ * Los contadores viven en globalThis, como la instancia de Better Auth
+ * (lib/auth.ts): Next puede evaluar este modulo mas de una vez (una copia por
+ * ruta o al recargar en desarrollo) y cada copia empezaria con su Map vacio, asi
+ * que los fallos de una no los veria la otra y el limite nunca se alcanzaria.
+ */
+const almacen = globalThis as typeof globalThis & {
+  __mxdVentanasAcceso?: Map<string, Ventana>;
+  __mxdSolicitudesAcceso?: Map<string, Ventana>;
+};
+const ventanas = (almacen.__mxdVentanasAcceso ??= new Map<string, Ventana>());
 
 function vigente(clave: string, ahora: number): Ventana | undefined {
   const v = ventanas.get(clave);
@@ -69,7 +79,7 @@ export function registrarAcierto(correo: string): void {
  */
 const VENTANA_SOLICITUDES_MS = 60 * 60 * 1000;
 const MAXIMO_SOLICITUDES_POR_IP = 5;
-const solicitudes = new Map<string, Ventana>();
+const solicitudes = (almacen.__mxdSolicitudesAcceso ??= new Map<string, Ventana>());
 
 function solicitudesVigentes(ip: string, ahora: number): Ventana | undefined {
   const v = solicitudes.get(ip);

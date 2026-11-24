@@ -1,13 +1,14 @@
 "use server";
 
-import { APIError } from "better-auth/api";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { obtenerAuth } from "@/lib/auth";
+import { esErrorDeApi } from "@/lib/error-auth";
 import { accesoBloqueado, registrarAcierto, registrarFallo } from "@/lib/limite-acceso";
 import { ipDelCliente } from "@/lib/protegido";
 import { rutaSegura } from "@/lib/ruta-segura";
+import { sesionActual } from "@/lib/sesion";
 
 /**
  * Inicia sesion con correo y contrasena.
@@ -37,6 +38,15 @@ export async function iniciarSesion(formData: FormData): Promise<void> {
     return volver("credenciales");
   }
 
+  // Una pestana con /login abierto desde antes sigue mostrando el formulario
+  // aunque otra pestana ya haya entrado. Con sesion abierta no se crea otra:
+  // la misma cuenta pasa de largo, otra cuenta debe salir primero.
+  const abierta = await sesionActual();
+  if (abierta) {
+    if (abierta.user.email.toLowerCase() === correo) redirect(siguiente);
+    return volver("otra-sesion");
+  }
+
   const peticion = { headers: await headers() };
   const ip = ipDelCliente(peticion);
   if (accesoBloqueado(ip, correo)) return volver("limite");
@@ -54,7 +64,7 @@ export async function iniciarSesion(formData: FormData): Promise<void> {
       headers: peticion.headers,
     });
   } catch (e) {
-    if (e instanceof APIError && e.status === "FORBIDDEN") {
+    if (esErrorDeApi(e) && e.status === "FORBIDDEN") {
       // Solo llega aqui si la contrasena era correcta: el hook de sesion de
       // lib/auth.ts rechaza la cuenta con activo = 0 despues de verificarla.
       // Decirlo no revela si un correo existe a quien no tiene su contrasena.
@@ -64,7 +74,7 @@ export async function iniciarSesion(formData: FormData): Promise<void> {
         : motivo.endsWith(":baja")
           ? "baja"
           : "pendiente";
-    } else if (e instanceof APIError) {
+    } else if (esErrorDeApi(e)) {
       // Correo inexistente, contrasena incorrecta o correo mal formado.
       registrarFallo(ip, correo);
       resultado = "credenciales";
