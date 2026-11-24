@@ -39,3 +39,6 @@ npm-debug.log*
 
 # Archivos de bloqueo de Office (documento abierto en Word o Excel)
 ~$*
+
+# El maestro de partes trae numeros OEM, proveedores y notas de calidad: el repo es publico
+Maestro_Partes_MX80*.xlsx
