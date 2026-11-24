@@ -28,7 +28,7 @@ export function PesoPieza({ propio, ensamble }: { propio: PesoPropio; ensamble: 
               {propio.origen && <span className="ml-2 text-xs text-mxd-gris">({ORIGEN[propio.origen]})</span>}
             </>
           ) : (
-            <span className="text-mxd-gris">sin dato. Captura «Masa» en esta ficha.</span>
+            <span className="text-mxd-gris">sin dato. Captúralo en «Peso unitario», en Especificaciones de esta ficha.</span>
           )}
         </p>
 

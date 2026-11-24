@@ -21,7 +21,7 @@ import {
 import { VisorPieza } from "@/features/viewer/VisorPieza";
 import { leerEstadoBom } from "@/lib/bom";
 import { numerosEnUso } from "@/lib/numeros-en-uso";
-import { partidasDeLaPieza } from "@/lib/partida-maestro";
+import { partidasDeLaPieza, valoresDelMaestro } from "@/lib/partida-maestro";
 import { pesosDeLaFicha } from "@/lib/pesos-ensamble";
 import {
   obtenerPiezaConBomPorSlug,
@@ -286,6 +286,7 @@ export default async function PaginaPieza({
             estadoBom={estadoBom}
             numerosUsados={numerosUsados}
             partidaDelMaestro={partidas[0]?.numero ?? null}
+            delMaestro={valoresDelMaestro(partidas[0])}
             filasFijas={[
               // Solo las subpiezas: de que ensamble forman parte, de lo general
               // a lo especifico, con el SKU del inmediato (p. ej. "Balanceador >

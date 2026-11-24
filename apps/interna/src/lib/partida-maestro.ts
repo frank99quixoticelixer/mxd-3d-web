@@ -40,6 +40,43 @@ function texto(v: ValorMaestro | undefined): string | null {
   return String(v);
 }
 
+/**
+ * Que columna del maestro corresponde a cada campo de la ficha. Los pocos campos
+ * donde el maestro tiene un dato real (no "PENDIENTE") se ofrecen como sugerencia
+ * en el formulario: la ficha es donde se llena el BOM, y el maestro es de donde
+ * hay que partir.
+ */
+const CAMPO_DEL_MAESTRO: Record<string, string> = {
+  material: "Material",
+  proveedor: "Proveedor",
+  parte_proveedor: "No. parte OEM",
+  trazabilidad_criticidad: "Criticidad",
+  trazabilidad_control_calidad: "Control de calidad",
+  notas: "Observaciones",
+  acabado: "Acabado",
+  proceso_fabricacion: "Proceso de fabricación",
+  tolerancia_mm: "Tolerancia general",
+  par_apriete_nm: "Par de apriete (N·m)",
+  trazabilidad_carpeta_pieza: "Carpeta de la pieza",
+};
+
+/**
+ * Lo que el maestro dice de la pieza, por clave del BOM y como texto. El peso del
+ * maestro va en kg y el campo de la ficha en g, asi que se convierte.
+ */
+export function valoresDelMaestro(partida: PartidaDeLaFicha | undefined): Record<string, string> {
+  const sugeridos: Record<string, string> = {};
+  if (!partida) return sugeridos;
+  for (const [clave, titulo] of Object.entries(CAMPO_DEL_MAESTRO)) {
+    const v = partida.datos[titulo];
+    if (v === null || v === undefined || v === "" || /^pendiente$/i.test(String(v).trim())) continue;
+    sugeridos[clave] = String(v);
+  }
+  const kg = partida.datos["Peso unit. (kg)"];
+  if (typeof kg === "number" && kg > 0) sugeridos.masa_g = String(Math.round(kg * 1000 * 1000) / 1000);
+  return sugeridos;
+}
+
 /** Las partidas de la pieza (una, o una por version). Vacio si no tiene numero o si la base no responde. */
 export async function partidasDeLaPieza(pieza: Pieza): Promise<PartidaDeLaFicha[]> {
   const cruce = CRUCE_MAESTRO[pieza.sku];

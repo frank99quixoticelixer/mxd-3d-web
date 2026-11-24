@@ -48,7 +48,16 @@ function FilaValor({ etiqueta, valor }: { etiqueta: string; valor: string }) {
   );
 }
 
-function FilaInput({ campo, valor }: { campo: CampoFicha; valor: string | number | boolean | null }) {
+function FilaInput({
+  campo,
+  valor,
+  sugerido,
+}: {
+  campo: CampoFicha;
+  valor: string | number | boolean | null;
+  /** Lo que dice el maestro de partes para este campo, si la ficha aun no tiene dato. */
+  sugerido?: string;
+}) {
   if (campo.tipo === "seleccionGiro") {
     return (
       <div className="flex items-center justify-between gap-4 border-b border-mxd-borde py-2 last:border-0">
@@ -142,7 +151,8 @@ function FilaInput({ campo, valor }: { campo: CampoFicha; valor: string | number
         type={campo.tipo === "numero" ? "number" : "text"}
         step={campo.tipo === "numero" ? "any" : undefined}
         defaultValue={(valor as string | number | null) ?? ""}
-        className="w-48 rounded-md border border-mxd-borde bg-mxd-hueso px-2 py-1 text-sm text-mxd-tinta"
+        placeholder={sugerido ? `Maestro: ${sugerido}` : undefined}
+        className="w-48 rounded-md border border-mxd-borde bg-mxd-hueso px-2 py-1 text-sm text-mxd-tinta placeholder:text-mxd-gris/70"
       />
     </div>
   );
@@ -359,6 +369,7 @@ export function FichaEditable({
   estadoBom,
   numerosUsados = [],
   partidaDelMaestro = null,
+  delMaestro = {},
   filasFijas = [],
 }: {
   pieza: Pieza;
@@ -368,6 +379,8 @@ export function FichaEditable({
   numerosUsados?: string[];
   /** Partida del maestro de partes de la pieza (numero), si la tiene. */
   partidaDelMaestro?: string | null;
+  /** Lo que el maestro de partes dice de esta pieza, por clave del BOM: se ofrece donde la ficha esta vacia. */
+  delMaestro?: Record<string, string>;
   /** Filas de solo lectura (no viven en el BOM: secciones/cantidad vienen de mx80.ts). */
   filasFijas?: { etiqueta: string; valor: string }[];
 }) {
@@ -431,7 +444,7 @@ export function FichaEditable({
               <FilaValor key={f.etiqueta} etiqueta={f.etiqueta} valor={f.valor} />
             ))}
             {camposEspecVisibles.map((c) => (
-              <FilaValor key={c.clave} etiqueta={c.etiqueta} valor={textoValor(pieza, c)} />
+              <FilaValor key={c.clave} etiqueta={c.etiqueta} valor={textoValor(pieza, c, delMaestro)} />
             ))}
           </dl>
           <p className="mt-2 text-[11px] leading-relaxed text-mxd-gris">
@@ -446,7 +459,7 @@ export function FichaEditable({
           </h2>
           <dl className="mt-3 rounded-xl border border-mxd-borde bg-mxd-fondo px-4">
             {camposComprasVisibles.map((c) => (
-              <FilaValor key={c.clave} etiqueta={c.etiqueta} valor={textoValor(pieza, c)} />
+              <FilaValor key={c.clave} etiqueta={c.etiqueta} valor={textoValor(pieza, c, delMaestro)} />
             ))}
           </dl>
         </section>
@@ -457,7 +470,7 @@ export function FichaEditable({
           </h2>
           <dl className="mt-3 rounded-xl border border-mxd-borde bg-mxd-fondo px-4">
             {camposCostosVisibles.map((c) => (
-              <FilaValor key={c.clave} etiqueta={c.etiqueta} valor={textoValor(pieza, c)} />
+              <FilaValor key={c.clave} etiqueta={c.etiqueta} valor={textoValor(pieza, c, delMaestro)} />
             ))}
             {/* Calculados, no editables: salen de costo_masa_g + costo_material
                 (lib/costos.ts). Se muestran aqui para no perder el total que ya
@@ -477,7 +490,7 @@ export function FichaEditable({
           </h2>
           <dl className="mt-3 rounded-xl border border-mxd-borde bg-mxd-fondo px-4">
             {camposTrazabilidadVisibles.map((c) => (
-              <FilaValor key={c.clave} etiqueta={c.etiqueta} valor={textoValor(pieza, c)} />
+              <FilaValor key={c.clave} etiqueta={c.etiqueta} valor={textoValor(pieza, c, delMaestro)} />
             ))}
           </dl>
         </section>
@@ -500,7 +513,7 @@ export function FichaEditable({
             <FilaValor key={f.etiqueta} etiqueta={f.etiqueta} valor={f.valor} />
           ))}
           {camposEspecVisibles.map((c) => (
-            <FilaInput key={c.clave} campo={c} valor={valorInicial(pieza, c.clave)} />
+            <FilaInput key={c.clave} campo={c} valor={valorInicial(pieza, c.clave)} sugerido={delMaestro[c.clave]} />
           ))}
         </div>
       </section>
@@ -511,7 +524,7 @@ export function FichaEditable({
         </h2>
         <div className="mt-3 rounded-xl border border-mxd-borde bg-mxd-fondo px-4">
           {camposComprasVisibles.map((c) => (
-            <FilaInput key={c.clave} campo={c} valor={valorInicial(pieza, c.clave)} />
+            <FilaInput key={c.clave} campo={c} valor={valorInicial(pieza, c.clave)} sugerido={delMaestro[c.clave]} />
           ))}
         </div>
       </section>
@@ -522,7 +535,7 @@ export function FichaEditable({
         </h2>
         <div className="mt-3 rounded-xl border border-mxd-borde bg-mxd-fondo px-4">
           {camposCostosVisibles.map((c) => (
-            <FilaInput key={c.clave} campo={c} valor={valorInicial(pieza, c.clave)} />
+            <FilaInput key={c.clave} campo={c} valor={valorInicial(pieza, c.clave)} sugerido={delMaestro[c.clave]} />
           ))}
         </div>
         <p className="mt-2 text-[11px] leading-relaxed text-mxd-gris">
@@ -537,7 +550,7 @@ export function FichaEditable({
         </h2>
         <div className="mt-3 rounded-xl border border-mxd-borde bg-mxd-fondo px-4">
           {camposTrazabilidadVisibles.map((c) => (
-            <FilaInput key={c.clave} campo={c} valor={valorInicial(pieza, c.clave)} />
+            <FilaInput key={c.clave} campo={c} valor={valorInicial(pieza, c.clave)} sugerido={delMaestro[c.clave]} />
           ))}
         </div>
       </section>

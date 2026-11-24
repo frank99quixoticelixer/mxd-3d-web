@@ -30,7 +30,7 @@ export const ETIQUETAS_GRUPO_MATERIAL: Record<string, string> = {
 export type CampoFicha = { clave: string; etiqueta: string; tipo: TipoCampo; unidad?: string };
 
 export const CAMPOS_ESPECIFICACIONES: CampoFicha[] = [
-  { clave: "masa_g", etiqueta: "Masa", tipo: "numero", unidad: "g" },
+  { clave: "masa_g", etiqueta: "Peso unitario", tipo: "numero", unidad: "g" },
   { clave: "largo_mm", etiqueta: "Largo", tipo: "numero", unidad: "mm" },
   { clave: "ancho_mm", etiqueta: "Ancho", tipo: "numero", unidad: "mm" },
   { clave: "alto_mm", etiqueta: "Alto", tipo: "numero", unidad: "mm" },
@@ -130,7 +130,12 @@ export function monedaTexto(valor: number | null): string {
     : valor.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
 }
 
-export function textoValor(pieza: Pieza, campo: CampoFicha): string {
+export function textoValor(
+  pieza: Pieza,
+  campo: CampoFicha,
+  /** Lo que el maestro de partes dice de esta pieza, por clave del BOM (lib/partida-maestro.ts). */
+  delMaestro?: Record<string, string>,
+): string {
   if (pieza.camposNoAplican.includes(campo.clave)) return "N/A";
   const valor = valorInicial(pieza, campo.clave);
   // Un tornillo sin par documentado no es un dato faltante: es que no hace
@@ -138,7 +143,12 @@ export function textoValor(pieza: Pieza, campo: CampoFicha): string {
   if (campo.clave === "par_apriete_nm" && valor === null && pieza.especificaciones.numero_tornillos) {
     return "Apriete manual";
   }
-  if (valor === null || valor === "") return "Pendiente";
+  if (valor === null || valor === "") {
+    // Sin dato en la ficha pero con dato en el maestro: se muestra, marcado como suyo.
+    const sugerido = delMaestro?.[campo.clave];
+    if (sugerido) return `${sugerido}${campo.unidad && campo.unidad !== "MXN" ? ` ${campo.unidad}` : ""} (del maestro)`;
+    return "Pendiente";
+  }
   if (campo.tipo === "seleccionBooleano") return valor ? "In-house (MXD)" : "Maquilado afuera";
   if (campo.tipo === "seleccionSiNo") return valor ? "Sí" : "No";
   if (campo.tipo === "seleccionMaterial") return ETIQUETAS_GRUPO_MATERIAL[valor as string] ?? String(valor);
