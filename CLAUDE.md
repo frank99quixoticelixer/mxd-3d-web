@@ -221,6 +221,14 @@ del nodo en el GLB y cada una dice su fuente: no son de plano.
   esta escrito a mano en `apps/interna/src/data/cruce-maestro.ts`, con estado
   `confirmado` o `propuesto`. La pagina `/maestro` de interna lo muestra.
   Los numeros de parte NO salen en vitrina.
+  **El Excel completo del maestro NO va al repo** (es publico y trae numeros OEM,
+  proveedores y notas de calidad; `Maestro_Partes_MX80*.xlsx` esta en
+  `.gitignore`). Sus 39 columnas viven en la tabla `maestro_partidas` de la base,
+  que se carga con `npm run maestro:a-base -- ruta/al/Excel.xlsx --aplicar`, y de
+  ahi sale el Excel que descarga interna (`lib/bom-maestro-excel.ts`), en el
+  mismo formato que el maestro, con el numero de parte MXD como llave. La
+  nomenclatura de los numeros (sistemas, tipos, consecutivos) esta en
+  `src/data/catalogo-codigos.ts`.
 - Los conjuntos que se compran como una sola partida (PDB, motor, bateria,
   soporte de bateria) marcan sus subpiezas `surtidaEnConjunto`: estan en el
   catalogo para ubicarlas en el 3D, no para pedirlas.
