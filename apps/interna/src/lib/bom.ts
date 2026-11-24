@@ -17,6 +17,8 @@
  */
 import type { PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 
+import MAESTRO from "@/data/maestro-mx80.json";
+
 import { obtenerPool } from "./db";
 import { EspecificacionesEsquema, type Especificaciones, type Pieza } from "./esquema";
 
@@ -34,6 +36,9 @@ import { EspecificacionesEsquema, type Especificaciones, type Pieza } from "./es
  *   listaCorta   -> array de string, unido con "," en la celda (nombres de
  *                   campo sin espacios, para camposNoAplican)
  */
+/** Los numeros de parte que son una partida del maestro de partes. */
+const NUMEROS_DEL_MAESTRO = new Set<string>(MAESTRO.partidas.map((p) => p.numero));
+
 export type TipoColumna = "texto" | "numero" | "lista" | "listaCorta" | "booleano";
 const COLUMNAS: { clave: string; encabezado: string; tipo: TipoColumna }[] = [
   { clave: "sku", encabezado: "SKU", tipo: "texto" },
@@ -412,13 +417,18 @@ async function escribirDentro(
   }
 
   // Una fila nueva es una pieza que el maestro original no traia: queda
-  // marcada, con quien y cuando, salvo que quien llama ya la haya marcado.
+  // marcada, con quien y cuando, salvo que quien llama ya la haya marcado. Si su
+  // numero de parte ya es una partida del maestro (por el cruce, o porque la
+  // persona lo escribio), la pieza SI viene del maestro y no se marca como
+  // agregada a mano.
   if (!existente) {
     const marca = marcaDeAgregada(autor.correo, ahora);
+    const numero = cambios.numero_parte_mxd ?? null;
+    const delMaestro = numero !== null && NUMEROS_DEL_MAESTRO.has(numero);
     cambios = {
       ...cambios,
-      origen_bom: cambios.origen_bom ?? marca.origen_bom,
-      origen_nota: cambios.origen_nota ?? marca.origen_nota,
+      origen_bom: cambios.origen_bom ?? (delMaestro ? "maestro" : marca.origen_bom),
+      origen_nota: cambios.origen_nota ?? (delMaestro ? null : marca.origen_nota),
     };
   }
 

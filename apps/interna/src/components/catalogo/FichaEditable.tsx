@@ -168,6 +168,7 @@ function AvisoOrigen({
   slug,
   numeroInicial,
   numerosUsados,
+  partidaDelMaestro,
 }: {
   estado: EstadoBomFicha;
   sku: string;
@@ -176,6 +177,8 @@ function AvisoOrigen({
   numeroInicial: string | null;
   /** Los numeros de parte MXD que ya existen (maestro y BOM), para sugerir el siguiente libre. */
   numerosUsados: string[];
+  /** Numero de la partida del maestro de partes que le corresponde a la pieza, si tiene una. */
+  partidaDelMaestro: string | null;
 }) {
   const [confirmando, setConfirmando] = useState(false);
   const [agregando, startTransition] = useTransition();
@@ -231,12 +234,26 @@ function AvisoOrigen({
         </>
       ) : (
         <>
-          <p className="font-semibold">Esta pieza no está en el BOM maestro</p>
-          <p className="mt-1 text-xs leading-relaxed">
-            Lo que ves viene del catálogo del 3D y no se guarda en ningún BOM. Si la agregas (o si
-            la editas), queda marcada como agregada a mano, con quién y cuándo, y sale así en el
-            Excel.
-          </p>
+          {partidaDelMaestro ? (
+            <>
+              <p className="font-semibold">Tiene partida en el maestro, pero aún no tiene fila en el BOM</p>
+              <p className="mt-1 text-xs leading-relaxed">
+                Su número de parte es <span className="font-mono">{partidaDelMaestro}</span>, por el
+                cruce con el maestro de partes. Lo que ves viene del catálogo del 3D y todavía no se
+                guarda en el BOM de la base de datos. Al agregarla (o al editarla) se crea su fila,
+                como pieza del maestro.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="font-semibold">Sin partida en el maestro y sin fila en el BOM</p>
+              <p className="mt-1 text-xs leading-relaxed">
+                Lo que ves viene del catálogo del 3D y no se guarda en ningún BOM. Si la agregas (o
+                si la editas), queda marcada como agregada a mano, con quién y cuándo, y sale así en
+                el Excel.
+              </p>
+            </>
+          )}
           {confirmando ? (
             <div className="mt-3 space-y-3">
               <div className="rounded-lg border border-amber-300 bg-white/60 p-3">
@@ -244,10 +261,9 @@ function AvisoOrigen({
                   Número de parte MXD
                 </label>
                 <p className="mt-0.5 text-[11px] leading-relaxed">
-                  El BOM maestro identifica cada pieza con este número, y esta no lo tiene. Elige el
-                  sistema y el tipo para proponer el siguiente libre, o escríbelo tú. Un ensamble de
-                  varias piezas lleva tipo ENS (por ejemplo el balanceador es PRO-ENS-001); un
-                  motor o ESC que se compra armado, SUB.
+                  {partidaDelMaestro
+                    ? "Viene del cruce con el maestro de partes. Cámbialo solo si el cruce está mal; para proponer otro, elige el sistema y el tipo."
+                    : "El BOM maestro identifica cada pieza con este número, y esta no lo tiene. Elige el sistema y el tipo para proponer el siguiente libre, o escríbelo tú. Un ensamble de varias piezas lleva tipo ENS (por ejemplo el balanceador es PRO-ENS-001); un motor o ESC que se compra armado, SUB."}
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <select
@@ -342,6 +358,7 @@ export function FichaEditable({
   slug,
   estadoBom,
   numerosUsados = [],
+  partidaDelMaestro = null,
   filasFijas = [],
 }: {
   pieza: Pieza;
@@ -349,6 +366,8 @@ export function FichaEditable({
   estadoBom: EstadoBomFicha;
   /** Numeros de parte MXD ya existentes; solo llegan si la pieza aun no esta en el BOM. */
   numerosUsados?: string[];
+  /** Partida del maestro de partes de la pieza (numero), si la tiene. */
+  partidaDelMaestro?: string | null;
   /** Filas de solo lectura (no viven en el BOM: secciones/cantidad vienen de mx80.ts). */
   filasFijas?: { etiqueta: string; valor: string }[];
 }) {
@@ -392,6 +411,7 @@ export function FichaEditable({
           slug={slug}
           numeroInicial={pieza.numeroBom}
           numerosUsados={numerosUsados}
+          partidaDelMaestro={partidaDelMaestro}
         />
         <section className="mt-8">
           <div className="flex items-center justify-between">

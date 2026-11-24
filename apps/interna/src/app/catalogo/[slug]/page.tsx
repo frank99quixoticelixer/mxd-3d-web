@@ -281,6 +281,7 @@ export default async function PaginaPieza({
             slug={slug}
             estadoBom={estadoBom}
             numerosUsados={numerosUsados}
+            partidaDelMaestro={partidas[0]?.numero ?? null}
             filasFijas={[
               // Solo las subpiezas: de que ensamble forman parte, de lo general
               // a lo especifico, con el SKU del inmediato (p. ej. "Balanceador >
