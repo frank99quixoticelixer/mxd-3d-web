@@ -1,63 +1,32 @@
 import { MODELO_PREDETERMINADO } from "@/config/modelos3d";
 import { conBomTodas, obtenerTodas } from "@/lib/catalogo";
-import { pendientesMaestro } from "@/lib/pendientes-maestro";
+import { numerosEnUso } from "@/lib/numeros-en-uso";
+import { generarExcelPendientes } from "@/lib/pendientes-excel";
 
-/** Lee el BOM editable del disco: usa fs de Node, no corre en el runtime Edge. */
+/** Lee el BOM y arma el Excel con exceljs (Buffer de Node): no corre en el runtime Edge. */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Una celda CSV: entre comillas, con las comillas internas dobladas. */
-const celda = (v: string | number | null | undefined) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-
 /**
- * Lo que falta enlazar entre el catalogo y el maestro de partes, en CSV para
- * abrirlo en Excel y darle seguimiento en el BOM. Mismas listas que la pagina
- * /maestro (ver lib/pendientes-maestro.ts).
+ * Lo que falta enlazar entre el catalogo y el maestro de partes, como un Excel
+ * de trabajo: una hoja por tipo de pendiente, con enlace a la ficha de cada
+ * pieza, la partida que mas se parece y columnas de decision con menu.
+ * Mismas listas que la pagina /maestro (ver lib/pendientes-maestro.ts).
  *   GET /api/maestro/pendientes
  */
-export async function GET() {
+export async function GET(peticion: Request) {
   const piezas = await conBomTodas(obtenerTodas(MODELO_PREDETERMINADO));
-  const p = pendientesMaestro(piezas);
+  const duenos = await numerosEnUso().catch(() => new Map<string, string>());
+  // Los enlaces del archivo apuntan al sitio publico (BETTER_AUTH_URL), no al
+  // origen interno con el que Hostinger entrega la peticion a la app.
+  const origen = (process.env.BETTER_AUTH_URL ?? new URL(peticion.url).origin).replace(/\/+$/, "");
 
-  const filas: (string | number | null)[][] = [
-    ["Pendiente", "SKU", "Pieza", "No. parte MXD", "Detalle"],
-    ...p.porConfirmar.map((x) => [
-      "Cruce por confirmar",
-      x.sku,
-      x.nombre,
-      x.numeroBom,
-      x.cruceBom?.nota ?? null,
-    ]),
-    ...p.porDarDeAlta.map((x) => [
-      "Pieza sin número: dar de alta o enlazar",
-      x.sku,
-      x.nombre,
-      null,
-      x.categoria,
-    ]),
-    ...p.tornilleria.map((x) => [
-      "Tornillería sin número",
-      x.sku,
-      x.nombre,
-      null,
-      x.categoria,
-    ]),
-    ...p.partidasSinPieza.map((m) => [
-      "Partida del maestro sin pieza en el 3D",
-      null,
-      m.nombre,
-      m.numero,
-      [m.nombreOem, m.posicion].filter(Boolean).join(" · "),
-    ]),
-  ];
-
-  // El BOM UTF-8 al inicio hace que Excel lea bien los acentos.
-  const csv = "﻿" + filas.map((f) => f.map(celda).join(",")).join("\r\n") + "\r\n";
+  const bytes = await generarExcelPendientes(piezas, duenos, origen);
   const fecha = new Date().toISOString().slice(0, 10);
-  return new Response(csv, {
+  return new Response(new Uint8Array(bytes), {
     headers: {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="pendientes_maestro_MX80_${fecha}.csv"`,
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename="pendientes_maestro_MX80_${fecha}.xlsx"`,
       "Cache-Control": "no-store",
     },
   });

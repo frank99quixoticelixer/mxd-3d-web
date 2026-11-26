@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { AsociarPartida } from "@/components/catalogo/AsociarPartida";
 import { DescargasMalla } from "@/components/catalogo/DescargasMalla";
 import { EtiquetaWeb } from "@/components/catalogo/EtiquetaWeb";
 import { FichaEditable } from "@/components/catalogo/FichaEditable";
@@ -20,8 +21,9 @@ import {
 } from "@/features/viewer/componentes";
 import { VisorPieza } from "@/features/viewer/VisorPieza";
 import { leerEstadoBom } from "@/lib/bom";
-import { numerosEnUso } from "@/lib/numeros-en-uso";
+import { numerosEnUso, SIN_DUENO } from "@/lib/numeros-en-uso";
 import { partidasDeLaPieza, valoresDelMaestro } from "@/lib/partida-maestro";
+import { sugerirPartidas, todasLasCandidatas } from "@/lib/sugerencias-maestro";
 import { pesosDeLaFicha } from "@/lib/pesos-ensamble";
 import {
   obtenerPiezaConBomPorSlug,
@@ -140,10 +142,21 @@ export default async function PaginaPieza({
   const estadoBom = await leerEstadoBom(pieza.sku);
   // Solo una pieza que aun no esta en el BOM ofrece sumarse, y para sugerirle un
   // numero de parte MXD libre la ficha necesita saber cuales ya existen.
-  const numerosUsados = estadoBom.enBom ? [] : [...(await numerosEnUso()).keys()];
+  const duenosDeNumeros = await numerosEnUso().catch(() => null);
+  const numerosUsados = estadoBom.enBom || !duenosDeNumeros ? [] : [...duenosDeNumeros.keys()];
+  // Para el campo "Numero de parte MXD" del formulario: todos los que existen y
+  // cuales ya lleva una pieza del 3D (las partidas sin cruzar no cuentan como tomadas).
+  const numerosExistentes = duenosDeNumeros ? [...duenosDeNumeros.keys()] : [];
+  const numerosTomados = Object.fromEntries(
+    [...(duenosDeNumeros ?? [])].filter(([, dueno]) => dueno !== SIN_DUENO && dueno !== pieza.sku),
+  );
   // Lo que el maestro de partes dice de esta pieza: su partida, el ensamble del
   // que forma parte y las partidas que la componen.
   const partidas = await partidasDeLaPieza(pieza);
+  // Para asociar la pieza con su partida desde la ficha: las mas parecidas y
+  // todas las demas para buscar. Una pieza que se surte dentro de su conjunto
+  // no lleva numero propio. Sin la base, la ficha sigue sin este bloque.
+  const duenos = pieza.surtidaEnConjunto ? null : duenosDeNumeros;
   // Peso unitario (de la ficha o del maestro) y, si se desarma, el peso del ensamble.
   const pesos = await pesosDeLaFicha(pieza);
 
@@ -285,6 +298,8 @@ export default async function PaginaPieza({
             slug={slug}
             estadoBom={estadoBom}
             numerosUsados={numerosUsados}
+            numerosExistentes={numerosExistentes}
+            numerosTomados={numerosTomados}
             partidaDelMaestro={partidas[0]?.numero ?? null}
             delMaestro={valoresDelMaestro(partidas[0])}
             filasFijas={[
@@ -305,6 +320,24 @@ export default async function PaginaPieza({
           />
 
           <PesoPieza propio={pesos.propio} ensamble={pesos.ensamble} />
+
+          {duenos && (
+            <AsociarPartida
+              sku={pieza.sku}
+              nombrePieza={pieza.nombre}
+              estado={pieza.cruceBom?.estado ?? null}
+              nota={pieza.cruceBom?.nota ?? null}
+              numeroActual={pieza.numeroBom}
+              variantes={pieza.variantes.map(({ clave, etiqueta, posicion, numeroBom }) => ({
+                clave,
+                etiqueta,
+                posicion,
+                numeroBom,
+              }))}
+              sugeridas={sugerirPartidas(pieza, duenos)}
+              todas={todasLasCandidatas(duenos, pieza.sku)}
+            />
+          )}
 
           <PartidaMaestro partidas={partidas} tieneNumero={Boolean(pieza.numeroBom)} />
 

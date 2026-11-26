@@ -204,7 +204,7 @@ export default async function PaginaMaestro() {
             href="/api/maestro/pendientes"
             className="rounded-lg bg-mxd-verde px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-mxd-verde-oscuro"
           >
-            Descargar pendientes (CSV)
+            Descargar pendientes (Excel)
           </a>
         </div>
 

@@ -8,6 +8,7 @@ import {
   escribirPieza,
   filaDesdePieza,
   leerEstadoBom,
+  leerPieza,
   type CambiosFilaBom,
 } from "@/lib/bom";
 import { obtenerPiezaPorSku } from "@/lib/catalogo";
@@ -52,6 +53,15 @@ export async function guardarEspecificaciones(formData: FormData): Promise<Resul
     } else {
       cambios[columna.clave] = crudo === "" ? null : crudo;
     }
+  }
+
+  // El numero de parte tiene que seguir la nomenclatura, igual que al agregar la
+  // pieza al BOM. Si no cambio no se toca: hay numeros viejos (de la carga
+  // inicial) que no la siguen y que no son motivo para rechazar otro guardado.
+  const numeroNuevo = cambios.numero_parte_mxd;
+  if (typeof numeroNuevo === "string" && numeroNuevo !== (await leerPieza(sku))?.numero_parte_mxd) {
+    const errorNumero = errorDeFormato(numeroNuevo);
+    if (errorNumero) return { ok: false, error: errorNumero };
   }
 
   // La version que vio quien edito: si otra persona guardo antes, no se pisa.

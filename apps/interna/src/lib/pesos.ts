@@ -30,6 +30,14 @@ export interface FilaComponente {
   subtotalKg: number | null;
   /** Piezas sin peso dentro de este componente (1 si es el propio componente). */
   faltantes: number;
+  /**
+   * Lo que ya pesan, sumado, las piezas con peso de un subensamble que todavia
+   * esta incompleto (cantidad x suma parcial). Sin esto, ese peso entraba al total
+   * del ensamble sin que ninguna fila lo mostrara. null si no aplica.
+   */
+  parcialKg: number | null;
+  /** Los componentes de este subensamble, cuando se sumo hacia abajo. */
+  hijos: FilaComponente[];
 }
 
 export interface ResumenEnsamble {
@@ -38,6 +46,9 @@ export interface ResumenEnsamble {
   sumaKg: number;
   faltantes: number;
   completo: boolean;
+  /** Piezas (hojas del ensamble) con peso y piezas en total, para decir "6 de 18". */
+  piezasConPeso: number;
+  piezasTotales: number;
 }
 
 /**
@@ -60,6 +71,8 @@ export function resumirEnsamble(
   const componentes: FilaComponente[] = [];
   let sumaKg = 0;
   let faltantes = 0;
+  let piezasConPeso = 0;
+  let piezasTotales = 0;
 
   for (const hijo of hijosDe(pieza.sku)) {
     const cantidad = cantidadEnPadre(hijo, pieza);
@@ -74,6 +87,8 @@ export function resumirEnsamble(
       origen: null,
       subtotalKg: null,
       faltantes: 0,
+      parcialKg: null,
+      hijos: [],
     };
 
     if (propio.kg !== null) {
@@ -81,25 +96,33 @@ export function resumirEnsamble(
       fila.origen = propio.origen;
       fila.subtotalKg = cantidad * propio.kg;
       sumaKg += fila.subtotalKg;
+      piezasConPeso += 1;
+      piezasTotales += 1;
     } else if (nietos.length > 0) {
       // Un subensamble sin peso propio: se suma lo que lo compone.
       const interno = resumirEnsamble(hijo, hijosDe, pesoPropio, profundidad + 1);
       fila.faltantes = interno.faltantes;
+      fila.hijos = interno.componentes;
       sumaKg += cantidad * interno.sumaKg;
+      piezasConPeso += interno.piezasConPeso;
+      piezasTotales += interno.piezasTotales;
       if (interno.completo) {
         fila.pesoUnitarioKg = interno.sumaKg;
         fila.origen = "suma";
         fila.subtotalKg = cantidad * interno.sumaKg;
+      } else if (interno.sumaKg > 0) {
+        fila.parcialKg = cantidad * interno.sumaKg;
       }
       faltantes += interno.faltantes;
     } else {
       fila.faltantes = 1;
       faltantes += 1;
+      piezasTotales += 1;
     }
     componentes.push(fila);
   }
 
-  return { componentes, sumaKg, faltantes, completo: faltantes === 0 };
+  return { componentes, sumaKg, faltantes, completo: faltantes === 0, piezasConPeso, piezasTotales };
 }
 
 /** "1.234 kg": hasta 3 decimales, sin ceros de relleno. */
