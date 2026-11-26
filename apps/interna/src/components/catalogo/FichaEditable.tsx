@@ -21,6 +21,7 @@ import { costoMaterial, costoProduccionTotal } from "@/lib/costos";
 import type { Pieza } from "@/lib/esquema";
 import {
   errorDeFormato,
+  leerNumeroDeParte,
   siguienteNumeroDeParte,
   sistemasEnUso,
   TIPOS_DE_PARTE,
@@ -122,16 +123,149 @@ function FilaConUnidad({
   );
 }
 
+/**
+ * "Numero de parte MXD" del formulario: el mismo menu ambar de "Agregar al BOM",
+ * para armar el numero con la convencion de codigos en vez de escribirlo a mano.
+ *
+ * Sistema y tipo arrancan con los del numero actual y NO tocan el numero hasta
+ * que se cambia alguno: abrir la ficha a editar no debe pisar uno que ya esta
+ * bien. Al elegir sistema y tipo se propone el siguiente consecutivo libre. El
+ * numero se puede corregir a mano; el formato lo vuelve a comprobar el servidor.
+ *
+ * Una pieza con versiones (CW/CCW...) no pasa por aqui: su numero se arma de los
+ * de cada version (bloque "Numero de parte MXD" de la ficha).
+ */
+function CampoNumeroParte({
+  valor,
+  numerosUsados,
+  numerosTomados,
+}: {
+  valor: string;
+  numerosUsados: string[];
+  /** numero -> SKU de la pieza que ya lo lleva (informativo). */
+  numerosTomados: Record<string, string>;
+}) {
+  const actual = leerNumeroDeParte(valor);
+  const [numero, setNumero] = useState(valor);
+  const [sistema, setSistema] = useState(actual?.sistema ?? "");
+  const [tipo, setTipo] = useState(actual?.tipo ?? "");
+
+  const sistemas = sistemasEnUso(numerosUsados);
+  const errorNumero = errorDeFormato(numero);
+  const limpio = numero.trim();
+  const tomadoPor = limpio !== "" && limpio !== valor ? numerosTomados[limpio] : undefined;
+  const sinCatalogo = numerosUsados.length === 0;
+
+  function sugerir(nuevoSistema: string, nuevoTipo: string) {
+    setSistema(nuevoSistema);
+    setTipo(nuevoTipo);
+    if (nuevoSistema && nuevoTipo) setNumero(siguienteNumeroDeParte(numerosUsados, nuevoSistema, nuevoTipo));
+  }
+
+  return (
+    <div className="border-b border-mxd-borde py-2 last:border-0">
+      <label htmlFor="numero_parte_mxd" className="text-sm text-mxd-gris">
+        Número de parte MXD
+      </label>
+      <div className="mt-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-amber-900">
+        <p className="text-[11px] leading-relaxed">
+          Formato: <span className="font-mono">MXD-MX80-SISTEMA-TIPO-000-R00</span>. Elige el sistema y el tipo y se
+          propone el siguiente número libre; también puedes escribirlo. Un ensamble de varias piezas lleva tipo ENS;
+          un motor o ESC que se compra armado, SUB.
+        </p>
+        {!sinCatalogo && (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <select
+              aria-label="Sistema"
+              value={sistema}
+              onChange={(e) => sugerir(e.target.value, tipo)}
+              className="rounded-md border border-amber-300 bg-white px-2 py-1 text-xs"
+            >
+              <option value="">Sistema…</option>
+              {sistemas.map((s) => (
+                <option key={s.sistema} value={s.sistema}>
+                  {s.sistema} – {s.nombre}
+                </option>
+              ))}
+            </select>
+            <select
+              aria-label="Tipo"
+              value={tipo}
+              onChange={(e) => sugerir(sistema, e.target.value)}
+              className="rounded-md border border-amber-300 bg-white px-2 py-1 text-xs"
+            >
+              <option value="">Tipo…</option>
+              {TIPOS_DE_PARTE.map((t) => (
+                <option key={t.codigo} value={t.codigo}>
+                  {t.codigo} – {t.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        <input
+          id="numero_parte_mxd"
+          name="numero_parte_mxd"
+          type="text"
+          value={numero}
+          onChange={(e) => setNumero(e.target.value)}
+          placeholder="MXD-MX80-PRO-ENS-001-R00"
+          autoComplete="off"
+          spellCheck={false}
+          aria-invalid={Boolean(errorNumero)}
+          className="mt-2 w-full rounded-md border border-amber-300 bg-white px-2 py-1 font-mono text-xs text-mxd-tinta"
+        />
+        {errorNumero && <p className="mt-1 text-[11px] font-medium text-red-800">{errorNumero}</p>}
+        {tomadoPor && !errorNumero && (
+          <p className="mt-1 text-[11px] font-medium">
+            Ya lo lleva {tomadoPor}. Si es la misma partida compartida (por ejemplo izquierda y derecha), está bien;
+            si no, elige otro.
+          </p>
+        )}
+        {limpio === "" && <p className="mt-1 text-[11px]">Vacío: la pieza queda sin número de parte.</p>}
+      </div>
+    </div>
+  );
+}
+
 function FilaInput({
   campo,
   valor,
   sugerido,
+  numerosUsados = [],
+  numerosTomados = {},
+  conVersiones = false,
 }: {
   campo: CampoFicha;
   valor: string | number | boolean | null;
   /** Lo que dice el maestro de partes para este campo, si la ficha aun no tiene dato. */
   sugerido?: string;
+  numerosUsados?: string[];
+  numerosTomados?: Record<string, string>;
+  /** La pieza tiene versiones: su numero sale de los de cada version, no se edita aqui. */
+  conVersiones?: boolean;
 }) {
+  if (campo.clave === "numero_parte_mxd") {
+    if (conVersiones) {
+      return (
+        <div className="border-b border-mxd-borde py-2 last:border-0">
+          <p className="text-sm text-mxd-gris">{campo.etiqueta}</p>
+          <p className="mt-1 break-all font-mono text-xs text-mxd-tinta">{(valor as string) || "Pendiente"}</p>
+          <p className="mt-1 text-[11px] leading-relaxed text-mxd-gris">
+            Esta pieza tiene versiones: su número sale del de cada una. Asócialas en el bloque «Número de parte MXD»
+            de la ficha.
+          </p>
+        </div>
+      );
+    }
+    return (
+      <CampoNumeroParte
+        valor={(valor as string | null) ?? ""}
+        numerosUsados={numerosUsados}
+        numerosTomados={numerosTomados}
+      />
+    );
+  }
   if (campo.unidades) return <FilaConUnidad campo={campo} valor={valor} sugerido={sugerido} />;
   if (campo.tipo === "seleccionGiro") {
     return (
@@ -443,6 +577,8 @@ export function FichaEditable({
   slug,
   estadoBom,
   numerosUsados = [],
+  numerosExistentes = [],
+  numerosTomados = {},
   partidaDelMaestro = null,
   delMaestro = {},
   filasFijas = [],
@@ -452,6 +588,10 @@ export function FichaEditable({
   estadoBom: EstadoBomFicha;
   /** Numeros de parte MXD ya existentes; solo llegan si la pieza aun no esta en el BOM. */
   numerosUsados?: string[];
+  /** Todos los numeros de parte que existen, para proponer el siguiente libre al editar. */
+  numerosExistentes?: string[];
+  /** numero -> SKU de la pieza del 3D que ya lo lleva. */
+  numerosTomados?: Record<string, string>;
   /** Partida del maestro de partes de la pieza (numero), si la tiene. */
   partidaDelMaestro?: string | null;
   /** Lo que el maestro de partes dice de esta pieza, por clave del BOM: se ofrece donde la ficha esta vacia. */
@@ -599,7 +739,15 @@ export function FichaEditable({
         </h2>
         <div className="mt-3 rounded-xl border border-mxd-borde bg-mxd-fondo px-4">
           {camposComprasVisibles.map((c) => (
-            <FilaInput key={c.clave} campo={c} valor={valorInicial(pieza, c.clave)} sugerido={delMaestro[c.clave]} />
+            <FilaInput
+              key={c.clave}
+              campo={c}
+              valor={valorInicial(pieza, c.clave)}
+              sugerido={delMaestro[c.clave]}
+              numerosUsados={numerosExistentes}
+              numerosTomados={numerosTomados}
+              conVersiones={pieza.variantes.length > 0}
+            />
           ))}
         </div>
       </section>

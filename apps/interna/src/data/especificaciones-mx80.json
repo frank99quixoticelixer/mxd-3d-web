@@ -210,68 +210,69 @@
   },
   "MX80-004-01": {
    "especificaciones": {
-    "masa_g": null,
+    "masa_g": 400,
     "largo_mm": 755.97,
     "ancho_mm": 154.2,
     "alto_mm": 42.7,
-    "material": "Polímero reforzado con fibra de carbono (CFRP), preimpregnado de matriz epóxica",
-    "acabado": "Superficie de molde con tejido de carbono visible; recubrimiento transparente con protección UV (propuesto)",
+    "material": "Nylon reforzado con fibra de carbono",
+    "acabado": null,
     "tolerancia_mm": null,
     "par_apriete_nm": null,
-    "proveedor": null,
-    "parte_proveedor": null,
+    "proveedor": "Hobbywing",
+    "parte_proveedor": "MFP 63x24",
     "fuente": [
-     "Usuario: fibra de carbono, proceso con molde",
-     "Hoja del motor: hélice de referencia 63 × 24 y cargas de operación",
-     "Propuesta técnica: proceso y requisitos de balanceo",
+     "Hoja del fabricante Hobbywing, helice MFP 63x24 (propelas_especificaciones.pdf): peso, material, limites de operacion y pruebas a 69 V",
      "Medido en Blender: MX80_completo_v4_web.glb, nodo Propela_CW_1_1 (modelo de produccion; la medicion anterior usaba MX80_completo_new_4_real.blend, un archivo distinto al de produccion)"
     ],
-    "notas": "Cantidad registrada como 1 hoja de las 2 que arma la helice CW de este brazo (la otra es geometria escaneada por separado, ver render CW_2 en la biblioteca local; mismo numero de parte). Confirmar tamano 63 x 24 in contra la pieza real. Masa pendiente. Cotas = envolvente completa del nodo (puede incluir la raiz/zona de montaje, mas ancha y gruesa que la pala en la punta): largo 756.0 mm, ancho (cuerda maxima) 154.2 mm, alto (espesor maximo) 42.7 mm.",
+    "notas": "Cantidad registrada como 1 hoja de las 2 que arma la helice CW de este brazo (la otra es geometria escaneada por separado, ver render CW_2 en la biblioteca local; mismo numero de parte). Masa, material y proveedor son los de la hoja del fabricante (MFP 63x24); sustituyen la suposicion anterior de CFRP preimpregnado moldeado. Cotas = envolvente completa del nodo en el GLB (incluye la raiz de montaje, mas ancha y gruesa que la pala): largo 756.0 mm, ancho (cuerda maxima) 154.2 mm, alto (espesor maximo) 42.7 mm. Por confirmar contra la pieza real: que el modelo comprado sea la MFP 63x24.",
     "longitud_mm": 755.97,
     "sentido_giro": "CW"
    },
    "categoria": "Propulsión - hélice",
-   "proceso_fabricacion": "Moldeo por compresión en molde metálico cerrado con preimpregnado de fibra de carbono y curado térmico; recorte y acabado de bordes; balanceo estático y dinámico",
+   "proceso_fabricacion": null,
    "descripcion_funcional": "Hoja de la helice del brazo CW (una de las 2 que arman la helice). Convierte el par del motor en empuje.",
    "especificaciones_tecnicas": [
-    "Sentido de giro: CW (horario; confirmar convención de observación)",
-    "Tamaño de referencia en la hoja del motor: 63 × 24 in (diámetro × paso)",
-    "Condición de operación máxima: 2371 RPM y 82 kgf de empuje (≈ 804 N)",
-    "Balanceo estático y dinámico obligatorio (grado por definir)",
-    "Sin delaminaciones, porosidad visible ni fibras expuestas en bordes",
+    "Sentido de giro: CW (confirmar convencion de observacion)",
+    "Modelo: Hobbywing MFP 63x24, helice plegable de 63 in (1600.2 mm) de diametro",
+    "Peso de una pala: 400 g; con el adaptador la helice completa pesa 1190 g",
+    "Velocidad recomendada 1000 a 1900 RPM; maxima 2350 RPM",
+    "Empuje recomendado 13 a 54 kg; maximo 73 kg",
+    "Temperatura de operacion -20 a 50 C; almacenaje -10 a 40 C, humedad maxima 85 %",
+    "Balanceo estatico y dinamico obligatorio (grado por definir)",
     "Juego de palas con masa y centro de gravedad pareados"
    ]
   },
   "MX80-004-02": {
    "especificaciones": {
-    "masa_g": null,
+    "masa_g": 400,
     "largo_mm": 767.57,
     "ancho_mm": 130.04,
     "alto_mm": 48.27,
-    "material": "Polímero reforzado con fibra de carbono (CFRP), preimpregnado de matriz epóxica",
-    "acabado": "Superficie de molde con tejido de carbono visible; recubrimiento transparente con protección UV (propuesto)",
+    "material": "Nylon reforzado con fibra de carbono",
+    "acabado": null,
     "tolerancia_mm": null,
     "par_apriete_nm": null,
-    "proveedor": null,
-    "parte_proveedor": null,
+    "proveedor": "Hobbywing",
+    "parte_proveedor": "MFP 63x24",
     "fuente": [
-     "Usuario: fibra de carbono, proceso con molde",
-     "Hoja del motor: hélice de referencia 63 × 24 y cargas de operación",
-     "Propuesta técnica: proceso y requisitos de balanceo",
+     "Hoja del fabricante Hobbywing, helice MFP 63x24 (propelas_especificaciones.pdf): peso, material, limites de operacion y pruebas a 69 V",
      "Medido en Blender: MX80_completo_v4_web.glb, nodo Propela_CCW_2 (modelo de produccion; la medicion anterior usaba MX80_completo_new_4_real.blend, un archivo distinto al de produccion)"
     ],
-    "notas": "Geometria entregada como espejo de una sola hoja escaneada (las 2 copias en el GLB son identicas, rotadas 180 grados entre si: no hay 2 escaneos distintos como en la CW). Se asume mismo material y proceso que la hoja CW por ser la misma familia de pieza; MASA PENDIENTE de medicion propia, no se copia de la CW. Confirmar sentido de giro CCW y numero de parte con Eduardo. Cotas = envolvente completa del nodo (puede incluir la raiz/zona de montaje, mas ancha y gruesa que la pala en la punta): largo 767.6 mm, ancho (cuerda maxima) 130.0 mm, alto (espesor maximo) 48.3 mm.",
+    "notas": "Geometria entregada como espejo de una sola hoja escaneada (las 2 copias en el GLB son identicas, rotadas 180 grados entre si). Masa, material y proveedor son los de la hoja del fabricante (MFP 63x24), que es una sola para el modelo: se asume igual a la CW, sin pesar la pieza. Cotas = envolvente completa del nodo en el GLB (incluye la raiz de montaje): largo 767.6 mm, ancho (cuerda maxima) 130.0 mm, alto (espesor maximo) 48.3 mm. Por confirmar: sentido de giro CCW y numero de parte con Eduardo.",
     "longitud_mm": 767.57,
     "sentido_giro": "CCW"
    },
    "categoria": "Propulsión - hélice",
-   "proceso_fabricacion": "Moldeo por compresión en molde metálico cerrado con preimpregnado de fibra de carbono y curado térmico; recorte y acabado de bordes; balanceo estático y dinámico",
+   "proceso_fabricacion": null,
    "descripcion_funcional": "Hoja de la helice del brazo CCW (una de las 2 que arman la helice). Convierte el par del motor en empuje.",
    "especificaciones_tecnicas": [
-    "Sentido de giro: CCW (antihorario; confirmar convencion de observacion)",
-    "Mismo tamano y condiciones de operacion de referencia que la hoja CW, por confirmar",
+    "Sentido de giro: CCW (confirmar convencion de observacion)",
+    "Modelo: Hobbywing MFP 63x24, helice plegable de 63 in (1600.2 mm) de diametro",
+    "Peso de una pala: 400 g; con el adaptador la helice completa pesa 1190 g",
+    "Velocidad recomendada 1000 a 1900 RPM; maxima 2350 RPM",
+    "Empuje recomendado 13 a 54 kg; maximo 73 kg",
+    "Temperatura de operacion -20 a 50 C; almacenaje -10 a 40 C, humedad maxima 85 %",
     "Balanceo estatico y dinamico obligatorio (grado por definir)",
-    "Sin delaminaciones, porosidad visible ni fibras expuestas en bordes",
     "Juego de palas con masa y centro de gravedad pareados"
    ]
   },
@@ -281,20 +282,28 @@
     "largo_mm": null,
     "ancho_mm": null,
     "alto_mm": null,
-    "material": null,
+    "material": "Nylon reforzado con fibra de carbono (palas); aleacion de aluminio (adaptador)",
     "acabado": null,
     "tolerancia_mm": null,
     "par_apriete_nm": null,
-    "proveedor": null,
-    "parte_proveedor": null,
-    "fuente": [],
-    "notas": "Pieza de catalogo formada por MX80-004-01 (hoja CW) y MX80-004-02 (hoja CCW). Cada rotor monta la que le corresponde segun su sentido de giro. Cotas y masa del conjunto: ver la hoja de cada una."
+    "proveedor": "Hobbywing",
+    "parte_proveedor": "MFP 63x24",
+    "fuente": [
+     "Hoja del fabricante Hobbywing, helice MFP 63x24 (propelas_especificaciones.pdf): peso, material, limites de operacion y pruebas a 69 V"
+    ],
+    "notas": "Pieza de catalogo formada por MX80-004-01 (hoja CW) y MX80-004-02 (hoja CCW). Cada rotor monta la que le corresponde segun su sentido de giro. Peso: 400 g por pala; 1190 g la helice completa con su adaptador. Discrepancia a resolver: la hoja del motor daba como condicion maxima 2371 RPM y 82 kgf, pero la helice admite como maximo 2350 RPM y 73 kg. Manda el limite de la helice. Las curvas de velocidad, par y eficiencia (banco del fabricante a 69 V) estan en el datasheet MXD de la helice, que no forma parte de esta ficha."
    },
    "categoria": "Propulsión - hélice",
-   "proceso_fabricacion": "Conjunto: ver el proceso de cada subpieza",
+   "proceso_fabricacion": "Pieza comprada al fabricante: ver su hoja",
    "descripcion_funcional": "Par de helices de fibra de carbono, una de sentido horario (CW) y otra antihorario (CCW). Cada rotor monta la que le corresponde.",
    "especificaciones_tecnicas": [
-    "Conjunto de 2 subpiezas: ver la hoja de cada una"
+    "Modelo: Hobbywing MFP 63x24, helice plegable de 63 in (1600.2 mm) de diametro",
+    "Motor recomendado por el fabricante: Hobbywing X15",
+    "Velocidad recomendada 1000 a 1900 RPM; maxima 2350 RPM",
+    "Empuje recomendado 13 a 54 kg; maximo 73 kg",
+    "Peso: 400 g por pala; 1190 g con el adaptador",
+    "Montaje: barreno central de 15 mm y 4 barrenos de 6.2 mm en circulo de 46 mm",
+    "Temperatura de operacion -20 a 50 C; almacenaje -10 a 40 C, humedad maxima 85 %"
    ]
   },
   "MX80-005": {

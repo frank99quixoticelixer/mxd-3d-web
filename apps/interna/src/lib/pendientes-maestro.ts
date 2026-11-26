@@ -31,6 +31,9 @@ export interface PartidaMaestro {
   posicion: string | null;
 }
 
+/** Las partidas del maestro (recorte minimo de data/maestro-mx80.json). */
+export const MAESTRO_PARTIDAS_JSON = MAESTRO.partidas as PartidaMaestro[];
+
 export interface PendientesMaestro {
   porConfirmar: Pieza[];
   porDarDeAlta: Pieza[];

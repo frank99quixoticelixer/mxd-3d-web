@@ -59,7 +59,7 @@ export function PartidaMaestro({ partidas, tieneNumero }: { partidas: PartidaDeL
           {tieneNumero
             ? "El número de parte de esta pieza no está en el maestro de partes."
             : "Esta pieza no tiene número de parte, así que no aparece en el maestro de partes."}{" "}
-          Se asigna en «Compras» de esta ficha, o se cruza con una partida en{" "}
+          Se asocia en «Número de parte MXD», arriba en esta misma ficha; la vista de conjunto está en{" "}
           <Link href="/maestro" className="underline hover:text-mxd-verde">
             el maestro
           </Link>

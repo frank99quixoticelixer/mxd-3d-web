@@ -48,13 +48,34 @@ export default async function PaginaHistorial({
   const piezas = new Map(obtenerTodas().map((p) => [p.sku, p]));
   // Solo el cambio mas reciente de cada campo de cada pieza se puede restaurar:
   // los demas dejaron de ser lo vigente (la accion lo vuelve a comprobar).
+  //
+  // Una restauracion es ella misma un cambio, y si tambien llevara boton,
+  // restaurar se volveria un vaiven: cada clic dejaria el valor de antes y el
+  // siguiente el de ahora. Por eso una fila que solo deshace un cambio anterior
+  // del mismo campo se marca como "Restauracion" y no ofrece restaurar. Para
+  // cambiarlo otra vez se edita el campo en la ficha.
+  const vacio = (v: string | null) => v ?? "";
+  const restauraciones = new Set<number>();
+  for (const c of cambios) {
+    const deshaceUnoAnterior = cambios.some(
+      (e) =>
+        e.id < c.id &&
+        e.sku === c.sku &&
+        e.campo === c.campo &&
+        vacio(e.anterior) === vacio(c.nuevo) &&
+        vacio(e.nuevo) === vacio(c.anterior),
+    );
+    if (deshaceUnoAnterior) restauraciones.add(c.id);
+  }
   const vistos = new Set<string>();
   const restaurables = new Set<number>();
   for (const c of cambios) {
     const llave = `${c.sku}\u0000${c.campo}`;
     if (vistos.has(llave)) continue;
     vistos.add(llave);
-    if (puedeRestaurarse(c.campo) && c.anterior !== c.nuevo) restaurables.add(c.id);
+    if (puedeRestaurarse(c.campo) && c.anterior !== c.nuevo && !restauraciones.has(c.id)) {
+      restaurables.add(c.id);
+    }
   }
 
   return (
@@ -112,11 +133,19 @@ export default async function PaginaHistorial({
                       )}
                       {pieza && <span className="block text-xs text-mxd-gris">{pieza.nombre}</span>}
                     </td>
-                    <td className="px-3 py-2 text-mxd-tinta">{nombreDeCampo(c.campo)}</td>
+                    <td className="px-3 py-2 text-mxd-tinta">
+                      {nombreDeCampo(c.campo)}
+                      {restauraciones.has(c.id) && (
+                        <span className="ml-2 rounded-full bg-mxd-verde-claro px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-mxd-verde-oscuro">
+                          Restauración
+                        </span>
+                      )}
+                    </td>
                     <td className="px-3 py-2 text-mxd-gris"><Valor texto={c.anterior} /></td>
                     <td className="px-3 py-2 text-mxd-tinta"><Valor texto={c.nuevo} /></td>
                     <td className="px-3 py-2">
                       {restaurables.has(c.id) && <BotonRestaurar idCambio={c.id} />}
+                      {restauraciones.has(c.id) && <span className="text-xs text-mxd-gris">Ya restaurado</span>}
                     </td>
                   </tr>
                 );

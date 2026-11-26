@@ -138,7 +138,12 @@ function conBom(pieza: Pieza, fila: FilaBom | null): Pieza {
     descripcion_funcional,
     especificaciones_tecnicas,
     camposNoAplican,
-    numeroBom: numero_parte_mxd,
+    // Una fila del BOM sin numero NO borra el que propone el catalogo: muchas
+    // filas vienen de la carga inicial, hecha antes de que se cruzara cada
+    // pieza con el maestro, y dejaban la etiqueta en "Pendiente" aunque la
+    // pieza ya tuviera su partida. Solo se respeta el vacio cuando alguien dejo
+    // dicho que la pieza no tiene numero (cruce "sin-numero", desde /maestro).
+    numeroBom: numero_parte_mxd ?? (cruce_estado === "sin-numero" ? null : pieza.numeroBom),
     variantes,
     cruceBom,
     precio_mxn,

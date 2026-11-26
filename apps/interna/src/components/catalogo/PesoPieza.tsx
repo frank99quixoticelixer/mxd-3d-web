@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { formatearKg, type OrigenPeso, type ResumenEnsamble } from "@/lib/pesos";
+import { formatearKg, type FilaComponente, type OrigenPeso, type ResumenEnsamble } from "@/lib/pesos";
 import type { PesoPropio } from "@/lib/pesos";
 
 /**
@@ -14,6 +14,46 @@ const ORIGEN: Record<OrigenPeso, string> = {
   maestro: "del maestro de partes",
   suma: "suma de sus componentes",
 };
+
+/**
+ * Una fila del desglose y, debajo, las de su subensamble. Cada pieza que entra
+ * a la suma tiene su fila visible: un subensamble incompleto no esconde el peso
+ * de las piezas que si lo tienen.
+ */
+function FilasComponente({ c, nivel }: { c: FilaComponente; nivel: number }) {
+  return (
+    <>
+      <tr className="border-t border-mxd-borde">
+        <td className="py-1.5 pr-3" style={{ paddingLeft: nivel * 16 }}>
+          {nivel > 0 && <span className="mr-1 text-mxd-gris" aria-hidden="true">↳</span>}
+          <Link href={`/catalogo/${c.slug}`} className="hover:text-mxd-verde hover:underline">
+            {c.nombre}
+          </Link>
+          <span className="ml-2 font-mono text-[10px] text-mxd-gris">{c.sku}</span>
+        </td>
+        <td className="px-3 py-1.5 text-right">{c.cantidad}</td>
+        <td className="px-3 py-1.5 text-right">
+          {c.pesoUnitarioKg !== null ? formatearKg(c.pesoUnitarioKg) : <span className="text-mxd-gris">sin dato</span>}
+          {c.origen === "suma" && <span className="ml-1 text-[10px] text-mxd-gris">(suma)</span>}
+        </td>
+        <td className="py-1.5 pl-3 text-right">
+          {c.subtotalKg !== null ? (
+            formatearKg(c.subtotalKg)
+          ) : c.parcialKg !== null ? (
+            <span className="text-amber-800" title="Solo suma las piezas de este subensamble que ya tienen peso">
+              {formatearKg(c.parcialKg)} parcial
+            </span>
+          ) : (
+            <span className="text-mxd-gris">—</span>
+          )}
+        </td>
+      </tr>
+      {c.hijos.map((h) => (
+        <FilasComponente key={h.sku} c={h} nivel={nivel + 1} />
+      ))}
+    </>
+  );
+}
 
 export function PesoPieza({ propio, ensamble }: { propio: PesoPropio; ensamble: ResumenEnsamble | null }) {
   return (
@@ -47,22 +87,7 @@ export function PesoPieza({ propio, ensamble }: { propio: PesoPropio; ensamble: 
                 </thead>
                 <tbody>
                   {ensamble.componentes.map((c) => (
-                    <tr key={c.sku} className="border-t border-mxd-borde">
-                      <td className="py-1.5 pr-3">
-                        <Link href={`/catalogo/${c.slug}`} className="hover:text-mxd-verde hover:underline">
-                          {c.nombre}
-                        </Link>
-                        <span className="ml-2 font-mono text-[10px] text-mxd-gris">{c.sku}</span>
-                      </td>
-                      <td className="px-3 py-1.5 text-right">{c.cantidad}</td>
-                      <td className="px-3 py-1.5 text-right">
-                        {c.pesoUnitarioKg !== null ? formatearKg(c.pesoUnitarioKg) : <span className="text-mxd-gris">sin dato</span>}
-                        {c.origen === "suma" && <span className="ml-1 text-[10px] text-mxd-gris">(suma)</span>}
-                      </td>
-                      <td className="py-1.5 pl-3 text-right">
-                        {c.subtotalKg !== null ? formatearKg(c.subtotalKg) : <span className="text-mxd-gris">—</span>}
-                      </td>
-                    </tr>
+                    <FilasComponente key={c.sku} c={c} nivel={0} />
                   ))}
                 </tbody>
                 <tfoot>
@@ -83,8 +108,9 @@ export function PesoPieza({ propio, ensamble }: { propio: PesoPropio; ensamble: 
             </div>
             {!ensamble.completo && (
               <p role="status" className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                {ensamble.sumaKg > 0 ? "Total parcial: " : "Sin total: "}a {ensamble.faltantes}{" "}
-                {ensamble.faltantes === 1 ? "pieza" : "piezas"} les falta el peso
+                {ensamble.sumaKg > 0 ? "Total parcial: " : "Sin total: "}solo {ensamble.piezasConPeso} de{" "}
+                {ensamble.piezasTotales} piezas tienen peso; a {ensamble.faltantes}{" "}
+                {ensamble.faltantes === 1 ? "pieza" : "piezas"} les falta
                 {ensamble.sumaKg > 0 ? `. El real es mayor que ${formatearKg(ensamble.sumaKg)}` : ""}.
               </p>
             )}

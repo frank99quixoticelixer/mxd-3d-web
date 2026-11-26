@@ -1,6 +1,6 @@
 import { renderToBuffer } from "@react-pdf/renderer";
 
-import { obtenerSubpiezas } from "@/lib/catalogo";
+import { conBomTodas, obtenerSubpiezas } from "@/lib/catalogo";
 import type { Pieza } from "@/lib/esquema";
 
 import { DocumentoFichas, type Alcance } from "./Documento";
@@ -42,6 +42,18 @@ function subpiezasDe(piezas: Pieza[]): Map<string, Pieza[]> {
 }
 
 /**
+ * Las subpiezas salen del catalogo estatico; sin esto la hoja de una subpieza
+ * ignoraba lo capturado en el BOM (numero de parte, peso, material...) y no
+ * coincidia con su ficha web. Una sola lectura de la base para todas.
+ */
+async function conBomDeSubpiezas(mapa: Map<string, Pieza[]>): Promise<Map<string, Pieza[]>> {
+  const todas = [...mapa.values()].flat();
+  if (todas.length === 0) return mapa;
+  const vivas = new Map((await conBomTodas(todas)).map((p) => [p.sku, p]));
+  return new Map([...mapa].map(([sku, hijas]) => [sku, hijas.map((h) => vivas.get(h.sku) ?? h)]));
+}
+
+/**
  * Si algo falla al generar, responde 500 CON el mensaje del error en lugar de
  * un 500 vacio. En Hostinger no hay acceso a los logs del servidor y las
  * fichas fallaban sin dejar rastro. Interna esta detras de contrasena
@@ -74,7 +86,7 @@ async function generarPdf(
   nombreBase: string,
 ): Promise<Response> {
   const piezas = piezasDe(alcance);
-  const subpiezas = subpiezasDe(piezas);
+  const subpiezas = await conBomDeSubpiezas(subpiezasDe(piezas));
   const todas = [...piezas, ...[...subpiezas.values()].flat()];
   const [imagenes, logo] = await Promise.all([
     cargarImagenes(todas, origen),
